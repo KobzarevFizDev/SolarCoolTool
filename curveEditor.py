@@ -1,6 +1,8 @@
 import math
 import select
+from curve import Curve
 import sys
+import curve
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout
@@ -22,7 +24,7 @@ class Point:
         self.color = Qt.red
 
 
-class BezierEditorWindow(QWidget):
+class CurveEditorWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.points = list()
@@ -42,19 +44,19 @@ class BezierEditorWindow(QWidget):
             painter.setBrush(QBrush(point.color, Qt.SolidPattern))
             painter.drawEllipse(QPoint(point.x, point.y), 10, 10)
 
-        painter.setBrush(QBrush(Qt.green, Qt.CrossPattern))
-        ## Вынести в отдельную функцию
-        if len(self.points) == 3:
-            lastPoint = self.getBezierPoint(0)
+        if len(self.points) > 2:
+            curve = Curve(self.points)
+            painter.setBrush(QBrush(Qt.green, Qt.CrossPattern))
+            previous_point = curve.get_value(0)
             for t in [0.05 * i for i in range(1,21)]:
-                print("t = {0}".format(t))
-                currentPoint = self.getBezierPoint(t)
-                painter.drawLine(lastPoint, currentPoint)
-                lastPoint = currentPoint
+                current_point = curve.get_value(t)
+                painter.drawLine(previous_point, current_point)
+                previous_point = current_point
+
 
     def mousePressEvent(self, event):
         if not self.isClickOnBezierPoint(QPoint(event.x(), event.y())):
-            self.createBezierPoint(event.x(), event.y())
+            self.addPoint(event.x(), event.y())
             self.update()
 
     def isClickOnBezierPoint(self, mouseClickPoint):
@@ -102,25 +104,11 @@ class BezierEditorWindow(QWidget):
             self.selectedBezierPoint.y = event.y()
             self.update()
 
-    def createBezierPoint(self, x, y):
+    def addPoint(self, x, y):
         self.points.append(Point(x,y,10))
-        self.update()
 
-    def getBezierPoint(self, t):
-        P0 = QPoint(self.points[0].x, self.points[0].y)
-        P1 = QPoint(self.points[1].x, self.points[1].y)
-        P2 = QPoint(self.points[2].x, self.points[2].y)
-
-        w1 = self.points[0].w
-        w2 = self.points[1].w
-        w3 = self.points[2].w
-
-        x = int((1-t)**2 * P0.x() + 2*t*(1-t)*P1.x() + t**2*P2.x())
-        y = int((1-t)**2 * P0.y() + 2*t*(1-t)*P1.y() + t**2*P2.y())
-
-        return QPoint(x,y)
 
 app = QApplication(sys.argv)
-ex = BezierEditorWindow()
+ex = CurveEditorWindow()
 ex.show()
 sys.exit(app.exec_())
