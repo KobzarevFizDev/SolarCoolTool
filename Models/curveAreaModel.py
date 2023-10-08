@@ -2,10 +2,10 @@ from PyQt5.QtCore import Qt, QPoint
 from scipy.interpolate import CubicSpline
 
 class Point:
-    def __init__(self,x,y,r):
+    def __init__(self,x,y):
         self.x = x
         self.y = y
-        self.r = r
+        self.r = 10
         self.w = 1
         self.color = Qt.red
 
@@ -55,6 +55,18 @@ class Curve:
 class CurveAreaModel:
     def __init__(self):
         self.__observers = []
+        self.curve = Curve()
+
+    def getPoints(self):
+        return self.curve.getPoints()
+
+    def addPoint(self, point):
+        self.curve.addPoint(point)
+        self.notifyObservers()
+
+    def removePoint(self, point):
+        self.curve.removePoint(point)
+        self.notifyObservers()
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

@@ -6,7 +6,9 @@ class CurveAreaView:
         self.model = model
         self.widget = CurveAreaWidget(parentWindow)
         parentWindow.setCentralWidget(self.widget)
-        self.widget.mouseDoubleClickSignal.connect(self.controller.createPoint)
+        self.model.addObserver(self)
+        self.widget.mouseDoubleClickSignal.connect(self.controller.editCurve)
 
     def modelIsChanged(self):
-        self.widget.drawPoints(self.model.getPoints())
+        print("Model is changed {0}".format([p.x for p in self.model.getPoints()]))
+        self.widget.drawArea(self.model.getPoints())
