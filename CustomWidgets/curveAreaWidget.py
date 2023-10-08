@@ -14,11 +14,14 @@ class CurveAreaWidget(QWidget):
         self.setMinimumSize(300, 600)
         self.setMaximumSize(300, 600)
         self.setAutoFillBackground(True)
-
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(Qt.green))
         self.setPalette(palette)
-        self.drawSceneTest()
+        self.scene = QGraphicsScene(self)
+        self.scene.setSceneRect(0, 0, 300, 600)
+        self.view = QGraphicsView(self.scene, self)
+        self.view.setGeometry(0, 0, 300, 600)
+        self.view.show()
 
     def mousePressEvent(self, event):
         self.mousePressSignal.emit(event.x(), event.y())
@@ -30,7 +33,15 @@ class CurveAreaWidget(QWidget):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
     def drawArea(self, points):
-        self.repaint()
+        self.scene.clear()
+        greenBrush = QBrush(Qt.green)
+        blackPen = QPen(Qt.green)
+        blackPen.setWidth(5)
+        for p in points:
+            print("Draw point: {0} {1}".format(p.x, p.y))
+            self.scene.addEllipse(p.x, p.y, 20, 20, blackPen, greenBrush)
+        self.scene.update()
+        self.view.show()
 
     def drawSceneTest(self):
         scene = QGraphicsScene(self)

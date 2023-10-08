@@ -23,7 +23,7 @@ class CurveEditorController:
 
         r = points[0].r
         for p in points:
-            if math.sqrt( (p.x - x) * (p.y - y) ) < r:
+            if math.sqrt( (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) ) < r:
                 return True
         return False
 
@@ -35,7 +35,7 @@ class CurveEditorController:
 
         r = points[0].r
         for p in points:
-            if math.sqrt( (p.x - x) * (p.y - y) ) < r:
+            if math.sqrt( (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) ) < r:
                 return p
         return None
 
