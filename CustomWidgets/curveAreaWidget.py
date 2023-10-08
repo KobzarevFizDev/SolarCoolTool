@@ -16,6 +16,6 @@ class CurveAreaWidget(QWidget):
     def mousePressEvent(self, event):
         print("click: {0} {1}".format(event.x(), event.y()))
 
-    def drawArea(self, points):
-        print(points)
+    def drawPoints(self, points):
+        print("Draw points")
         pass

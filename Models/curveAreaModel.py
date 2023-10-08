@@ -1,5 +1,24 @@
+# TODO: Включить в этот файл классы Curve, Point
+
 from PyQt5.QtCore import Qt, QPoint
 from scipy.interpolate import CubicSpline
+
+class Point:
+    def __init__(self,x,y,r):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.w = 1
+        self.color = Qt.red
+
+
+    def highlightThisPointAsSelected(self):
+        self.color = Qt.blue
+
+
+    def unhightlightThisPointAsSelected(self):
+        self.color = Qt.red
+
 
 class Curve:
     def __init__(self):
@@ -34,3 +53,17 @@ class Curve:
 
     def __get_x_by_t(self, t):
         return self.x0 + (self.xn - self.x0) * t
+
+class CurveAreaModel:
+    def __init__(self):
+        self.__observers = []
+
+    def addObserver(self, inObserver):
+        self.__observers.append(inObserver)
+
+    def removeObserver(self, inObserver):
+        self.__observers.remove(inObserver)
+
+    def notifyObservers(self):
+        for x in self.__observers:
+            x.modelIsChanged()

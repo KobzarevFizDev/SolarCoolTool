@@ -1,11 +1,8 @@
-from CustomWidgets.curveAreaWidget import CurveAreaWidget
-from Models.curve import Curve
-from Models.point import Point
-
+from Views.curveAreaView import CurveAreaView
 class CurveEditorController:
-    def __init__(self, curveModel:'Curve', curveView:'CurveAreaWidget'):
-        self.model = curveModel
-        self.view = curveView
+    def __init__(self, model, MainAppWindow):
+        self.model = model
+        self.view = CurveAreaView(self, model, MainAppWindow)
 
     def addPoint(self, point):
         self.model.addPoint(point)
