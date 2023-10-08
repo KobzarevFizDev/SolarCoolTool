@@ -6,7 +6,7 @@ class CurveAreaView:
         self.model = model
         self.widget = CurveAreaWidget(parentWindow)
         parentWindow.setCentralWidget(self.widget)
-
+        self.widget.mouseDoubleClickSignal.connect(self.controller.createPoint)
 
     def modelIsChanged(self):
         self.widget.drawPoints(self.model.getPoints())

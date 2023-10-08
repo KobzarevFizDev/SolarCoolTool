@@ -4,10 +4,12 @@ class CurveEditorController:
         self.model = model
         self.view = CurveAreaView(self, model, MainAppWindow)
 
-    def addPoint(self, point):
-        self.model.addPoint(point)
-        self.view.drawArea(self.model.getPoints())
+    def createPoint(self, x, y):
+        print("create point: {0}, {1}".format(x,y))
+        #self.model.addPoint(point)
+        #self.view.drawArea(self.model.getPoints())
 
-    def removePoint(self, point):
-        self.model.removePoint(point)
-        self.view.drawArea(self.model.getPoints())
+    def deletePoint(self, x,y):
+        print("delete point: {0}, {1}".format(x, y))
+        #self.model.removePoint(point)
+        #self.view.drawArea(self.model.getPoints())

@@ -1,5 +1,3 @@
-# TODO: Включить в этот файл классы Curve, Point
-
 from PyQt5.QtCore import Qt, QPoint
 from scipy.interpolate import CubicSpline
 
