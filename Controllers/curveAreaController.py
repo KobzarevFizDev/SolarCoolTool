@@ -7,13 +7,15 @@ class CurveEditorController:
         self.model = model
         self.view = CurveAreaView(self, model, MainAppWindow)
 
-    def editCurve(self, x, y):
-        if self.__isClickOnAnExistingPoint(x, y):
-            print("click on existing point")
-            self.selectedPoint = self.__getExistingPointInArea(x, y)
-        else:
-            print("create new point")
-            self.__createNewPoint(x, y)
+    def createNewPoint(self, x, y):
+        newPoint = Point(x, y)
+        self.model.addPoint(newPoint)
+
+
+    def mouseMove(self, x, y):
+        print("mouse move")
+        if not self.selectedPoint == None:
+            self.model.changePoint(self.selectedPoint, x, y)
 
     def __isClickOnAnExistingPoint(self, x, y):
         points = self.model.getPoints()
@@ -38,7 +40,3 @@ class CurveEditorController:
             if math.sqrt( (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) ) < r:
                 return p
         return None
-
-    def __createNewPoint(self, x, y):
-        newPoint = Point(x,y)
-        self.model.addPoint(newPoint)

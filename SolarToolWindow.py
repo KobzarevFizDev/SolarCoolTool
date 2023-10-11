@@ -21,10 +21,12 @@ class CurveEditorWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("My App")
         self.setGeometry(200, 200, 600, 600)
-
+        #self.setMouseTracking(True)
         self.curveEditorModel = CurveAreaModel()
         self.curveEditorController = CurveEditorController(self.curveEditorModel, self)
 
+    def mouseMoveEvent(self, event):
+        print("move: {0}, {1}: ".format(event.x(), event.y()))
         #super().__init__()
         #self.setWindowTitle("My App")
         #self.setGeometry(200,200,600,600)

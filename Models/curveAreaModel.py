@@ -64,6 +64,11 @@ class CurveAreaModel:
         self.curve.addPoint(point)
         self.notifyObservers()
 
+    def changePoint(self, point, new_x, new_y):
+        point.x = new_x
+        point.y = new_y
+        self.notifyObservers()
+
     def removePoint(self, point):
         self.curve.removePoint(point)
         self.notifyObservers()

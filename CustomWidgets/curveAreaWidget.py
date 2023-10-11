@@ -1,18 +1,23 @@
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
-    QGraphicsView
+    QGraphicsView, QGraphicsEllipseItem
 from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+
+from CustomWidgets.curvePointWidget import CurvePointWidget
+from Models.curveAreaModel import *
 
 
 class CurveAreaWidget(QWidget):
     mousePressSignal = pyqtSignal(int, int)
     mouseReleaseSignal = pyqtSignal(int, int)
     mouseDoubleClickSignal = pyqtSignal(int, int)
+    mouseMoveSignal = pyqtSignal(int, int)
 
     def __init__(self, parent):
         super(CurveAreaWidget, self).__init__()
         self.setMinimumSize(300, 600)
         self.setMaximumSize(300, 600)
+        self.setMouseTracking(True)
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(Qt.green))
@@ -22,9 +27,14 @@ class CurveAreaWidget(QWidget):
         self.view = QGraphicsView(self.scene, self)
         self.view.setGeometry(0, 0, 300, 600)
         self.view.show()
+        self.curvePointsWidget:list[CurvePointWidget] = list()
 
     def mousePressEvent(self, event):
         self.mousePressSignal.emit(event.x(), event.y())
+
+    def mouseMoveEvent(self, event):
+        print("move")
+        self.mouseMoveSignal.emit(event.x(), event.y())
 
     def mouseDoubleClickEvent(self, event):
         self.mouseDoubleClickSignal.emit(event.x(), event.y())
@@ -32,26 +42,43 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawArea(self, points):
-        self.scene.clear()
-        greenBrush = QBrush(Qt.green)
-        blackPen = QPen(Qt.green)
-        blackPen.setWidth(5)
-        for p in points:
-            print("Draw point: {0} {1}".format(p.x, p.y))
-            self.scene.addEllipse(p.x, p.y, 20, 20, blackPen, greenBrush)
+    def drawPoints(self, points: list[Point]):
+        diffBetweenRequiredAndDesiredNumberOfPoints:int = len(self.curvePointsWidget) - len(points)
+        if diffBetweenRequiredAndDesiredNumberOfPoints > 0:
+            self.__deletePoints(diffBetweenRequiredAndDesiredNumberOfPoints)
+        else:
+            self.__createPoints(-diffBetweenRequiredAndDesiredNumberOfPoints)
+        self.__updatePointsPosition(points)
         self.scene.update()
         self.view.show()
 
-    def drawSceneTest(self):
-        scene = QGraphicsScene(self)
-        greenBrush = QBrush(Qt.green)
-        blueBrush = QBrush(Qt.blue)
+    def __createPoints(self, numberOfPoints):
+        for i in range(numberOfPoints):
+            brush = QBrush(Qt.blue)
+            pen = QPen(Qt.blue)
+            pen.setWidth(5)
+            pointWidget = CurvePointWidget(30, 30)
+            self.scene.addItem(pointWidget)
+            self.curvePointsWidget.append(pointWidget)
 
-        blackPen = QPen(Qt.black)
-        blackPen.setWidth(5)
+    def __deletePoints(self, numberOfPoint):
+        pointsForDelete = self.curvePointsWidget[numberOfPoint:]
+        for p in pointsForDelete:
+            self.scene.removeItem(p)
+            # TODO: Удалить часть списка
 
-        scene.addEllipse(10,10,100,100,blackPen,greenBrush)
-        self.view = QGraphicsView(scene, self)
-        self.view.show()
+    def __updatePointsPosition(self, points:list[Point]):
+        for i, point in enumerate(points):
+            xPos = point.x
+            yPos = point.y
+            self.curvePointsWidget[i].setPos(xPos, yPos)
 
+    #def drawArea(self, points):
+    #    self.scene.clear()
+    #    greenBrush = QBrush(Qt.green)
+    #    greenPen = QPen(Qt.green)
+    #    greenPen.setWidth(5)
+    #    for p in points:
+    #        self.scene.addRect(p.x, p.y, 20, 20, greenPen, greenBrush)
+    #    self.scene.update()
+    #    self.view.show()
