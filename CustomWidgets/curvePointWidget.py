@@ -1,13 +1,19 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsEllipseItem
+from Models.curveAreaModel import Point
+
+from Models.curveAreaModel import CurveAreaModel
 
 
 class CurvePointWidget(QGraphicsEllipseItem):
-    def __init__(self, x, y):
-        super().__init__(0,0,10,10)
+    def __init__(self, curvePointModel:'Point', curveModel: 'CurveAreaModel'):
+        super().__init__(0,0,20,20)
         self.isSelected = False
-        self.setPos(x, y)
+        print("Set pos: {0} {1}".format(curvePointModel.x,curvePointModel.y))
+        self.setPos(curvePointModel.x, curvePointModel.y)
         self.setBrush(Qt.blue)
+        self.curvePointModel: Point = curvePointModel
+        self.curveModel: CurveAreaModel = curveModel
 
     def mousePressEvent(self, event):
         print("press on point")
@@ -18,5 +24,17 @@ class CurvePointWidget(QGraphicsEllipseItem):
         self.isSelected = False
 
     def mouseMoveEvent(self, event):
-        print("move point")
-        self.setPos(event.x(), event.y())
+        if self.isSelected:
+            lastCursorPosition = event.lastScenePos()
+            currentCursorPosition = event.scenePos()
+
+            origPosition = self.scenePos()
+
+            deltaPositionX = currentCursorPosition.x() - lastCursorPosition.x()
+            deltaPositionY = currentCursorPosition.y() - lastCursorPosition.y()
+
+            currentPointPositionX = deltaPositionX + origPosition.x()
+            currentPointPositionY = deltaPositionY + origPosition.y()
+
+            self.curvePointModel.changePosition(deltaPositionX, deltaPositionY)
+            self.setPos(currentPointPositionX, currentPointPositionY)

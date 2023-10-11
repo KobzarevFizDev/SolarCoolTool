@@ -10,12 +10,7 @@ class CurveEditorController:
     def createNewPoint(self, x, y):
         newPoint = Point(x, y)
         self.model.addPoint(newPoint)
-
-
-    def mouseMove(self, x, y):
-        print("mouse move")
-        if not self.selectedPoint == None:
-            self.model.changePoint(self.selectedPoint, x, y)
+        return newPoint
 
     def __isClickOnAnExistingPoint(self, x, y):
         points = self.model.getPoints()

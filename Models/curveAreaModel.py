@@ -9,10 +9,12 @@ class Point:
         self.w = 1
         self.color = Qt.red
 
+    def changePosition(self, deltaX: int, deltaY: int):
+        self.x += deltaX
+        self.y += deltaY
 
     def highlightThisPointAsSelected(self):
         self.color = Qt.blue
-
 
     def unhightlightThisPointAsSelected(self):
         self.color = Qt.red

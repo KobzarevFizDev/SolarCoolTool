@@ -42,43 +42,10 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawPoints(self, points: list[Point]):
-        diffBetweenRequiredAndDesiredNumberOfPoints:int = len(self.curvePointsWidget) - len(points)
-        if diffBetweenRequiredAndDesiredNumberOfPoints > 0:
-            self.__deletePoints(diffBetweenRequiredAndDesiredNumberOfPoints)
-        else:
-            self.__createPoints(-diffBetweenRequiredAndDesiredNumberOfPoints)
-        self.__updatePointsPosition(points)
-        self.scene.update()
-        self.view.show()
-
-    def __createPoints(self, numberOfPoints):
-        for i in range(numberOfPoints):
-            brush = QBrush(Qt.blue)
-            pen = QPen(Qt.blue)
-            pen.setWidth(5)
-            pointWidget = CurvePointWidget(30, 30)
-            self.scene.addItem(pointWidget)
-            self.curvePointsWidget.append(pointWidget)
-
-    def __deletePoints(self, numberOfPoint):
-        pointsForDelete = self.curvePointsWidget[numberOfPoint:]
-        for p in pointsForDelete:
-            self.scene.removeItem(p)
-            # TODO: Удалить часть списка
-
-    def __updatePointsPosition(self, points:list[Point]):
-        for i, point in enumerate(points):
-            xPos = point.x
-            yPos = point.y
-            self.curvePointsWidget[i].setPos(xPos, yPos)
-
-    #def drawArea(self, points):
-    #    self.scene.clear()
-    #    greenBrush = QBrush(Qt.green)
-    #    greenPen = QPen(Qt.green)
-    #    greenPen.setWidth(5)
-    #    for p in points:
-    #        self.scene.addRect(p.x, p.y, 20, 20, greenPen, greenBrush)
-    #    self.scene.update()
-    #    self.view.show()
+    def drawNewPoint(self, newPointModel, newCurveModel):
+        brush = QBrush(Qt.blue)
+        pen = QPen(Qt.blue)
+        pen.setWidth(5)
+        pointWidget = CurvePointWidget(newPointModel, newCurveModel)
+        self.scene.addItem(pointWidget)
+        self.curvePointsWidget.append(pointWidget)

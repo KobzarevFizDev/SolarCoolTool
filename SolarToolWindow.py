@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt, QPoint
 from CustomWidgets.curveAreaWidget import CurveAreaWidget
 
 from Models.curveAreaModel import CurveAreaModel
-from Controllers.curveAreaController import CurveEditorController
+from Controllers.curveEditorController import CurveEditorController
 
 
 class CurveEditorWindow(QMainWindow):
