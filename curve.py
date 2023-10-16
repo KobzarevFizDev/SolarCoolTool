@@ -1,4 +1,3 @@
-import numpy as np
 from scipy.interpolate import CubicSpline
 from PyQt5.QtCore import Qt, QPoint
 
