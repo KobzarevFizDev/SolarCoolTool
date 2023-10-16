@@ -54,7 +54,6 @@ class CurveAreaWidget(QWidget):
             startPoint = pointsFormingBrokenLine[indexOfPoint[0]]
             endPoint = pointsFormingBrokenLine[indexOfPoint[1]]
             self.scene.addLine(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), pen)
-            print("drawLine: {0}, {1}".format(startPoint.x(), endPoint.x()))
 
     def clearAll(self):
         self.scene.clear()

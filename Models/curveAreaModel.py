@@ -36,7 +36,8 @@ class Curve:
         self.numberOfSegments += 1
 
     def decreaseNumberOfCurveSegments(self):
-        self.numberOfSegments -= 1
+        if self.numberOfSegments > 3:
+            self.numberOfSegments -= 1
 
     def removePoint(self, point):
         self.points.remove(point)
@@ -73,6 +74,10 @@ class CurveAreaModel:
     @property
     def numberOfPoints(self):
         return self.curve.numberOfPoints
+
+    @property
+    def numberOfSegments(self):
+        return self.curve.numberOfSegments
 
     def getPoints(self):
         return self.curve.getPoints()

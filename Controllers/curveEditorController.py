@@ -13,7 +13,8 @@ class CurveEditorController:
 
     # TODO: подобрать более хорошее имя для функции
     def calculatePointsFormingBrokenLine(self):
-        t_values = [0.05 * i for i in range(1, 21)]
+        t_step = 1/self.model.numberOfSegments
+        t_values = [t_step * i for i in range(0, self.model.numberOfSegments + 1)]
         return [self.model.getPoint(t) for t in t_values]
 
 
