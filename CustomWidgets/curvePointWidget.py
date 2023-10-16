@@ -11,7 +11,6 @@ class CurvePointWidget(QGraphicsEllipseItem):
                        curveController):
         super().__init__(0,0,20,20)
         self.isSelected = False
-        print("Set pos: {0} {1}".format(curvePointModel.x,curvePointModel.y))
         self.setPos(curvePointModel.x, curvePointModel.y)
         self.setBrush(Qt.blue)
         self.curvePointModel: Point = curvePointModel
@@ -19,12 +18,11 @@ class CurvePointWidget(QGraphicsEllipseItem):
         self.curveController = curveController
 
     def mousePressEvent(self, event):
-        print("press on point")
         self.isSelected = True
 
     def mouseReleaseEvent(self, event):
-        print("release point")
         self.isSelected = False
+        self.curveModel.notifyObservers()
 
     def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent'):
         self.curveController.deletePoint(self.curvePointModel)
@@ -45,3 +43,4 @@ class CurvePointWidget(QGraphicsEllipseItem):
 
             self.curvePointModel.changePosition(deltaPositionX, deltaPositionY)
             self.setPos(currentPointPositionX, currentPointPositionY)
+            self.curveModel.rebuildSpline()

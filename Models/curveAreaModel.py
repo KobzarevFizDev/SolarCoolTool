@@ -22,10 +22,21 @@ class Point:
 
 class Curve:
     def __init__(self):
+        self.numberOfSegments = 10
         self.points = list()
+
+    @property
+    def numberOfPoints(self):
+        return len(self.points)
 
     def addPoint(self, point):
         self.points.append(point)
+
+    def increaseNumberOfCurveSegments(self):
+        self.numberOfSegments += 1
+
+    def decreaseNumberOfCurveSegments(self):
+        self.numberOfSegments -= 1
 
     def removePoint(self, point):
         self.points.remove(point)
@@ -41,7 +52,7 @@ class Curve:
         self.xn = max(x)
         self.spline = CubicSpline(x,y)
 
-    def get_value(self, t):
+    def getPoint(self, t):
         x = self.__get_x_by_t(t)
         return QPoint(x, int(self.spline(x)))
 
@@ -59,21 +70,38 @@ class CurveAreaModel:
         self.__observers = []
         self.curve = Curve()
 
+    @property
+    def numberOfPoints(self):
+        return self.curve.numberOfPoints
+
     def getPoints(self):
         return self.curve.getPoints()
 
+    def getPoint(self, t):
+        return self.curve.getPoint(t)
+
     def addPoint(self, point):
         self.curve.addPoint(point)
-        self.notifyObservers()
-
-    def changePoint(self, point, new_x, new_y):
-        point.x = new_x
-        point.y = new_y
+        if self.curve.numberOfPoints > 3:
+            self.curve.rebuildSpline()
         self.notifyObservers()
 
     def removePoint(self, point):
         self.curve.removePoint(point)
+        if self.curve.numberOfPoints > 3:
+            self.curve.rebuildSpline()
         self.notifyObservers()
+
+    def increaseNumberOfCurveSegments(self):
+        self.curve.increaseNumberOfCurveSegments()
+        self.notifyObservers()
+
+    def decreaseNumberOfCurveSegments(self):
+        self.curve.decreaseNumberOfCurveSegments()
+        self.notifyObservers()
+
+    def rebuildSpline(self):
+        self.curve.rebuildSpline()
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

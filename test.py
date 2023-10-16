@@ -1,2 +1,2 @@
-a = [1,2,3,4]
-print(a[2:])
+a = [(i, i + 1) for i in range(0,10)]
+print(a)

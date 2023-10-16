@@ -14,6 +14,11 @@ class CurveAreaView:
         self.controller.createNewPoint(x, y)
 
     def modelIsChanged(self):
-        self.widget.clearAllPoints()
+        print("model is changed")
+        self.widget.clearAll()
         for p in self.model.getPoints():
-            self.widget.drawNewPoint(p, self.model, self.controller)
+            self.widget.drawPoint(p, self.model, self.controller)
+
+        if self.model.numberOfPoints > 3:
+            points = self.controller.calculatePointsFormingBrokenLine()
+            self.widget.drawLine(points)

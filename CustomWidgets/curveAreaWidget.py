@@ -42,13 +42,19 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawNewPoint(self, newPointModel, newCurveModel, curveController):
-        brush = QBrush(Qt.blue)
-        pen = QPen(Qt.blue)
-        pen.setWidth(5)
+    def drawPoint(self, newPointModel, newCurveModel, curveController):
         pointWidget = CurvePointWidget(newPointModel, newCurveModel, curveController)
         self.scene.addItem(pointWidget)
         self.curvePointsWidget.append(pointWidget)
 
-    def clearAllPoints(self):
+    def drawLine(self, pointsFormingBrokenLine):
+        pen = QPen(Qt.red)
+        indexesOfPoints = [(i, i + 1) for i in range(len(pointsFormingBrokenLine) - 1)]
+        for indexOfPoint in indexesOfPoints:
+            startPoint = pointsFormingBrokenLine[indexOfPoint[0]]
+            endPoint = pointsFormingBrokenLine[indexOfPoint[1]]
+            self.scene.addLine(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), pen)
+            print("drawLine: {0}, {1}".format(startPoint.x(), endPoint.x()))
+
+    def clearAll(self):
         self.scene.clear()
