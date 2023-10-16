@@ -12,26 +12,5 @@ class CurveEditorController:
         self.model.addPoint(newPoint)
         return newPoint
 
-    def __isClickOnAnExistingPoint(self, x, y):
-        points = self.model.getPoints()
-
-        if len(points) == 0:
-            return False
-
-        r = points[0].r
-        for p in points:
-            if math.sqrt( (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) ) < r:
-                return True
-        return False
-
-    def __getExistingPointInArea(self, x, y):
-        points = self.model.getPoints()
-
-        if len(points) == 0:
-            return False
-
-        r = points[0].r
-        for p in points:
-            if math.sqrt( (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y) ) < r:
-                return p
-        return None
+    def deletePoint(self, point: Point):
+        self.model.removePoint(point)

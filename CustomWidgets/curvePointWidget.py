@@ -6,7 +6,9 @@ from Models.curveAreaModel import CurveAreaModel
 
 
 class CurvePointWidget(QGraphicsEllipseItem):
-    def __init__(self, curvePointModel:'Point', curveModel: 'CurveAreaModel'):
+    def __init__(self, curvePointModel: Point,
+                       curveModel: CurveAreaModel,
+                       curveController):
         super().__init__(0,0,20,20)
         self.isSelected = False
         print("Set pos: {0} {1}".format(curvePointModel.x,curvePointModel.y))
@@ -14,6 +16,7 @@ class CurvePointWidget(QGraphicsEllipseItem):
         self.setBrush(Qt.blue)
         self.curvePointModel: Point = curvePointModel
         self.curveModel: CurveAreaModel = curveModel
+        self.curveController = curveController
 
     def mousePressEvent(self, event):
         print("press on point")
@@ -22,6 +25,10 @@ class CurvePointWidget(QGraphicsEllipseItem):
     def mouseReleaseEvent(self, event):
         print("release point")
         self.isSelected = False
+
+    def mouseDoubleClickEvent(self, event: 'QGraphicsSceneMouseEvent'):
+        self.curveController.deletePoint(self.curvePointModel)
+        self.curveModel.notifyObservers()
 
     def mouseMoveEvent(self, event):
         if self.isSelected:

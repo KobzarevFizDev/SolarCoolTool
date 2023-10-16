@@ -42,10 +42,13 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawNewPoint(self, newPointModel, newCurveModel):
+    def drawNewPoint(self, newPointModel, newCurveModel, curveController):
         brush = QBrush(Qt.blue)
         pen = QPen(Qt.blue)
         pen.setWidth(5)
-        pointWidget = CurvePointWidget(newPointModel, newCurveModel)
+        pointWidget = CurvePointWidget(newPointModel, newCurveModel, curveController)
         self.scene.addItem(pointWidget)
         self.curvePointsWidget.append(pointWidget)
+
+    def clearAllPoints(self):
+        self.scene.clear()

@@ -1,5 +1,4 @@
 from CustomWidgets.curveAreaWidget import CurveAreaWidget
-from Models.curveAreaModel import Point
 
 
 class CurveAreaView:
@@ -10,12 +9,11 @@ class CurveAreaView:
         parentWindow.setCentralWidget(self.widget)
         self.model.addObserver(self)
         self.widget.mouseDoubleClickSignal.connect(self.createNewPointWidget)
-        #self.widget.mouseDoubleClickSignal.connect(self.controller.createNewPoint)
 
     def createNewPointWidget(self, x, y):
-        pointModel = Point(x, y)
-        self.widget.drawNewPoint(pointModel, self.model)
+        self.controller.createNewPoint(x, y)
 
     def modelIsChanged(self):
-        print("Model is changed {0}".format([p.x for p in self.model.getPoints()]))
-
+        self.widget.clearAllPoints()
+        for p in self.model.getPoints():
+            self.widget.drawNewPoint(p, self.model, self.controller)

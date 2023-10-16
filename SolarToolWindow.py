@@ -8,9 +8,6 @@ import curve
 
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QMainWindow
-from PyQt5.QtGui import QPainter, QPen, QBrush
-from PyQt5.QtCore import Qt, QPoint
-from CustomWidgets.curveAreaWidget import CurveAreaWidget
 
 from Models.curveAreaModel import CurveAreaModel
 from Controllers.curveEditorController import CurveEditorController
