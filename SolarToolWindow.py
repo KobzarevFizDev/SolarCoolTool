@@ -1,4 +1,6 @@
 import sys
+
+from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow
 
 from Models.curveAreaModel import CurveAreaModel
@@ -21,7 +23,8 @@ class CurveEditorWindow(QMainWindow):
             self.curveEditorController.decreaseNumberOfCurveSegments()
 
 
-app = QApplication(sys.argv)
-ex = CurveEditorWindow()
-ex.show()
-sys.exit(app.exec_())
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    ex = CurveEditorWindow()
+    ex.show()
+    sys.exit(app.exec_())

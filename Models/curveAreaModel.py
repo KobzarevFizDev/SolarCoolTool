@@ -20,6 +20,13 @@ class Point:
         self.color = Qt.red
 
 
+class AreaSegment:
+    def __init__(self, topRight, topLeft, bottomRight, bottomLeft):
+        self.topRight = topRight
+        self.topLeft = topLeft
+        self.bottomRight = bottomRight
+        self.bottomLeft = bottomLeft
+
 class Curve:
     def __init__(self):
         self.numberOfSegments = 10
