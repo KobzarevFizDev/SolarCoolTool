@@ -20,5 +20,9 @@ class CurveAreaView:
 
         if self.model.numberOfPoints > 3:
             points = self.controller.calculatePointsFormingBrokenLine()
-            self.controller.calculateAreaSegments(points, 20)
-            self.widget.drawLine(points)
+            topPoints = self.controller.calculateTopPointsFormingArea(points, 20)
+            bottomPoints = self.controller.calculateBottomPointsFormingArea(points, 20)
+            segments = self.controller.calculateAreaSegments(topPoints, bottomPoints)
+            self.controller.calculateAreaSegments(points, bottomPoints)
+            self.widget.drawCurve(points)
+            self.widget.drawAreaSegments(segments)

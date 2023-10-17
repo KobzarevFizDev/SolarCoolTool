@@ -27,6 +27,12 @@ class AreaSegment:
         self.bottomRight = bottomRight
         self.bottomLeft = bottomLeft
 
+    def __eq__(self, other: 'AreaSegment'):
+        return self.topRight == other.topRight and \
+               self.topLeft == other.topLeft and \
+               self.bottomRight == other.bottomRight and \
+               self.bottomLeft == other.bottomLeft
+
 class Curve:
     def __init__(self):
         self.numberOfSegments = 10
