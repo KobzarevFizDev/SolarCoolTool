@@ -1,0 +1,2 @@
+class SolarViewModel:
+    pass

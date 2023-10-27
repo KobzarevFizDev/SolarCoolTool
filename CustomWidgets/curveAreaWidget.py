@@ -15,17 +15,17 @@ class CurveAreaWidget(QWidget):
 
     def __init__(self, parent):
         super(CurveAreaWidget, self).__init__()
-        self.setMinimumSize(300, 600)
-        self.setMaximumSize(300, 600)
+        self.setMinimumSize(500, 600)
+        self.setMaximumSize(500, 600)
         self.setMouseTracking(True)
         self.setAutoFillBackground(True)
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(Qt.green))
         self.setPalette(palette)
         self.scene = QGraphicsScene(self)
-        self.scene.setSceneRect(0, 0, 300, 600)
+        self.scene.setSceneRect(0, 0, 500, 600)
         self.view = QGraphicsView(self.scene, self)
-        self.view.setGeometry(0, 0, 300, 600)
+        self.view.setGeometry(0, 0, 500, 600)
         self.view.show()
         self.curvePointsWidget:list[CurvePointWidget] = list()
 

@@ -5,9 +5,9 @@ from Models.curveAreaModel import Point, AreaSegment
 
 
 class CurveEditorController:
-    def __init__(self, model, MainAppWindow):
+    def __init__(self, model, mainAppWindow):
         self.model = model
-        self.view = CurveAreaView(self, model, MainAppWindow)
+        self.view = CurveAreaView(self, model, mainAppWindow)
 
     def createNewPoint(self, x, y):
         newPoint = Point(x, y)
