@@ -1,7 +1,8 @@
 import sys
+from IOSolarData import imagesStorage
 
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
 
 from Models.curveAreaModel import CurveAreaModel
 from Models.solarViewerModel import SolarViewModel
@@ -24,7 +25,9 @@ class CurveEditorWindow(QMainWindow):
         self.curveEditorController = CurveEditorController(self.curveEditorModel, self)
         self.solarViewerController = SolarViewerController(self.solarViewerModel, self)
 
-        self.setLayout(self.layout)
+        centralWidget = QWidget()
+        centralWidget.setLayout(self.layout)
+        self.setCentralWidget(centralWidget)
 
     def wheelEvent(self, event):
         deltaWheel = event.angleDelta().y()

@@ -5,4 +5,4 @@ class SolarViewerView:
         self.controller = controller
         self.model = model
         self.widget = SolarViewerWidget(parentWindow)
-        #parentWindow.setCentralWidget(self.widget)
+        parentWindow.layout.addWidget(self.widget)

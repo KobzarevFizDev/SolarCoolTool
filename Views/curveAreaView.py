@@ -6,7 +6,7 @@ class CurveAreaView:
         self.controller = controller
         self.model = model
         self.widget = CurveAreaWidget(parentWindow)
-        parentWindow.setCentralWidget(self.widget)
+        parentWindow.layout.addWidget(self.widget)
         self.model.addObserver(self)
         self.widget.mouseDoubleClickSignal.connect(self.createNewPointWidget)
 

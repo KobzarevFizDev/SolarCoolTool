@@ -1,6 +1,6 @@
 import unittest
 from PyQt5 import QtWidgets
-from test import MyWidget
+from p3 import MyWidget
 
 
 class TestMyWidget(unittest.TestCase):
