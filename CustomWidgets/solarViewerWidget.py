@@ -1,15 +1,13 @@
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
-    QGraphicsView, QGraphicsEllipseItem
-from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor, QPixmap
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+from PyQt5 import QtGui
+from PyQt5.QtWidgets import QLabel, QWidget
+from PyQt5.QtGui import QPalette, QColor, QPixmap
+from PyQt5.QtCore import Qt, pyqtSignal
 
 from IOSolarData import imagesStorage
 
-import sunpy.visualization.colormaps as cm
-import matplotlib
-
 class SolarViewerWidget(QWidget):
+    wheelScrollSignal = pyqtSignal(int, int)
+    mouseMoveSignal = pyqtSignal(int, int)
     def __init__(self, parent):
         super(SolarViewerWidget, self).__init__()
         self.setMinimumSize(600, 600)
@@ -21,6 +19,13 @@ class SolarViewerWidget(QWidget):
         self.setPalette(palette)
         i = imagesStorage.ImagesStorage()
         self.label = QLabel(self)
-        pixmap = QPixmap.fromImage(i.read_image_by_index(1))
-        pixmap = pixmap.scaledToWidth(600)
+        self.originPixmap = QPixmap.fromImage(i.read_image_by_index(1))
+        pixmap = self.originPixmap.scaledToWidth(600)
         self.label.setPixmap(pixmap)
+
+    def setScaleOfSolarView(self, scale):
+        pixmap = self.originPixmap.scaledToWidth(scale)
+        self.label.setPixmap(pixmap)
+
+    def wheelEvent(self, event: QtGui.QWheelEvent):
+        self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())

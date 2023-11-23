@@ -33,7 +33,6 @@ class CurveAreaWidget(QWidget):
         self.mousePressSignal.emit(event.x(), event.y())
 
     def mouseMoveEvent(self, event):
-        print("move")
         self.mouseMoveSignal.emit(event.x(), event.y())
 
     def mouseDoubleClickEvent(self, event):
