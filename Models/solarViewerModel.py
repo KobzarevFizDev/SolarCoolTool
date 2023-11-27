@@ -3,9 +3,19 @@ class SolarViewModel:
         self.__observers = []
         self.zoom = 1
         self.originScaleImage = 600
+        self.originImagePosition = (0, 0)
 
     def setOriginSolarPreviewImage(self, originScale):
         self.originScaleImage = originScale
+        self.notifyObserver()
+
+    def setOriginSolerPreviewImage(self, originImagePosition):
+        self.originImagePosition = originImagePosition
+        self.notifyObserver()
+
+    def moveImage(self, deltaPosition):
+        self.originImagePosition[0] += deltaPosition[0]
+        self.originImagePosition[1] += deltaPosition[1]
         self.notifyObserver()
 
     def changeZoom(self, deltaZoom):

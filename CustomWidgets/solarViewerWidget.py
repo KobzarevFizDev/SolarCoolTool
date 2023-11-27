@@ -22,6 +22,8 @@ class SolarViewerWidget(QWidget):
         self.originPixmap = QPixmap.fromImage(i.read_image_by_index(1))
         pixmap = self.originPixmap.scaledToWidth(600)
         self.label.setPixmap(pixmap)
+        self.label.move(0,0)
+        print(self.label.pos().x(), self.label.pos().y())
 
     def setScaleOfSolarView(self, scale):
         pixmap = self.originPixmap.scaledToWidth(scale)

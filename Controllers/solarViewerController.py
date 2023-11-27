@@ -5,6 +5,9 @@ class SolarViewerController:
         self.model = model
         self.view = SolarViewerView(self, model, mainAppWindow)
 
+    def moveImage(self, deltaPosition):
+        self.model.moveImage(deltaPosition)
+
     def increaseZoom(self, delta):
         self.model.changeZoom(delta)
 
