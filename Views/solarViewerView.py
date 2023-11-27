@@ -6,7 +6,8 @@ class SolarViewerView:
         self.controller = controller
         self.model: SolarViewModel = model
         self.widget: SolarViewerWidget = SolarViewerWidget(parentWindow)
-        parentWindow.layout.addWidget(self.widget,0,1)
+        #row column
+        parentWindow.layout.addWidget(self.widget,0,2,1,1)
         self.model.addObserver(self)
         self.widget.wheelScrollSignal.connect(self.zoom)
 

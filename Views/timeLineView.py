@@ -6,5 +6,5 @@ class TimeLineView:
         self.controller = controller
         self.model = model
         self.widget = TimeLineWidget(parentWindow)
-        #parentWindow.layout.addWidget(self.widget, 1, 0, 1, 2)
-        #self.model.addObserver(self)
+        parentWindow.layout.addWidget(self.widget, 1, 1, 1, 3)
+        self.model.addObserver(self)

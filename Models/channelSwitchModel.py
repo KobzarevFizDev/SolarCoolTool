@@ -1,6 +1,7 @@
 class ChannelSwitchModel:
     def __init__(self):
         self.__observers = []
+        self.channel:int = 94
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

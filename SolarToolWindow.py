@@ -21,7 +21,7 @@ class CurveEditorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("My App")
-        self.setGeometry(200, 200, 1000, 600)
+        self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
 
