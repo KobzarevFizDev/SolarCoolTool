@@ -28,3 +28,5 @@ class ImagesStorage:
         cm = sunpy.visualization.colormaps.cm.sdoaia193
         a = np.array(255 * cm(readed_data), dtype=np.uint8)
         return QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
+
+
