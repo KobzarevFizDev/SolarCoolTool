@@ -15,6 +15,8 @@ from Controllers.curveEditorController import CurveEditorController
 from Controllers.solarViewerController import SolarViewerController
 from Models.timeLineModel import TimeLineModel
 
+import imagesIndexer
+
 
 
 class CurveEditorWindow(QMainWindow):
@@ -48,6 +50,8 @@ class CurveEditorWindow(QMainWindow):
 
 
 if __name__ == "__main__":
+    indexer = imagesIndexer.ImagesIndexer("C:\\SolarImages")
+    indexer.indexContents()
     app = QApplication(sys.argv)
     ex = CurveEditorWindow()
     ex.show()
