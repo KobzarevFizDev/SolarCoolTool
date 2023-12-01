@@ -1,4 +1,4 @@
-from CustomWidgets.solarViewerWidget import SolarViewerWidget
+from CustomWidgets.solar_viewer_widget import SolarViewerWidget
 
 class SolarViewerView:
     def __init__(self, controller, model, parentWindow):

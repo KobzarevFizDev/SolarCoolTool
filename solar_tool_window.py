@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGr
 from Controllers.curve_editor_controller import CurveEditorController
 from Controllers.solar_viewer_controller import SolarViewerController
 
-import imagesIndexer
+from images_indexer import ImagesIndexer
 
 from Models.solar_editor_model import SolarEditorModel
 
@@ -21,7 +21,6 @@ class CurveEditorWindow(QMainWindow):
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
-
 
         self.solarEditorModel = SolarEditorModel()
 
@@ -43,7 +42,7 @@ class CurveEditorWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    indexer = imagesIndexer.ImagesIndexer("C:\\SolarImages")
+    indexer = ImagesIndexer("C:\\SolarImages")
     indexer.indexContents()
     app = QApplication(sys.argv)
     ex = CurveEditorWindow()

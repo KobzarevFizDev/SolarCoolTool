@@ -1,4 +1,4 @@
-from Views.solarViewerView import SolarViewerView
+from Views.solar_viewer_view import SolarViewerView
 
 class SolarViewerController:
     def __init__(self, model, mainAppWindow):

@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QPoint
 
-from Views.curveAreaView import CurveAreaView
+from Views.curve_area_view import CurveAreaView
 from Models.solar_editor_model import CurvePoint, CurveAreaSegment
 
 class CurveEditorController:

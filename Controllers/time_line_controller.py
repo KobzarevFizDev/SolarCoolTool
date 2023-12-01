@@ -1,4 +1,4 @@
-from Views.timeLineView import TimeLineView
+from Views.time_line_view import TimeLineView
 
 
 class TimeLineController:

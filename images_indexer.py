@@ -1,16 +1,17 @@
 import os
 import sqlite3
-from astropy.io import fits
+from typing import List
 
 class ImagesIndexer:
     def __init__(self, path):
         self.path = path
+        self.connection = None
+        self.cursor = None
 
     def indexContents(self):
         files = self.__getAllFilesInTargetDir()
         channels = self.__getChannels(files)
         dates = self.__getDates(files)
-
         self.__createDatabase(files, channels, dates)
 
     def __getAllFilesInTargetDir(self):
@@ -25,10 +26,10 @@ class ImagesIndexer:
         return [f.split('.')[2][0:10] for f in files]
 
     def __createDatabase(self, files, channels, dates):
-        connection = sqlite3.connect('my_database.db')
-        cursor = connection.cursor()
-        cursor.execute("DROP TABLE IF EXISTS Images")
-        cursor.execute("""
+        self.connection = sqlite3.connect('my_database.db')
+        self.cursor = self.connection.cursor()
+        self.cursor.execute("DROP TABLE IF EXISTS Images")
+        self.cursor.execute("""
         CREATE TABLE Images(
         Id INTEGER PRIMARY KEY,
         Path TEXT NOT NULL,
@@ -39,6 +40,22 @@ class ImagesIndexer:
         for i, file in enumerate(files):
             insertCommand = "INSERT INTO Images (Id, Path, Channel, Date) VALUES (?,?,?,?)"
             insertData = (i, file, channels[i], dates[i])
-            cursor.execute(insertCommand, insertData)
-        connection.commit()
-        connection.close()
+            self.cursor.execute(insertCommand, insertData)
+        self.connection.commit()
+        self.connection.close()
+
+    def isExistImagesByChannel(self, channel: int) -> bool:
+        self.connection = sqlite3.connect('my_database.db')
+        self.cursor = self.connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        files = self.cursor.execute(command).fetchall()
+        self.connection.close()
+        return len(files) > 0
+
+    def getFilesByChannel(self, channel: int) -> List[str]:
+        self.connection = sqlite3.connect('my_database.db')
+        self.cursor = self.connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        files = self.cursor.execute(command).fetchall()
+        self.connection.close()
+        return files

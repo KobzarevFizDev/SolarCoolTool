@@ -1,5 +1,10 @@
+from typing import List
+
 from PyQt5.QtCore import Qt, QPoint
 from scipy.interpolate import CubicSpline
+
+from images_indexer import ImagesIndexer
+
 
 class CurvePoint:
     def __init__(self,x,y):
@@ -91,14 +96,42 @@ class TimeLineModel:
 class CurrentChannelModel:
     def __init__(self):
         self.__observers = []
-        self.currentChannel = 94
+        self.__currentChannel = 94
+        self.__availableChannels = []
+        self.__notAvailableChannels = []
+        self.checkAvailableChannels()
+
+    @property
+    def currentChannel(self) -> int:
+        return self.__currentChannel
+
+    @property
+    def availableChannels(self) -> List[int]:
+        return self.__availableChannels
+
+    @property
+    def notAvailableChannels(self) -> List[int]:
+        return self.__notAvailableChannels
 
     def setCurrentChannel(self, channel):
         availableChannels = [94, 131, 171, 193, 211, 355]
         if not channel in availableChannels:
             raise Exception("Incorrect channel: {0}".format(channel))
         else:
-            self.currentChannel = channel
+            self.__currentChannel = channel
+        self.notifyObservers()
+
+    def checkAvailableChannels(self):
+        indexer = ImagesIndexer("C:\\SolarImages")
+
+        channels = [94, 131, 171, 193, 211, 355]
+        for i, channel in enumerate(channels):
+            if indexer.isExistImagesByChannel(channel):
+                print("A{0} is available".format(channel))
+                self.__availableChannels.append(channel)
+            else:
+                print("A{0} is not available".format(channel))
+                self.__notAvailableChannels.append(channel)
 
 
     def addObserver(self, inObserver):

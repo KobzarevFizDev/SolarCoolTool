@@ -1,4 +1,4 @@
-from CustomWidgets.timeLineWidget import TimeLineWidget
+from CustomWidgets.time_line_widget import TimeLineWidget
 
 
 class TimeLineView:

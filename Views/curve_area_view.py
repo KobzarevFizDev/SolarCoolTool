@@ -1,4 +1,4 @@
-from CustomWidgets.curveAreaWidget import CurveAreaWidget
+from CustomWidgets.curve_area_widget import CurveAreaWidget
 
 class CurveAreaView:
     def __init__(self, controller, model, parentWindow):
