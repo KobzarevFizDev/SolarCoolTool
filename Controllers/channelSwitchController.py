@@ -8,4 +8,4 @@ class ChannelSwitchController:
 
     def switchChannel(self, channel:int):
         self.model.channel = channel
-        self.model.notifyObserver()
+        self.model.notifyObservers()

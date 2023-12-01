@@ -17,25 +17,25 @@ from Models.timeLineModel import TimeLineModel
 
 import imagesIndexer
 
+from Models.solar_editor_model import SolarEditorModel
+
 
 
 class CurveEditorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("My App")
+        self.setWindowTitle("Solar cool tool")
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
 
-        self.curveEditorModel = CurveAreaModel()
-        self.solarViewerModel = SolarViewModel()
-        self.timeLineModel = TimeLineModel()
-        self.channelSwitchModel = ChannelSwitchModel()
 
-        self.curveEditorController = CurveEditorController(self.curveEditorModel, self)
-        self.solarViewerController = SolarViewerController(self.solarViewerModel, self)
-        self.timeLineController = TimeLineController(self.timeLineModel, self)
-        self.channelSwitchController = ChannelSwitchController(self.channelSwitchModel, self)
+        self.solarEditorModel = SolarEditorModel()
+
+        self.curveEditorController = CurveEditorController(self.solarEditorModel.curveModel, self)
+        self.solarViewerController = SolarViewerController(self.solarEditorModel.solarViewModel, self)
+        self.timeLineController = TimeLineController(self.solarEditorModel.timeLineModel, self)
+        self.channelSwitchController = ChannelSwitchController(self.solarEditorModel.currentChannelModel, self)
 
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
