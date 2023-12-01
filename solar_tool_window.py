@@ -1,19 +1,12 @@
 import sys
 
-from Controllers.channelSwitchController import ChannelSwitchController
-from Controllers.timeLineController import TimeLineController
-from IOSolarData import imagesStorage
+from Controllers.channel_switch_controller import ChannelSwitchController
+from Controllers.time_line_controller import TimeLineController
 
-from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
 
-from Models.channelSwitchModel import ChannelSwitchModel
-from Models.curveAreaModel import CurveAreaModel
-from Models.solarViewerModel import SolarViewModel
-
-from Controllers.curveEditorController import CurveEditorController
-from Controllers.solarViewerController import SolarViewerController
-from Models.timeLineModel import TimeLineModel
+from Controllers.curve_editor_controller import CurveEditorController
+from Controllers.solar_viewer_controller import SolarViewerController
 
 import imagesIndexer
 
