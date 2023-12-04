@@ -1,9 +1,10 @@
 from CustomWidgets.curve_area_widget import CurveAreaWidget
+from Models.solar_editor_model import SolarEditorModel
 
 class CurveAreaView:
     def __init__(self, controller, model, parentWindow):
         self.controller = controller
-        self.model = model
+        self.model: SolarEditorModel = model
         self.widget = CurveAreaWidget(parentWindow)
         parentWindow.layout.addWidget(self.widget,0,0,1,2)
         self.model.addObserver(self)
@@ -14,10 +15,10 @@ class CurveAreaView:
 
     def modelIsChanged(self):
         self.widget.clearAll()
-        for p in self.model.getPoints():
+        for p in self.model.curveModel.getPoints():
             self.widget.drawPoint(p, self.model, self.controller)
 
-        if self.model.numberOfPoints > 3:
+        if self.model.curveModel.numberOfPoints > 3:
             points = self.controller.calculatePointsFormingBrokenLine()
             topPoints = self.controller.calculateTopPointsFormingArea(points, 20)
             bottomPoints = self.controller.calculateBottomPointsFormingArea(points, 20)

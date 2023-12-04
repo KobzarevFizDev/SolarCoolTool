@@ -22,12 +22,15 @@ class CurveEditorWindow(QMainWindow):
 
         self.layout = QGridLayout()
 
-        self.solarEditorModel = SolarEditorModel()
+        indexer = ImagesIndexer("C:\\SolarImages")
+        indexer.indexContents()
 
-        self.curveEditorController = CurveEditorController(self.solarEditorModel.curveModel, self)
-        self.solarViewerController = SolarViewerController(self.solarEditorModel.solarViewModel, self)
-        self.timeLineController = TimeLineController(self.solarEditorModel.timeLineModel, self)
-        self.channelSwitchController = ChannelSwitchController(self.solarEditorModel.currentChannelModel, self)
+        self.solarEditorModel = SolarEditorModel(indexer)
+
+        self.curveEditorController = CurveEditorController(self.solarEditorModel, self)
+        self.solarViewerController = SolarViewerController(self.solarEditorModel, self)
+        self.timeLineController = TimeLineController(self.solarEditorModel, self)
+        self.channelSwitchController = ChannelSwitchController(self.solarEditorModel, self)
 
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
@@ -42,8 +45,6 @@ class CurveEditorWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    indexer = ImagesIndexer("C:\\SolarImages")
-    indexer.indexContents()
     app = QApplication(sys.argv)
     ex = CurveEditorWindow()
     ex.show()

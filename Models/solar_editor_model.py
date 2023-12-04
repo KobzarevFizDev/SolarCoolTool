@@ -38,11 +38,9 @@ class CurveAreaSegment:
                self.bottomLeft == other.bottomLeft
 
 
-# TODO: Выделить базовый класс для модели
-
 class SolarViewModel:
-    def __init__(self):
-        self.__observers = []
+    def __init__(self, indexer: ImagesIndexer):
+        self.__imagesIndexer = indexer
         self.__originImageScale = 600
         self.__zoom = 1
 
@@ -57,45 +55,23 @@ class SolarViewModel:
 
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
-        self.notifyObservers()
 
     def changeZoom(self, deltaZoom):
         self.__zoom += deltaZoom
-        self.notifyObservers()
-
-    def addObserver(self, inObserver):
-        self.__observers.append(inObserver)
-
-    def removeObserver(self, inObserver):
-        self.__observers.remove(inObserver)
-
-    def notifyObservers(self):
-        for x in self.__observers:
-            x.modelIsChanged()
 
 
 class TimeLineModel:
-    def __init__(self):
-        self.__observers = []
+    def __init__(self, indexer: ImagesIndexer):
+        self.__imagesIndexer = indexer
         self.indexFrame = 0
 
     def setIndexFrame(self, index):
         self.indexFrame = index
 
-    def addObserver(self, inObserver):
-        self.__observers.append(inObserver)
-
-    def removeObserver(self, inObserver):
-        self.__observers.remove(inObserver)
-
-    def notifyObservers(self):
-        for x in self.__observers:
-            x.modelIsChanged()
-
 
 class CurrentChannelModel:
-    def __init__(self):
-        self.__observers = []
+    def __init__(self, indexer: ImagesIndexer):
+        self.__imagesIndexer = indexer
         self.__currentChannel = 94
         self.__availableChannels = []
         self.__notAvailableChannels = []
@@ -113,20 +89,23 @@ class CurrentChannelModel:
     def notAvailableChannels(self) -> List[int]:
         return self.__notAvailableChannels
 
+    @property
+    def numberOfImagesInChannel(self, channel: int) -> int:
+        return self.__imagesIndexer.getCountFilesInChannel(channel)
+
     def setCurrentChannel(self, channel):
         availableChannels = [94, 131, 171, 193, 211, 355]
         if not channel in availableChannels:
             raise Exception("Incorrect channel: {0}".format(channel))
         else:
             self.__currentChannel = channel
-        self.notifyObservers()
 
     def checkAvailableChannels(self):
         indexer = ImagesIndexer("C:\\SolarImages")
 
         channels = [94, 131, 171, 193, 211, 355]
         for i, channel in enumerate(channels):
-            if indexer.isExistImagesByChannel(channel):
+            if indexer.isExistImagesInChannel(channel):
                 print("A{0} is available".format(channel))
                 self.__availableChannels.append(channel)
             else:
@@ -134,19 +113,9 @@ class CurrentChannelModel:
                 self.__notAvailableChannels.append(channel)
 
 
-    def addObserver(self, inObserver):
-        self.__observers.append(inObserver)
-
-    def removeObserver(self, inObserver):
-        self.__observers.remove(inObserver)
-
-    def notifyObservers(self):
-        for x in self.__observers:
-            x.modelIsChanged()
-
 class CurveModel:
-    def __init__(self):
-        self.__observers = []
+    def __init__(self, indexer: ImagesIndexer):
+        self.__imagesIndexer = indexer
         self.numberOfSegments = 10
         self.points = list()
 
@@ -158,22 +127,18 @@ class CurveModel:
         self.points.append(point)
         if self.numberOfPoints > 3:
             self.rebuildSpline()
-        self.notifyObservers()
 
     def removePoint(self, point):
         self.points.remove(point)
         if self.numberOfPoints > 3:
             self.rebuildSpline()
-        self.notifyObservers()
 
     def increaseNumberOfCurveSegments(self):
         self.numberOfSegments += 1
-        self.notifyObservers()
 
     def decreaseNumberOfCurveSegments(self):
         if self.numberOfSegments > 3:
             self.numberOfSegments -= 1
-            self.notifyObservers()
 
     def getPoints(self):
         return self.points
@@ -184,7 +149,6 @@ class CurveModel:
         self.x0 = min(x)
         self.xn = max(x)
         self.spline = CubicSpline(x, y)
-        self.notifyObservers()
 
     def getPoint(self, t):
         x = self.__get_x_by_t(t)
@@ -200,22 +164,14 @@ class CurveModel:
         return self.x0 + (self.xn - self.x0) * t
 
 
-    def addObserver(self, inObserver):
-        self.__observers.append(inObserver)
-
-    def removeObserver(self, inObserver):
-        self.__observers.remove(inObserver)
-
-    def notifyObservers(self):
-        for x in self.__observers:
-            x.modelIsChanged()
-
 class SolarEditorModel:
-    def __init__(self):
-        self.__curveModel = CurveModel()
-        self.__solarViewModel = SolarViewModel()
-        self.__timeLineModel = TimeLineModel()
-        self.__currentChannelModel = CurrentChannelModel()
+    def __init__(self, indexer: ImagesIndexer):
+        self.__imagesIndexer = indexer
+        self.__observers = []
+        self.__curveModel = CurveModel(indexer)
+        self.__solarViewModel = SolarViewModel(indexer)
+        self.__timeLineModel = TimeLineModel(indexer)
+        self.__currentChannelModel = CurrentChannelModel(indexer)
 
 
     @property
@@ -233,3 +189,13 @@ class SolarEditorModel:
     @property
     def currentChannelModel(self):
         return self.__currentChannelModel
+
+    def addObserver(self, inObserver):
+        self.__observers.append(inObserver)
+
+    def removeObserver(self, inObserver):
+        self.__observers.remove(inObserver)
+
+    def notifyObservers(self):
+        for x in self.__observers:
+            x.modelIsChanged()

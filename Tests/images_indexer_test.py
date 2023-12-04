@@ -7,7 +7,7 @@ class ImagesIndexerTest(TestCase):
 
     def test_is_exist_images_by_channel(self):
         message = "is_exist_images_by_channes_test() of Images Indexer not working"
-        self.assertEqual(True, self.indexer.isExistImagesByChannel(94), message)
+        self.assertEqual(True, self.indexer.isExistImagesInChannel(94), message)
 
 if __name__ == "__main__":
     main()

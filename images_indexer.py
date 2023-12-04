@@ -44,7 +44,7 @@ class ImagesIndexer:
         self.connection.commit()
         self.connection.close()
 
-    def isExistImagesByChannel(self, channel: int) -> bool:
+    def isExistImagesInChannel(self, channel: int) -> bool:
         self.connection = sqlite3.connect('my_database.db')
         self.cursor = self.connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
@@ -52,10 +52,20 @@ class ImagesIndexer:
         self.connection.close()
         return len(files) > 0
 
-    def getFilesByChannel(self, channel: int) -> List[str]:
+    def getFilesInChannel(self, channel: int) -> List[str]:
         self.connection = sqlite3.connect('my_database.db')
         self.cursor = self.connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
         files = self.cursor.execute(command).fetchall()
         self.connection.close()
         return files
+
+    # TODO: Rename Files -> Images
+    def getCountFilesInChannel(self, channel: int) -> int:
+        self.connection = sqlite3.connect('my_database.db')
+        self.cursor = self.connection.cursor()
+        command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
+        countFiles = int(self.cursor.execute(command).fetchall()[0][0])
+        print(countFiles)
+        self.connection.close()
+        return countFiles

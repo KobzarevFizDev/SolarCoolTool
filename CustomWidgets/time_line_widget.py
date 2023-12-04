@@ -1,9 +1,12 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QWidget, QSlider, QHBoxLayout
 
+minValueOfTimeLineSlider = 0
+maxValueOfTimeLineSlider = 200
 
 class TimeLineWidget(QWidget):
+    selectedImageInChannel = pyqtSignal(int)
     def __init__(self, parent):
         super(TimeLineWidget, self).__init__()
         self.setMinimumSize(1000, 300)
@@ -16,6 +19,20 @@ class TimeLineWidget(QWidget):
 
         layout = QHBoxLayout()
         self.setLayout(layout)
-        slider = QSlider(Qt.Horizontal)
-        layout.addWidget(slider)
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setRange(minValueOfTimeLineSlider,maxValueOfTimeLineSlider)
+        self.slider.valueChanged.connect(self.changeValueOfSlider)
+        layout.addWidget(self.slider)
+        self.setNumberImagesInChannel(181)
+
+    def setNumberImagesInChannel(self, numberOfImagesInChannel: int):
+        self.numberOfImagesInChannel = numberOfImagesInChannel
+
+    def changeValueOfSlider(self, value):
+        step = self.numberOfImagesInChannel/maxValueOfTimeLineSlider
+        indexOfImage = int(value*step)
+        self.selectedImageInChannel.emit(indexOfImage)
+
+
+
 
