@@ -13,8 +13,22 @@ class SolarImage:
         self.__path = path
         self.__channel = channel
         self.__date = date
+
         hdul = fits.open(self.__path)
-        self.__image = hdul[1].data
+        data = hdul[1].data
+        hdul.close()
+        img_w = data.shape[0]
+        img_h = data.shape[1]
+        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
+              131: sunpy.visualization.colormaps.cm.sdoaia131,
+              171: sunpy.visualization.colormaps.cm.sdoaia171,
+              193: sunpy.visualization.colormaps.cm.sdoaia193,
+              211: sunpy.visualization.colormaps.cm.sdoaia211,
+              304: sunpy.visualization.colormaps.cm.sdoaia304,
+              355: sunpy.visualization.colormaps.cm.sdoaia335}[channel]
+
+        a = np.array(255 * cm(data), dtype=np.uint8)
+        self.__image = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
         hdul.close()
 
     @property
@@ -149,22 +163,5 @@ class ImagesIndexer:
         self.__connection.close()
         return countImages
 
-    def getImage(self, channel: int, indexOfImage: int) -> QImage:
-        pathsToImagesInChannel = self.getPathsToImagesInChannel(channel)
-        pathToImage = pathsToImagesInChannel[indexOfImage]
-        hdul = fits.open(pathToImage)
-        data = hdul[1].data
-        hdul.close()
-        img_w = data.shape[0]
-        img_h = data.shape[1]
-        cm = {94:  sunpy.visualization.colormaps.cm.sdoaia94,
-              131: sunpy.visualization.colormaps.cm.sdoaia131,
-              171: sunpy.visualization.colormaps.cm.sdoaia171,
-              193: sunpy.visualization.colormaps.cm.sdoaia193,
-              211: sunpy.visualization.colormaps.cm.sdoaia211,
-              304: sunpy.visualization.colormaps.cm.sdoaia304,
-              355: sunpy.visualization.colormaps.cm.sdoaia335}[channel]
-
-        a = np.array(255 * cm(data), dtype=np.uint8)
-        return QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
-
+    def getImageInChannelByIndex(self, indexInChannel: int) -> QImage:
+        return self.__images[indexInChannel].image

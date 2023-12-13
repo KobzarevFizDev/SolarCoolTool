@@ -77,11 +77,14 @@ class CurrentChannelModel:
         self.__availableChannels = []
         self.__notAvailableChannels = []
         self.__checkAvailableChannels()
-        self.__newChannelWasSelected:bool = True
+        self.__newChannelWasSelected = True
+        self.__imagesIndexer.cacheChannel(self.__currentChannel)
 
     @property
     def newChannelWasSelected(self) -> bool:
-        return self.__newChannelWasSelected
+        res: bool = self.__newChannelWasSelected
+        self.__newChannelWasSelected = False
+        return res
 
     @property
     def currentChannel(self) -> int:
@@ -202,7 +205,8 @@ class SolarEditorModel:
     def currentSolarImage(self) -> QImage:
         channel = self.__currentChannelModel.currentChannel
         indexOfImage = self.__timeLineModel.indexImage
-        return self.__imagesIndexer.getImage(channel, indexOfImage)
+        return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
+        #return self.__imagesIndexer.getImage(channel, indexOfImage)
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)
