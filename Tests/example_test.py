@@ -1,15 +1,6 @@
 from unittest import TestCase, main
 
-from PyQt5 import QtWidgets
-
 import functions_for_tests
-
-from PyQt5.QtCore import QPoint
-
-from Controllers.curveEditorController import CurveEditorController
-from Models.curveAreaModel import CurveAreaModel
-from SolarToolWindow import CurveEditorWindow
-
 
 class ExampleTest(TestCase):
     def test_summ(self):

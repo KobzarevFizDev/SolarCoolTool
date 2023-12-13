@@ -1,23 +1,23 @@
 from PyQt5.QtCore import QPoint
 
-from Views.curveAreaView import CurveAreaView
-from Models.curveAreaModel import Point, AreaSegment
-
+from Views.curve_area_view import CurveAreaView
+from Models.solar_editor_model import CurvePoint, CurveAreaSegment, SolarEditorModel
 
 class CurveEditorController:
     def __init__(self, model, mainAppWindow):
-        self.model = model
+        self.model: SolarEditorModel = model
         self.view = CurveAreaView(self, model, mainAppWindow)
 
     def createNewPoint(self, x, y):
-        newPoint = Point(x, y)
-        self.model.addPoint(newPoint)
+        newPoint = CurvePoint(x, y)
+        self.model.curveModel.addPoint(newPoint)
+        self.model.notifyObservers()
         return newPoint
 
     def calculatePointsFormingBrokenLine(self):
-        t_step = 1/self.model.numberOfSegments
-        t_values = [t_step * i for i in range(0, self.model.numberOfSegments + 1)]
-        return [self.model.getPoint(t) for t in t_values]
+        t_step = 1/self.model.curveModel.numberOfSegments
+        t_values = [t_step * i for i in range(0, self.model.curveModel.numberOfSegments + 1)]
+        return [self.model.curveModel.getPoint(t) for t in t_values]
 
     def calculateTopPointsFormingArea(self, pointsFormingBroken, widthArea):
         return [QPoint(int(p.x()), int(p.y() + widthArea / 2)) for p in pointsFormingBroken]
@@ -36,17 +36,20 @@ class CurveEditorController:
             topRightPoint = topsPoint[indexes[i][1]]
             bottomLeftPoint = bottomPoints[indexes[i][0]]
             bottomRightPoint = bottomPoints[indexes[i][1]]
-            segment = AreaSegment(topRightPoint, topLeftPoint, bottomRightPoint, bottomLeftPoint)
+            segment = CurveAreaSegment(topRightPoint, topLeftPoint, bottomRightPoint, bottomLeftPoint)
             areaSegments.append(segment)
 
         return areaSegments
 
 
-    def deletePoint(self, point: Point):
-        self.model.removePoint(point)
+    def deletePoint(self, point):
+        self.model.curveModel.removePoint(point)
+        self.model.notifyObservers()
 
     def increaseNumberOfCurveSegments(self):
-        self.model.increaseNumberOfCurveSegments()
+        self.model.curveModel.increaseNumberOfCurveSegments()
+        self.model.notifyObservers()
 
     def decreaseNumberOfCurveSegments(self):
-        self.model.decreaseNumberOfCurveSegments()
+        self.model.curveModel.decreaseNumberOfCurveSegments()
+        self.model.notifyObservers()

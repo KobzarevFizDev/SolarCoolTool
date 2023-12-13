@@ -1,7 +1,5 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPalette
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from PyQt5.QtCore import pyqtSignal
 
 class ChannelSwitchWidget(QWidget):
     channelSwitchedSignal = pyqtSignal(int)
@@ -11,9 +9,6 @@ class ChannelSwitchWidget(QWidget):
         self.setMaximumSize(200, 300)
         self.setMouseTracking(True)
         self.setAutoFillBackground(True)
-        #palette = self.palette()
-        #palette.setColor(QPalette.Window, QColor(Qt.green))
-        #self.setPalette(palette)
         hbox = QVBoxLayout()
         self.setLayout(hbox)
 
@@ -38,17 +33,30 @@ class ChannelSwitchWidget(QWidget):
         self.A211ChannelButton.clicked.connect(self.__switchedA211)
         self.A355ChannelButton.clicked.connect(self.__switchedA355)
 
-    def markChannelAsSelected(self, channel: int):
-        buttons =  {94  : self.A94ChannelButton,
-                    131 : self.A131ChannelButton,
-                    171 : self.A171ChannelButton,
-                    193 : self.A193ChannelButton,
-                    211 : self.A211ChannelButton,
-                    355 : self.A355ChannelButton}
-        for b in buttons.values():
-            b.setStyleSheet("background-color: green; color: white;")
-        buttons[channel].setStyleSheet("background-color: blue; color: white;")
+        self.buttonsMap =  {94  : self.A94ChannelButton,
+                            131 : self.A131ChannelButton,
+                            171 : self.A171ChannelButton,
+                            193 : self.A193ChannelButton,
+                            211 : self.A211ChannelButton,
+                            355 : self.A355ChannelButton}
 
+    def markChannelAsSelected(self, channel: int) -> None:
+        buttonOfSelectedChannel = self.__getButtonByChannel(channel)
+        buttonOfSelectedChannel.setStyleSheet("background-color: green; color: white;")
+        buttonOfSelectedChannel.setEnabled(True)
+
+    def markChannelAsNotAvailable(self, channel: int) -> None:
+        buttonOfNotAvailableChannel = self.__getButtonByChannel(channel)
+        buttonOfNotAvailableChannel.setStyleSheet("background-color: red; color: white;")
+        buttonOfNotAvailableChannel.setEnabled(False)
+
+    def markChannelAsAvailable(self, channel: int) -> None:
+        buttonOfAvailableChannel = self.__getButtonByChannel(channel)
+        buttonOfAvailableChannel.setStyleSheet("background-color: blue; color: white;")
+        buttonOfAvailableChannel.setEnabled(True)
+
+    def __getButtonByChannel(self, channel: int) -> QPushButton:
+        return self.buttonsMap[channel]
 
     def __switchedA94(self):
         self.channelSwitchedSignal.emit(94)

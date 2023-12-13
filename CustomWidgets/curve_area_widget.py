@@ -3,8 +3,7 @@ from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout,
 from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
-from CustomWidgets.curvePointWidget import CurvePointWidget
-from Models.curveAreaModel import *
+from CustomWidgets.curve_point_widget import CurvePointWidget
 
 
 class CurveAreaWidget(QWidget):
@@ -54,7 +53,7 @@ class CurveAreaWidget(QWidget):
             endPoint = pointsFormingBrokenLine[indexOfPoint[1]]
             self.scene.addLine(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), pen)
 
-    def drawAreaSegments(self, areaSegments: list[AreaSegment]):
+    def drawAreaSegments(self, areaSegments):
         for segment in areaSegments:
             self.scene.addLine(segment.topLeft.x(),
                                segment.topLeft.y(),

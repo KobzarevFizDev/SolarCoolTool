@@ -1,6 +1,6 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget
-from PyQt5.QtGui import QPalette, QColor, QPixmap
+from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage
 from PyQt5.QtCore import Qt, pyqtSignal
 
 from IOSolarData import imagesStorage
@@ -17,13 +17,22 @@ class SolarViewerWidget(QWidget):
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(Qt.red))
         self.setPalette(palette)
-        i = imagesStorage.ImagesStorage()
+        #i = imagesStorage.ImagesStorage()
         self.label = QLabel(self)
-        self.originPixmap = QPixmap.fromImage(i.read_image_by_index(1))
+
+        i = imagesStorage.ImagesStorage()
+        self.displayImage(i.read_image_by_index(1))
+
+        #self.originPixmap = QPixmap.fromImage(i.read_image_by_index(1))
+        #pixmap = self.originPixmap.scaledToWidth(600)
+        #self.label.setPixmap(pixmap)
+        #self.label.move(0,0)
+        #print(self.label.pos().x(), self.label.pos().y())
+
+    def displayImage(self, image: QImage):
+        self.originPixmap = QPixmap.fromImage(image)
         pixmap = self.originPixmap.scaledToWidth(600)
         self.label.setPixmap(pixmap)
-        self.label.move(0,0)
-        print(self.label.pos().x(), self.label.pos().y())
 
     def setScaleOfSolarView(self, scale):
         pixmap = self.originPixmap.scaledToWidth(scale)

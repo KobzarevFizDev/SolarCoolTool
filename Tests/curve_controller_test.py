@@ -3,17 +3,17 @@ from unittest import TestCase, main
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QPoint
 
-from Controllers.curveEditorController import CurveEditorController
-from Models.curveAreaModel import CurveAreaModel, AreaSegment
-from SolarToolWindow import CurveEditorWindow
+from Controllers.curve_editor_controller import CurveEditorController
+from solar_tool_window import CurveEditorWindow
+from Models.solar_editor_model import SolarEditorModel, CurveAreaSegment
 
 
 class CurveControllerTest(TestCase):
     def setUp(self) -> None:
         self.app = QtWidgets.QApplication([])
         mainAppWindow = CurveEditorWindow()
-        model = CurveAreaModel()
-        self.controller = CurveEditorController(model, mainAppWindow)
+        model = SolarEditorModel()
+        self.controller = CurveEditorController(model.curveModel, mainAppWindow)
 
     def test_calculate_tops_points_forming_area(self):
         pointsFormingBroken = [QPoint(100, 100),
@@ -57,12 +57,12 @@ class CurveControllerTest(TestCase):
         bottomPoints = self.controller.calculateBottomPointsFormingArea(pointsFormingBroken, 20)
         calculatedSegments = self.controller.calculateAreaSegments(topPoints, bottomPoints)
 
-        expectedSegment1 = AreaSegment(QPoint(120, 115),
+        expectedSegment1 = CurveAreaSegment(QPoint(120, 115),
                                QPoint(100, 110),
                                QPoint(120, 95),
                                QPoint(100, 90))
 
-        expectedSegment2 = AreaSegment(QPoint(140, 109),
+        expectedSegment2 = CurveAreaSegment(QPoint(140, 109),
                                QPoint(120, 115),
                                QPoint(140, 89),
                                QPoint(120, 95))

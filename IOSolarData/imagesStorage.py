@@ -22,7 +22,9 @@ class ImagesStorage:
 
     def read_image_by_index(self, index:int):
         path = self.path_of_files_in_storage[index]
-        readed_data = fits.open("Images/" + path)[1].data
+        hdul = fits.open("Images/" + path)
+        readed_data = hdul[1].data
+        hdul.close()
         img_w = readed_data.shape[0]
         img_h = readed_data.shape[1]
         cm = sunpy.visualization.colormaps.cm.sdoaia193

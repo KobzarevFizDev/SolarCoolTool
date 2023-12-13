@@ -1,20 +1,16 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QGraphicsEllipseItem
-from Models.curveAreaModel import Point
-
-from Models.curveAreaModel import CurveAreaModel
-
 
 class CurvePointWidget(QGraphicsEllipseItem):
-    def __init__(self, curvePointModel: Point,
-                       curveModel: CurveAreaModel,
+    def __init__(self, curvePointModel,
+                       curveModel,
                        curveController):
         super().__init__(0,0,20,20)
         self.isSelected = False
         self.setPos(curvePointModel.x, curvePointModel.y)
         self.setBrush(Qt.blue)
-        self.curvePointModel: Point = curvePointModel
-        self.curveModel: CurveAreaModel = curveModel
+        self.curvePointModel = curvePointModel
+        self.curveModel = curveModel
         self.curveController = curveController
 
     def mousePressEvent(self, event):
