@@ -76,7 +76,12 @@ class CurrentChannelModel:
         self.__currentChannel = 94
         self.__availableChannels = []
         self.__notAvailableChannels = []
-        self.checkAvailableChannels()
+        self.__checkAvailableChannels()
+        self.__newChannelWasSelected:bool = True
+
+    @property
+    def newChannelWasSelected(self) -> bool:
+        return self.__newChannelWasSelected
 
     @property
     def currentChannel(self) -> int:
@@ -99,9 +104,11 @@ class CurrentChannelModel:
         if not channel in availableChannels:
             raise Exception("Incorrect channel: {0}".format(channel))
         else:
+            self.__newChannelWasSelected = self.__currentChannel != channel
             self.__currentChannel = channel
 
-    def checkAvailableChannels(self):
+    def __checkAvailableChannels(self):
+        # TODO: Зачем создавать indexer если он уже создан в __init__?
         indexer = ImagesIndexer("C:\\SolarImages")
 
         channels = [94, 131, 171, 193, 211, 355]
@@ -204,5 +211,8 @@ class SolarEditorModel:
         self.__observers.remove(inObserver)
 
     def notifyObservers(self):
+        if self.__currentChannelModel.newChannelWasSelected:
+            self.__imagesIndexer.cacheChannel(self.__currentChannelModel.currentChannel)
+
         for x in self.__observers:
             x.modelIsChanged()

@@ -5,7 +5,7 @@ class ImagesIndexerTest(TestCase):
     def setUp(self) -> None:
         self.indexer = ImagesIndexer("C:\\SolarImages")
 
-    def test_is_exist_images_by_channel(self):
+    def test_is_exist_images_of_channel(self):
         message = "is_exist_images_by_channes_test() of Images Indexer not working"
         self.assertEqual(True, self.indexer.isExistImagesInChannel(94), message)
 
