@@ -1,5 +1,8 @@
+from typing import TYPE_CHECKING
 from CustomWidgets.channel_switch_widget import ChannelSwitchWidget
-from Models.solar_editor_model import SolarEditorModel
+
+if TYPE_CHECKING:
+    from Models.solar_editor_model import SolarEditorModel
 
 class ChannelSwitchView:
     def __init__(self, controller, model, parentWindow):

@@ -1,6 +1,7 @@
 from typing import List
 
 from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QImage
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
@@ -63,10 +64,10 @@ class SolarViewModel:
 class TimeLineModel:
     def __init__(self, indexer: ImagesIndexer):
         self.__imagesIndexer = indexer
-        self.indexFrame = 0
+        self.indexImage = 0
 
-    def setIndexFrame(self, index):
-        self.indexFrame = index
+    def setIndexImage(self, index):
+        self.indexImage = index
 
 
 class CurrentChannelModel:
@@ -90,8 +91,8 @@ class CurrentChannelModel:
         return self.__notAvailableChannels
 
     @property
-    def numberOfImagesInChannel(self, channel: int) -> int:
-        return self.__imagesIndexer.getCountFilesInChannel(channel)
+    def numberOfImagesInChannel(self) -> int:
+        return self.__imagesIndexer.getCountImagesInChannel(self.__currentChannel)
 
     def setCurrentChannel(self, channel):
         availableChannels = [94, 131, 171, 193, 211, 355]
@@ -189,6 +190,12 @@ class SolarEditorModel:
     @property
     def currentChannelModel(self):
         return self.__currentChannelModel
+
+    @property
+    def currentSolarImage(self) -> QImage:
+        channel = self.__currentChannelModel.currentChannel
+        indexOfImage = self.__timeLineModel.indexImage
+        return self.__imagesIndexer.getImage(channel, indexOfImage)
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

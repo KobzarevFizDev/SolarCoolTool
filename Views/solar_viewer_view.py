@@ -1,5 +1,8 @@
+from typing import TYPE_CHECKING
 from CustomWidgets.solar_viewer_widget import SolarViewerWidget
-from Models.solar_editor_model import SolarEditorModel
+
+if TYPE_CHECKING:
+    from Models.solar_editor_model import SolarEditorModel
 
 class SolarViewerView:
     def __init__(self, controller, model, parentWindow):
@@ -19,3 +22,4 @@ class SolarViewerView:
 
     def modelIsChanged(self):
         self.widget.setScaleOfSolarView(self.model.solarViewModel.zoom * self.model.solarViewModel.originImageScale)
+        self.widget.displayImage(self.model.currentSolarImage)

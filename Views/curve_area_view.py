@@ -1,5 +1,8 @@
+from typing import TYPE_CHECKING
 from CustomWidgets.curve_area_widget import CurveAreaWidget
-from Models.solar_editor_model import SolarEditorModel
+
+if TYPE_CHECKING:
+    from Models.solar_editor_model import SolarEditorModel
 
 class CurveAreaView:
     def __init__(self, controller, model, parentWindow):

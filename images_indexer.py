@@ -2,6 +2,11 @@ import os
 import sqlite3
 from typing import List
 
+import numpy as np
+import sunpy.visualization.colormaps.cm
+from PyQt5.QtGui import QImage
+from astropy.io import fits
+
 class ImagesIndexer:
     def __init__(self, path):
         self.path = path
@@ -48,24 +53,43 @@ class ImagesIndexer:
         self.connection = sqlite3.connect('my_database.db')
         self.cursor = self.connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
-        files = self.cursor.execute(command).fetchall()
+        images = self.cursor.execute(command).fetchall()
         self.connection.close()
-        return len(files) > 0
+        return len(images) > 0
 
-    def getFilesInChannel(self, channel: int) -> List[str]:
+    def getPathsToImagesInChannel(self, channel: int) -> List[str]:
         self.connection = sqlite3.connect('my_database.db')
         self.cursor = self.connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
-        files = self.cursor.execute(command).fetchall()
+        pathsToImages = self.cursor.execute(command).fetchall()
         self.connection.close()
-        return files
+        return pathsToImages
 
-    # TODO: Rename Files -> Images
-    def getCountFilesInChannel(self, channel: int) -> int:
+    def getCountImagesInChannel(self, channel: int) -> int:
         self.connection = sqlite3.connect('my_database.db')
         self.cursor = self.connection.cursor()
         command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
-        countFiles = int(self.cursor.execute(command).fetchall()[0][0])
-        print(countFiles)
+        countImages = int(self.cursor.execute(command).fetchall()[0][0])
+        print(countImages)
         self.connection.close()
-        return countFiles
+        return countImages
+
+    def getImage(self, channel: int, indexOfImage: int) -> QImage:
+        pathsToImagesInChannel = self.getPathsToImagesInChannel(channel)
+        pathToImage = pathsToImagesInChannel[indexOfImage][0]
+        hdul = fits.open(pathToImage)
+        data = hdul[1].data
+        hdul.close()
+        img_w = data.shape[0]
+        img_h = data.shape[1]
+        cm = {94:  sunpy.visualization.colormaps.cm.sdoaia94,
+              131: sunpy.visualization.colormaps.cm.sdoaia131,
+              171: sunpy.visualization.colormaps.cm.sdoaia171,
+              193: sunpy.visualization.colormaps.cm.sdoaia193,
+              211: sunpy.visualization.colormaps.cm.sdoaia211,
+              304: sunpy.visualization.colormaps.cm.sdoaia304,
+              355: sunpy.visualization.colormaps.cm.sdoaia335}[channel]
+
+        a = np.array(255 * cm(data), dtype=np.uint8)
+        return QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
+
