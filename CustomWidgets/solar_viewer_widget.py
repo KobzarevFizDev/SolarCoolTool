@@ -23,7 +23,7 @@ class SolarViewerWidget(QWidget):
         self.__offset: QPoint = QPoint(0, 0)
         self.__previousX: int = -1
         self.__previousY: int = -1
-        self.__isMoved:bool = False
+        self.__isMoved: bool = False
 
         i = imagesStorage.ImagesStorage()
         self.displayImage(i.read_image_by_index(1), 600, QPoint(0,0))
@@ -31,12 +31,13 @@ class SolarViewerWidget(QWidget):
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         painter = QPainter()
         painter.begin(self)
-        pixmapToDraw = QPixmap.fromImage(self.__currentImageToDisplay)
-
+        imageToDisplay = self.__currentImageToDisplay
+        imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
+        pixmapToDraw = QPixmap.fromImage(imageToDisplay)
         painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
         painter.end()
 
-    def displayImage(self, image: QImage, scale: float, offset: QPoint) -> None:
+    def displayImage(self, image: QImage, scale: int, offset: QPoint) -> None:
         self.__currentImageToDisplay = image
         self.__scale = scale
         self.__offset = offset
