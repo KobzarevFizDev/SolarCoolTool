@@ -44,8 +44,9 @@ class SolarViewModel:
         self.__imagesIndexer = indexer
         self.__originImageScale = 600
         self.__zoom = 1
+        self.__offset: QPoint = QPoint(0,0)
 
-
+    # TODO: Подумать нужны ли свойства в данном случае
     @property
     def originImageScale(self):
         return self.__originImageScale
@@ -54,8 +55,15 @@ class SolarViewModel:
     def zoom(self):
         return self.__zoom
 
+    @property
+    def offset(self):
+        return self.__offset
+
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
+
+    def changeOffsetSolarPreviewImage(self, deltaOffset):
+        self.__offset += deltaOffset
 
     def changeZoom(self, deltaZoom):
         self.__zoom += deltaZoom
