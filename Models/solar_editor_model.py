@@ -44,8 +44,9 @@ class SolarViewModel:
         self.__imagesIndexer = indexer
         self.__originImageScale = 600
         self.__zoom = 1
+        self.__offset: QPoint = QPoint(0,0)
 
-
+    # TODO: Подумать нужны ли свойства в данном случае
     @property
     def originImageScale(self):
         return self.__originImageScale
@@ -54,8 +55,15 @@ class SolarViewModel:
     def zoom(self):
         return self.__zoom
 
+    @property
+    def offset(self):
+        return self.__offset
+
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
+
+    def changeOffsetSolarPreviewImage(self, deltaOffset):
+        self.__offset += deltaOffset
 
     def changeZoom(self, deltaZoom):
         self.__zoom += deltaZoom
@@ -76,7 +84,15 @@ class CurrentChannelModel:
         self.__currentChannel = 94
         self.__availableChannels = []
         self.__notAvailableChannels = []
-        self.checkAvailableChannels()
+        self.__checkAvailableChannels()
+        self.__newChannelWasSelected = True
+        self.__imagesIndexer.cacheChannel(self.__currentChannel)
+
+    @property
+    def newChannelWasSelected(self) -> bool:
+        res: bool = self.__newChannelWasSelected
+        self.__newChannelWasSelected = False
+        return res
 
     @property
     def currentChannel(self) -> int:
@@ -99,9 +115,11 @@ class CurrentChannelModel:
         if not channel in availableChannels:
             raise Exception("Incorrect channel: {0}".format(channel))
         else:
+            self.__newChannelWasSelected = self.__currentChannel != channel
             self.__currentChannel = channel
 
-    def checkAvailableChannels(self):
+    def __checkAvailableChannels(self):
+        # TODO: Зачем создавать indexer если он уже создан в __init__?
         indexer = ImagesIndexer("C:\\SolarImages")
 
         channels = [94, 131, 171, 193, 211, 355]
@@ -195,7 +213,8 @@ class SolarEditorModel:
     def currentSolarImage(self) -> QImage:
         channel = self.__currentChannelModel.currentChannel
         indexOfImage = self.__timeLineModel.indexImage
-        return self.__imagesIndexer.getImage(channel, indexOfImage)
+        return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
+        #return self.__imagesIndexer.getImage(channel, indexOfImage)
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)
@@ -204,5 +223,8 @@ class SolarEditorModel:
         self.__observers.remove(inObserver)
 
     def notifyObservers(self):
+        if self.__currentChannelModel.newChannelWasSelected:
+            self.__imagesIndexer.cacheChannel(self.__currentChannelModel.currentChannel)
+
         for x in self.__observers:
             x.modelIsChanged()

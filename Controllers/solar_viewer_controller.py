@@ -18,3 +18,7 @@ class SolarViewerController:
     def decreaseZoom(self, delta):
         self.model.solarViewModel.changeZoom(-delta)
         self.model.notifyObservers()
+
+    def moveSolarImage(self, delta):
+        self.model.solarViewModel.changeOffsetSolarPreviewImage(delta)
+        self.model.notifyObservers()

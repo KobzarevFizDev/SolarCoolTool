@@ -1,7 +1,7 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget
-from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter
+from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 
 from IOSolarData import imagesStorage
 
@@ -17,26 +17,52 @@ class SolarViewerWidget(QWidget):
         palette = self.palette()
         palette.setColor(QPalette.Window, QColor(Qt.red))
         self.setPalette(palette)
-        #i = imagesStorage.ImagesStorage()
         self.label = QLabel(self)
 
+        self.__scale: int = 600
+        self.__offset: QPoint = QPoint(0, 0)
+        self.__previousX: int = -1
+        self.__previousY: int = -1
+        self.__isMoved: bool = False
+
         i = imagesStorage.ImagesStorage()
-        self.displayImage(i.read_image_by_index(1))
+        self.displayImage(i.read_image_by_index(1), 600, QPoint(0,0))
 
-        #self.originPixmap = QPixmap.fromImage(i.read_image_by_index(1))
-        #pixmap = self.originPixmap.scaledToWidth(600)
-        #self.label.setPixmap(pixmap)
-        #self.label.move(0,0)
-        #print(self.label.pos().x(), self.label.pos().y())
+    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
+        painter = QPainter()
+        painter.begin(self)
+        imageToDisplay = self.__currentImageToDisplay
+        imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
+        pixmapToDraw = QPixmap.fromImage(imageToDisplay)
+        painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
+        painter.end()
 
-    def displayImage(self, image: QImage):
-        self.originPixmap = QPixmap.fromImage(image)
-        pixmap = self.originPixmap.scaledToWidth(600)
-        self.label.setPixmap(pixmap)
+    def displayImage(self, image: QImage, scale: int, offset: QPoint) -> None:
+        self.__currentImageToDisplay = image
+        self.__scale = scale
+        self.__offset = offset
+        self.update()
 
-    def setScaleOfSolarView(self, scale):
-        pixmap = self.originPixmap.scaledToWidth(scale)
-        self.label.setPixmap(pixmap)
+    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
+        self.__isMoved = True
 
-    def wheelEvent(self, event: QtGui.QWheelEvent):
+    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
+        self.__isMoved = False
+
+    def setOffsetOfSolarView(self, x: int, y: int) -> None:
+        self.__offset = QPoint(x, y)
+        self.update()
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())
+
+
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        currentX = event.x()
+        currentY = event.y()
+        if self.__isMoved and not self.__previousX == -1 and not self.__previousY == -1:
+            deltaX = currentX - self.__previousX
+            deltaY = currentY - self.__previousY
+            self.mouseMoveSignal.emit(deltaX, deltaY)
+        self.__previousX = currentX
+        self.__previousY = currentY

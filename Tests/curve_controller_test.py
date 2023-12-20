@@ -7,13 +7,14 @@ from Controllers.curve_editor_controller import CurveEditorController
 from solar_tool_window import CurveEditorWindow
 from Models.solar_editor_model import SolarEditorModel, CurveAreaSegment
 
+from images_indexer import ImagesIndexer
 
 class CurveControllerTest(TestCase):
     def setUp(self) -> None:
         self.app = QtWidgets.QApplication([])
         mainAppWindow = CurveEditorWindow()
-        model = SolarEditorModel()
-        self.controller = CurveEditorController(model.curveModel, mainAppWindow)
+        model = SolarEditorModel(ImagesIndexer("C:\\SolarImages"))
+        self.controller = CurveEditorController(model, mainAppWindow)
 
     def test_calculate_tops_points_forming_area(self):
         pointsFormingBroken = [QPoint(100, 100),
