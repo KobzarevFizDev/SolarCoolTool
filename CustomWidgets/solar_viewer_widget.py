@@ -49,7 +49,7 @@ class SolarViewerWidget(QWidget):
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.__isMoved = False
 
-    def setOffsetOfSolarView(self, x: int, y:int) -> None:
+    def setOffsetOfSolarView(self, x: int, y: int) -> None:
         self.__offset = QPoint(x, y)
         self.update()
 
