@@ -5,6 +5,8 @@ from PyQt5.QtGui import QImage
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
+from transformations import transformPointFromViewToImage
+
 
 
 class CurvePoint:
@@ -46,6 +48,12 @@ class SolarViewModel:
         self.__zoom = 1
         self.__offset: QPoint = QPoint(0,0)
 
+        self.__sizeOfImageInPixels: (int, int) = (4096, 4096)
+        self.__sizeOfViewInPixels: (int, int) = (600, 600)
+
+        self.__topLeftPointInImage: QPoint = QPoint(-1,-1)
+        self.__bottomRightPointInImage: QPoint = QPoint(-1, -1)
+
     # TODO: Подумать нужны ли свойства в данном случае
     @property
     def originImageScale(self):
@@ -58,6 +66,21 @@ class SolarViewModel:
     @property
     def offset(self):
         return self.__offset
+
+    def selectPlotOfImage(self,
+                          topLeftPointInView: QPoint,
+                          bottomRightPointInView: QPoint) -> None:
+        self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
+                                                                   self.__sizeOfViewInPixels,
+                                                                   self.__sizeOfImageInPixels,
+                                                                   self.__zoom)
+
+
+        self.__bottomRightPointInImage = transformPointFromViewToImage(bottomRightPointInView,
+                                                                       self.__sizeOfViewInPixels,
+                                                                       self.__sizeOfImageInPixels,
+                                                                       self.__zoom)
+        print("Selected {0} <-> {1}".format(self.__topLeftPointInImage, self.__bottomRightPointInImage))
 
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
@@ -215,6 +238,8 @@ class SolarEditorModel:
         indexOfImage = self.__timeLineModel.indexImage
         return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
         #return self.__imagesIndexer.getImage(channel, indexOfImage)
+
+
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

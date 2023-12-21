@@ -1,13 +1,15 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget
-from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter
+from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 
 from IOSolarData import imagesStorage
 
+
 class SolarViewerWidget(QWidget):
     wheelScrollSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
+    plotWasAllocatedSignal = pyqtSignal(QPoint, QPoint)
     def __init__(self, parent):
         super(SolarViewerWidget, self).__init__()
         self.setMinimumSize(600, 600)
@@ -23,10 +25,16 @@ class SolarViewerWidget(QWidget):
         self.__offset: QPoint = QPoint(0, 0)
         self.__previousX: int = -1
         self.__previousY: int = -1
+        self.__zoom: float = 1
         self.__isMoved: bool = False
 
+        self.__firstPointOfPlotWasSelected: bool = False
+
+        self.__topLeftPointOfSelectedPlot: QPoint = QPoint(-1, -1)
+        self.__bottomRightPointOfSelectedPlot: QPoint = QPoint(-1, -1)
+
         i = imagesStorage.ImagesStorage()
-        self.displayImage(i.read_image_by_index(1), 600, QPoint(0,0))
+        self.displayImage(i.read_image_by_index(1), 600,1, QPoint(0,0))
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         painter = QPainter()
@@ -35,16 +43,33 @@ class SolarViewerWidget(QWidget):
         imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
         pixmapToDraw = QPixmap.fromImage(imageToDisplay)
         painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
+        painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.drawLine(QPoint(30,30), QPoint(60,60))
         painter.end()
 
-    def displayImage(self, image: QImage, scale: int, offset: QPoint) -> None:
+    def displayImage(self,
+                     image: QImage,
+                     scale: int,
+                     zoom: float,
+                     offset: QPoint) -> None:
         self.__currentImageToDisplay = image
         self.__scale = scale
+        self.__zoom = zoom
         self.__offset = offset
         self.update()
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.__isMoved = True
+
+    # TODO: Пользователь может выбрать точки не в том порядке
+    # модель должна уметь с этим работать
+    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
+        if not self.__firstPointOfPlotWasSelected:
+            self.__topLeftPointOfSelectedPlot = QPoint(a0.x(), a0.y())
+        else:
+            self.__bottomRightPointOfSelectedPlot = QPoint(a0.x(), a0.y())
+            self.plotWasAllocatedSignal.emit(self.__topLeftPointOfSelectedPlot, self.__bottomRightPointOfSelectedPlot)
+        self.__firstPointOfPlotWasSelected = not self.__firstPointOfPlotWasSelected
 
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.__isMoved = False

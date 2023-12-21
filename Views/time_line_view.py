@@ -15,7 +15,6 @@ class TimeLineView:
         self.widget.selectedImageInChannel.connect(self.selectedImage)
 
     def selectedImage(self, indexOfImage: int) -> None:
-        print("Selected image: {0}".format(indexOfImage))
         self.controller.selectImage(indexOfImage)
 
     def modelIsChanged(self):
