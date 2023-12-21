@@ -65,6 +65,7 @@ class SolarViewerWidget(QWidget):
         p2 = QPoint(tp.x(), br.y())
         p3 = QPoint(br.x(), br.y())
         p4 = QPoint(br.x(), tp.y())
+
         painter.drawLine(p1, p2)
         painter.drawLine(p2, p3)
         painter.drawLine(p3, p4)

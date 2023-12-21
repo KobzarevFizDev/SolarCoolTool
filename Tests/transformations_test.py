@@ -38,6 +38,17 @@ class TransformationTest(TestCase):
         actualPointInImage = transformPointFromViewToImage(pointOfView, sizeOfView, sizeOfImage, zoom)
         self.assertEqual(actualPointInImage, exceptPoint, "Point transformation case 3 - wrong")
 
+    def test_point_transformation_from_view_to_image_case4(self):
+        sizeOfView = (600, 600)
+        sizeOfImage = (4096, 4096)
+        pointInView = QPoint(600, 600)
+        zoom = 2
+        offset = QPoint(-600, -600)
+        exceptPointInImage = QPoint(4096, 4096)
+
+        actualPointInImage = transformPointFromViewToImage(pointInView, sizeOfView, sizeOfImage, zoom, offset)
+        self.assertEqual(exceptPointInImage,actualPointInImage, "Point transformation case 4- wrong!")
+
     def test_point_transformation_from_image_to_view_case1(self):
         sizeOfView = (600, 600)
         sizeOfImage = (4096, 4096)
@@ -46,7 +57,7 @@ class TransformationTest(TestCase):
         exceptPointInImage = QPoint(600, 600)
 
         actualPointInImage = transformPointFromImageToView(pointInImage, sizeOfView, sizeOfImage, zoom)
-        self.assertEqual(actualPointInImage, exceptPointInImage, "Point transformation case 1- wrong!")
+        self.assertEqual(exceptPointInImage, actualPointInImage, "Point transformation case 1- wrong!")
 
     def test_point_transformation_from_image_to_view_case2(self):
         sizeOfView = (600, 600)
@@ -56,7 +67,7 @@ class TransformationTest(TestCase):
         exceptPointInImage = QPoint(300, 300)
 
         actualPointInImage = transformPointFromImageToView(pointInImage, sizeOfView, sizeOfImage, zoom)
-        self.assertEqual(actualPointInImage, exceptPointInImage, "Point transformation case 2- wrong!")
+        self.assertEqual(exceptPointInImage, actualPointInImage, "Point transformation case 2- wrong!")
 
     def test_point_transformation_from_image_to_view_case3(self):
         sizeOfView = (600, 600)
@@ -66,8 +77,7 @@ class TransformationTest(TestCase):
         exceptPointInImage = QPoint(600, 600)
 
         actualPointInImage = transformPointFromImageToView(pointInImage, sizeOfView, sizeOfImage, zoom)
-        self.assertEqual(actualPointInImage, exceptPointInImage, "Point transformation case 1- wrong!")
-
+        self.assertEqual(exceptPointInImage, actualPointInImage, "Point transformation case 3- wrong!")
 
     def tearDown(self) -> None:
         pass

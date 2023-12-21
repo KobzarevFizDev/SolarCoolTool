@@ -8,7 +8,8 @@ from PyQt5.QtGui import QImage
 def transformPointFromViewToImage(pointInImage: QPoint,
                                   sizeOfViewInPixels: (int, int),
                                   sizeOfImageInPixels: (int, int),
-                                  zoom: float) -> QPoint:
+                                  zoom: float,
+                                  offset: QPoint = QPoint(0, 0)) -> QPoint:
     if not sizeOfViewInPixels[0] == sizeOfViewInPixels[1]:
         raise Exception("View must be squared")
 
@@ -18,12 +19,15 @@ def transformPointFromViewToImage(pointInImage: QPoint,
     imageSideSizeInPixels = sizeOfImageInPixels[0]
     viewSideSizeInPixels = sizeOfViewInPixels[0]
     ratio = imageSideSizeInPixels / (zoom * viewSideSizeInPixels)
-    return QPoint(int(pointInImage.x() * ratio), int(pointInImage.y() * ratio))
 
+    return QPoint(int((pointInImage.x() - offset.x()) * ratio), int((pointInImage.y() - offset.y())* ratio))
+
+# TODO: Эта функция неработает корректно
 def transformPointFromImageToView(pointInView: QPoint,
                                   sizeOfViewInPixels: (int, int),
                                   sizeOfImageInPixels: (int, int),
-                                  zoom: float) -> QPoint:
+                                  zoom: float,
+                                  offset: QPoint = QPoint(0, 0)) -> QPoint:
     if not sizeOfViewInPixels[0] == sizeOfViewInPixels[1]:
         raise Exception("View must be squared")
 
@@ -33,4 +37,4 @@ def transformPointFromImageToView(pointInView: QPoint,
     imageSideSizeInPixels = sizeOfImageInPixels[0]
     viewSideSizeInPixels = sizeOfViewInPixels[0]
     ratio = imageSideSizeInPixels / (zoom * viewSideSizeInPixels)
-    return QPoint(int(pointInView.x() / ratio), int(pointInView.y() / ratio))
+    return QPoint(int((pointInView.x() - offset.x()) / ratio), int((pointInView.y() - offset.y()) / ratio))

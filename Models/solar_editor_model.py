@@ -82,6 +82,7 @@ class SolarViewModel:
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
+        print("offset: {0}".format((self.__offset.x(), self.__offset.y())))
         self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
                                                                    self.__sizeOfViewInPixels,
                                                                    self.__sizeOfImageInPixels,
