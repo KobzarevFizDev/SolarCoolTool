@@ -36,16 +36,49 @@ class SolarViewerWidget(QWidget):
         i = imagesStorage.ImagesStorage()
         self.displayImage(i.read_image_by_index(1), 600,1, QPoint(0,0))
 
+#TODO: Разбить на 2 метода (Отрисока изображения) и отрисока выделенной зоны
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         painter = QPainter()
         painter.begin(self)
+        self.__drawImage(painter)
+        self.__drawSelectedPlot(painter)
+        painter.end()
+
+        #painter = QPainter()
+        #painter.begin(self)
+        #imageToDisplay = self.__currentImageToDisplay
+        #imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
+        #pixmapToDraw = QPixmap.fromImage(imageToDisplay)
+        #painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
+        #painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        #painter.drawLine(QPoint(30,30), QPoint(60,60))
+        #painter.end()
+
+    def __drawImage(self, painter: QPainter):
         imageToDisplay = self.__currentImageToDisplay
         imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
         pixmapToDraw = QPixmap.fromImage(imageToDisplay)
         painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
+
+    # boundaries of the allocated zone
+    def __drawSelectedPlot(self, painter: QPainter):
         painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.drawLine(QPoint(30,30), QPoint(60,60))
-        painter.end()
+
+        tp = self.__topLeftPointOfSelectedPlot
+        br = self.__bottomRightPointOfSelectedPlot
+
+        #TODO: Сделать нормально
+        if tp.x() == -1 or br.x() == -1:
+            return
+
+        p1 = QPoint(tp.x(), tp.y())
+        p2 = QPoint(tp.x(), br.y())
+        p3 = QPoint(br.x(), br.y())
+        p4 = QPoint(br.x(), tp.y())
+        painter.drawLine(p1, p2)
+        painter.drawLine(p2, p3)
+        painter.drawLine(p3, p4)
+        painter.drawLine(p4, p1)
 
     def displayImage(self,
                      image: QImage,
@@ -56,6 +89,11 @@ class SolarViewerWidget(QWidget):
         self.__scale = scale
         self.__zoom = zoom
         self.__offset = offset
+        self.update()
+
+    def displaySelectedPlotInImage(self, topLeftPoint, bottomRightPoint):
+        self.__topLeftPointOfSelectedPlot = topLeftPoint
+        self.__bottomRightPointOfSelectedPlot = bottomRightPoint
         self.update()
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:

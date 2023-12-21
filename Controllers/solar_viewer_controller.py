@@ -29,3 +29,4 @@ class SolarViewerController:
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
         self.model.solarViewModel.selectPlotOfImage(topLeftPointInView, bottomRightPointInView)
+        self.model.notifyObservers()

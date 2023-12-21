@@ -51,7 +51,9 @@ class SolarViewModel:
         self.__sizeOfImageInPixels: (int, int) = (4096, 4096)
         self.__sizeOfViewInPixels: (int, int) = (600, 600)
 
-        self.__topLeftPointInImage: QPoint = QPoint(-1,-1)
+        self.__topLeftPointInView: QPoint = QPoint(-1, -1)
+        self.__bottomRightPointInView: QPoint = QPoint(-1, -1)
+        self.__topLeftPointInImage: QPoint = QPoint(-1, -1)
         self.__bottomRightPointInImage: QPoint = QPoint(-1, -1)
 
     # TODO: Подумать нужны ли свойства в данном случае
@@ -67,9 +69,16 @@ class SolarViewModel:
     def offset(self):
         return self.__offset
 
+    @property
+    def selectedPlotInView(self) -> (QPoint, QPoint):
+        return (self.__topLeftPointInImage, self.__bottomRightPointInImage)
+
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
+        self.__topLeftPointInView = topLeftPointInView
+        self.__bottomRightPointInView = bottomRightPointInView
+
         self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
                                                                    self.__sizeOfViewInPixels,
                                                                    self.__sizeOfImageInPixels,
