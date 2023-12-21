@@ -82,7 +82,7 @@ class SolarViewerWidget(QWidget):
         self.__offset = offset
         self.update()
 
-    def displaySelectedPlotInImage(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
+    def displaySelectedPlot(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
         self.__topLeftPointOfSelectedPlot = topLeftPoint
         self.__bottomRightPointOfSelectedPlot = bottomRightPoint
         self.update()

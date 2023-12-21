@@ -72,11 +72,14 @@ class SolarViewModel:
         topLeftPointInView = transformPointFromImageToView(self.__topLeftPointInImage,
                                                            self.__sizeOfViewInPixels,
                                                            self.__sizeOfImageInPixels,
-                                                           self.__zoom)
+                                                           self.__zoom,
+                                                           self.__offset)
         bottomRightPointInView = transformPointFromImageToView(self.__bottomRightPointInImage,
                                                                self.__sizeOfViewInPixels,
                                                                self.__sizeOfImageInPixels,
-                                                               self.__zoom)
+                                                               self.__zoom,
+                                                               self.__offset)
+        print("SELECTED: {0} <-> {1}".format(topLeftPointInView, bottomRightPointInView))
         return (topLeftPointInView, bottomRightPointInView)
 
     def selectPlotOfImage(self,
@@ -86,13 +89,15 @@ class SolarViewModel:
         self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
                                                                    self.__sizeOfViewInPixels,
                                                                    self.__sizeOfImageInPixels,
-                                                                   self.__zoom)
+                                                                   self.__zoom,
+                                                                   self.__offset)
 
 
         self.__bottomRightPointInImage = transformPointFromViewToImage(bottomRightPointInView,
                                                                        self.__sizeOfViewInPixels,
                                                                        self.__sizeOfImageInPixels,
-                                                                       self.__zoom)
+                                                                       self.__zoom,
+                                                                       self.__offset)
         print("Selected {0} <-> {1}".format(self.__topLeftPointInImage, self.__bottomRightPointInImage))
 
     def setOriginSolarPreviewImage(self, originImageScale):

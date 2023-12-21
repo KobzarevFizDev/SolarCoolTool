@@ -5,7 +5,7 @@ from PyQt5.QtGui import QImage
 # и преобразует ее в пиксель изображения (переобразование координат )
 # SizeOfQuadInPixels - длина стороны квадратного виджета на котором отображается изображение
 
-def transformPointFromViewToImage(pointInImage: QPoint,
+def transformPointFromViewToImage(pointInView: QPoint,
                                   sizeOfViewInPixels: (int, int),
                                   sizeOfImageInPixels: (int, int),
                                   zoom: float,
@@ -20,10 +20,10 @@ def transformPointFromViewToImage(pointInImage: QPoint,
     viewSideSizeInPixels = sizeOfViewInPixels[0]
     ratio = imageSideSizeInPixels / (zoom * viewSideSizeInPixels)
 
-    return QPoint(int((pointInImage.x() - offset.x()) * ratio), int((pointInImage.y() - offset.y())* ratio))
+    return QPoint(int((pointInView.x() - offset.x()) * ratio), int((pointInView.y() - offset.y()) * ratio))
 
 # TODO: Эта функция неработает корректно
-def transformPointFromImageToView(pointInView: QPoint,
+def transformPointFromImageToView(pointInImage: QPoint,
                                   sizeOfViewInPixels: (int, int),
                                   sizeOfImageInPixels: (int, int),
                                   zoom: float,
@@ -37,4 +37,4 @@ def transformPointFromImageToView(pointInView: QPoint,
     imageSideSizeInPixels = sizeOfImageInPixels[0]
     viewSideSizeInPixels = sizeOfViewInPixels[0]
     ratio = imageSideSizeInPixels / (zoom * viewSideSizeInPixels)
-    return QPoint(int((pointInView.x() - offset.x()) / ratio), int((pointInView.y() - offset.y()) / ratio))
+    return QPoint(int(pointInImage.x() / ratio + offset.x()), int(pointInImage.y() / ratio + offset.y()))
