@@ -39,3 +39,5 @@ class SolarViewerView:
         offset = self.model.solarViewModel.offset
         zoom = self.model.solarViewModel.zoom
         self.widget.displayImage(solarImage, scale, zoom, offset)
+        tp, br = self.model.solarViewModel.selectedPlotInView
+        self.widget.displaySelectedPlotInImage(tp, br)

@@ -5,7 +5,7 @@ from PyQt5.QtGui import QImage
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
-from transformations import transformPointFromViewToImage
+from transformations import transformPointFromViewToImage, transformPointFromImageToView
 
 
 
@@ -51,8 +51,6 @@ class SolarViewModel:
         self.__sizeOfImageInPixels: (int, int) = (4096, 4096)
         self.__sizeOfViewInPixels: (int, int) = (600, 600)
 
-        self.__topLeftPointInView: QPoint = QPoint(-1, -1)
-        self.__bottomRightPointInView: QPoint = QPoint(-1, -1)
         self.__topLeftPointInImage: QPoint = QPoint(-1, -1)
         self.__bottomRightPointInImage: QPoint = QPoint(-1, -1)
 
@@ -71,14 +69,19 @@ class SolarViewModel:
 
     @property
     def selectedPlotInView(self) -> (QPoint, QPoint):
-        return (self.__topLeftPointInImage, self.__bottomRightPointInImage)
+        topLeftPointInView = transformPointFromImageToView(self.__topLeftPointInImage,
+                                                           self.__sizeOfViewInPixels,
+                                                           self.__sizeOfImageInPixels,
+                                                           self.__zoom)
+        bottomRightPointInView = transformPointFromImageToView(self.__bottomRightPointInImage,
+                                                               self.__sizeOfViewInPixels,
+                                                               self.__sizeOfImageInPixels,
+                                                               self.__zoom)
+        return (topLeftPointInView, bottomRightPointInView)
 
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
-        self.__topLeftPointInView = topLeftPointInView
-        self.__bottomRightPointInView = bottomRightPointInView
-
         self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
                                                                    self.__sizeOfViewInPixels,
                                                                    self.__sizeOfImageInPixels,

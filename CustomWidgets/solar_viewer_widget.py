@@ -44,16 +44,6 @@ class SolarViewerWidget(QWidget):
         self.__drawSelectedPlot(painter)
         painter.end()
 
-        #painter = QPainter()
-        #painter.begin(self)
-        #imageToDisplay = self.__currentImageToDisplay
-        #imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
-        #pixmapToDraw = QPixmap.fromImage(imageToDisplay)
-        #painter.drawPixmap(self.__offset.x(), self.__offset.y(), pixmapToDraw)
-        #painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        #painter.drawLine(QPoint(30,30), QPoint(60,60))
-        #painter.end()
-
     def __drawImage(self, painter: QPainter):
         imageToDisplay = self.__currentImageToDisplay
         imageToDisplay = imageToDisplay.scaled(self.__scale, self.__scale)
@@ -91,7 +81,7 @@ class SolarViewerWidget(QWidget):
         self.__offset = offset
         self.update()
 
-    def displaySelectedPlotInImage(self, topLeftPoint, bottomRightPoint):
+    def displaySelectedPlotInImage(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
         self.__topLeftPointOfSelectedPlot = topLeftPoint
         self.__bottomRightPointOfSelectedPlot = bottomRightPoint
         self.update()
