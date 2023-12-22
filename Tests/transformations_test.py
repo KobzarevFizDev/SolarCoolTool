@@ -2,7 +2,9 @@ from unittest import TestCase, main
 
 from PyQt5.QtCore import QPoint
 
-from transformations import transformPointFromViewToImage, transformPointFromImageToView
+from transformations import (transformPointFromViewToImage,
+                             transformPointFromImageToView,
+                             transformRectangeIntoSquare)
 
 class TransformationTest(TestCase):
     def setUp(self) -> None:
@@ -102,6 +104,19 @@ class TransformationTest(TestCase):
 
         actualPointInView = transformPointFromImageToView(pointInImage, sizeOfView, sizeOfImage, zoom, offset)
         self.assertEqual(exceptPointInView, actualPointInView, "Point transformation case 5- wrong!")
+
+
+    def test_transform_rectangle_into_square(self):
+        inputTopLeftPoint = QPoint(0, 0)
+        inputBottomRightPoint = QPoint(300, 100)
+
+        exceptTopLeftPoint = QPoint(0, 0)
+        exceptBottomRightPoint = QPoint(200, 200)
+
+        actualTopLeftPoint, actualBottomRightPoint = transformRectangeIntoSquare(inputTopLeftPoint, inputBottomRightPoint)
+
+        self.assertEqual(exceptTopLeftPoint, actualTopLeftPoint, "tl point is wrong")
+        self.assertEqual(exceptBottomRightPoint, actualBottomRightPoint, "br point is wrong")
 
 
     def tearDown(self) -> None:

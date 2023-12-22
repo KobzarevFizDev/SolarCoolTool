@@ -5,7 +5,9 @@ from PyQt5.QtGui import QImage
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
-from transformations import transformPointFromViewToImage, transformPointFromImageToView
+from transformations import (transformPointFromViewToImage,
+                             transformPointFromImageToView,
+                             transformRectangeIntoSquare)
 
 
 
@@ -79,13 +81,12 @@ class SolarViewModel:
                                                                self.__sizeOfImageInPixels,
                                                                self.__zoom,
                                                                self.__offset)
-        print("SELECTED: {0} <-> {1}".format(topLeftPointInView, bottomRightPointInView))
         return (topLeftPointInView, bottomRightPointInView)
 
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
-        print("offset: {0}".format((self.__offset.x(), self.__offset.y())))
+        topLeftPointInView, bottomRightPointInView = transformRectangeIntoSquare(topLeftPointInView, bottomRightPointInView)
         self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
                                                                    self.__sizeOfViewInPixels,
                                                                    self.__sizeOfImageInPixels,
@@ -98,7 +99,6 @@ class SolarViewModel:
                                                                        self.__sizeOfImageInPixels,
                                                                        self.__zoom,
                                                                        self.__offset)
-        print("Selected {0} <-> {1}".format(self.__topLeftPointInImage, self.__bottomRightPointInImage))
 
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale

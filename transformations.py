@@ -38,3 +38,14 @@ def transformPointFromImageToView(pointInImage: QPoint,
     viewSideSizeInPixels = sizeOfViewInPixels[0]
     ratio = imageSideSizeInPixels / (zoom * viewSideSizeInPixels)
     return QPoint(int(pointInImage.x() / ratio + offset.x()), int(pointInImage.y() / ratio + offset.y()))
+
+
+def transformRectangeIntoSquare(topLeftPoint: QPoint,
+                                bottomRight: QPoint) -> (QPoint, QPoint):
+    xSideSize = bottomRight.x() - topLeftPoint.x()
+    ySideSize = bottomRight.y() - topLeftPoint.y()
+    sideSizeOfSquare = (xSideSize + ySideSize)/2
+    topLeftPointOfSquare = topLeftPoint
+    bottomRightOfSquare = QPoint(topLeftPointOfSquare.x() + sideSizeOfSquare,
+                                 topLeftPointOfSquare.y() + sideSizeOfSquare)
+    return (topLeftPointOfSquare, bottomRightOfSquare)
