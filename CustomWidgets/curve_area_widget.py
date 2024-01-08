@@ -1,9 +1,12 @@
+from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
     QGraphicsView, QGraphicsEllipseItem
 from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
 from CustomWidgets.curve_point_widget import CurvePointWidget
+from CustomWidgets.mask_spline_points_widget import AnchorPointWidget, ControlPointWidget
+from Models.solar_editor_model import MaskSplineModel, BezierCurve, SolarEditorModel
 
 
 class CurveAreaWidget(QWidget):
@@ -19,15 +22,19 @@ class CurveAreaWidget(QWidget):
         self.setMouseTracking(True)
         self.setAutoFillBackground(True)
         palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(Qt.green))
+        palette.setColor(QPalette.Window, QColor(Qt.red))
         self.setPalette(palette)
+        self.label = QLabel(self)
+
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.view = QGraphicsView(self.scene, self)
-        self.view.setGeometry(0, 0, 600, 600)
+        self.view.setGeometry(0 ,0, 600, 600)
         self.view.show()
-        self.curvePointsWidget:list[CurvePointWidget] = list()
 
+
+
+# TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
         self.mousePressSignal.emit(event.x(), event.y())
 
@@ -40,40 +47,49 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawPoint(self, newPointModel, newCurveModel, curveController):
-        pointWidget = CurvePointWidget(newPointModel, newCurveModel, curveController)
-        self.scene.addItem(pointWidget)
-        self.curvePointsWidget.append(pointWidget)
+    def drawSplineCurve(self, spline: MaskSplineModel, resolution: int, solarEditorModel: SolarEditorModel):
+        for i in range(spline.numberOfCurves):
+            bezierCurve = spline.getCurveAtIndex(i)
+            self.__drawBezierCurve(bezierCurve, resolution, solarEditorModel)
 
-    def drawCurve(self, pointsFormingBrokenLine):
-        pen = QPen(Qt.red)
-        indexesOfPoints = [(i, i + 1) for i in range(len(pointsFormingBrokenLine) - 1)]
-        for indexOfPoint in indexesOfPoints:
-            startPoint = pointsFormingBrokenLine[indexOfPoint[0]]
-            endPoint = pointsFormingBrokenLine[indexOfPoint[1]]
-            self.scene.addLine(startPoint.x(), startPoint.y(), endPoint.x(), endPoint.y(), pen)
 
-    def drawAreaSegments(self, areaSegments):
-        for segment in areaSegments:
-            self.scene.addLine(segment.topLeft.x(),
-                               segment.topLeft.y(),
-                               segment.topRight.x(),
-                               segment.topRight.y())
+    def __drawBezierCurve(self,
+                          bezierCurve: BezierCurve,
+                          resolution: int,
+                          solarEditorModel: SolarEditorModel):
+        anchor1 = bezierCurve.points[0]
+        control1 = bezierCurve.points[1]
+        control2 = bezierCurve.points[2]
+        anchor2 = bezierCurve.points[3]
 
-            self.scene.addLine(segment.topRight.x(),
-                               segment.topRight.y(),
-                               segment.bottomRight.x(),
-                               segment.bottomRight.y())
+        self.__drawBezierCurveController(anchor1, control1, solarEditorModel)
+        self.__drawBezierCurveController(anchor2, control2, solarEditorModel)
 
-            self.scene.addLine(segment.bottomRight.x(),
-                               segment.bottomRight.y(),
-                               segment.bottomLeft.x(),
-                               segment.bottomLeft.y())
+        for i in range(resolution - 1):
+            t1 = 1/resolution * i
+            t2 = 1/resolution * (i+1)
 
-            self.scene.addLine(segment.bottomLeft.x(),
-                               segment.bottomLeft.y(),
-                               segment.topLeft.x(),
-                               segment.topLeft.y())
+            p1: QPoint = bezierCurve.pointAtT(t1)
+            p2: QPoint = bezierCurve.pointAtT(t2)
+
+            self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+
+
+    def __drawBezierCurveController(self,
+                                    anchorPointModel: QPoint,
+                                    controlPointModel: QPoint,
+                                    solarEditorModel: SolarEditorModel):
+        # TODO: их нужно создать один раз а не перерисовывать каждый раз
+        anchorPointWidget = AnchorPointWidget(anchorPointModel, solarEditorModel)
+        controlPointWidget = ControlPointWidget(controlPointModel, solarEditorModel)
+
+        self.scene.addLine(anchorPointModel.x(),
+                           anchorPointModel.y(),
+                           controlPointModel.x(),
+                           controlPointModel.y())
+
+        self.scene.addItem(anchorPointWidget)
+        self.scene.addItem(controlPointWidget)
 
 
     def clearAll(self):
