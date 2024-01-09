@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QPoint
 
 from Views.curve_area_view import CurveAreaView
-from Models.solar_editor_model import CurvePoint, CurveAreaSegment, SolarEditorModel
+from Models.solar_editor_model import CurveAreaSegment, SolarEditorModel
 
 class CurveEditorController:
     def __init__(self, model, mainAppWindow):
@@ -9,7 +9,7 @@ class CurveEditorController:
         self.view = CurveAreaView(self, model, mainAppWindow)
 
     def createNewPoint(self, x, y):
-        newPoint = CurvePoint(x, y)
+        newPoint = QPoint(x, y)
         self.model.curveModel.addPoint(newPoint)
         self.model.notifyObservers()
         return newPoint

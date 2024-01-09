@@ -5,25 +5,10 @@ from PyQt5.QtGui import QImage
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
+from transformations import (transformPointFromViewToImage,
+                             transformPointFromImageToView,
+                             transformRectangeIntoSquare)
 
-
-class CurvePoint:
-    def __init__(self,x,y):
-        self.x = x
-        self.y = y
-        self.r = 10
-        self.w = 1
-        self.color = Qt.red
-
-    def changePosition(self, deltaX: int, deltaY: int):
-        self.x += deltaX
-        self.y += deltaY
-
-    def highlightThisPointAsSelected(self):
-        self.color = Qt.blue
-
-    def unhightlightThisPointAsSelected(self):
-        self.color = Qt.red
 
 class CurveAreaSegment:
     def __init__(self, topRight, topLeft, bottomRight, bottomLeft):
@@ -46,6 +31,12 @@ class SolarViewModel:
         self.__zoom = 1
         self.__offset: QPoint = QPoint(0,0)
 
+        self.__sizeOfImageInPixels: (int, int) = (4096, 4096)
+        self.__sizeOfViewInPixels: (int, int) = (600, 600)
+
+        self.__topLeftPointInImage: QPoint = QPoint(-1, -1)
+        self.__bottomRightPointInImage: QPoint = QPoint(-1, -1)
+
     # TODO: Подумать нужны ли свойства в данном случае
     @property
     def originImageScale(self):
@@ -58,6 +49,37 @@ class SolarViewModel:
     @property
     def offset(self):
         return self.__offset
+
+    @property
+    def selectedPlotInView(self) -> (QPoint, QPoint):
+        topLeftPointInView = transformPointFromImageToView(self.__topLeftPointInImage,
+                                                           self.__sizeOfViewInPixels,
+                                                           self.__sizeOfImageInPixels,
+                                                           self.__zoom,
+                                                           self.__offset)
+        bottomRightPointInView = transformPointFromImageToView(self.__bottomRightPointInImage,
+                                                               self.__sizeOfViewInPixels,
+                                                               self.__sizeOfImageInPixels,
+                                                               self.__zoom,
+                                                               self.__offset)
+        return (topLeftPointInView, bottomRightPointInView)
+
+    def selectPlotOfImage(self,
+                          topLeftPointInView: QPoint,
+                          bottomRightPointInView: QPoint) -> None:
+        topLeftPointInView, bottomRightPointInView = transformRectangeIntoSquare(topLeftPointInView, bottomRightPointInView)
+        self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
+                                                                   self.__sizeOfViewInPixels,
+                                                                   self.__sizeOfImageInPixels,
+                                                                   self.__zoom,
+                                                                   self.__offset)
+
+
+        self.__bottomRightPointInImage = transformPointFromViewToImage(bottomRightPointInView,
+                                                                       self.__sizeOfViewInPixels,
+                                                                       self.__sizeOfImageInPixels,
+                                                                       self.__zoom,
+                                                                       self.__offset)
 
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
@@ -132,6 +154,93 @@ class CurrentChannelModel:
                 self.__notAvailableChannels.append(channel)
 
 
+class BezierCurve:
+    def __init__(self,
+                 p0: QPoint,
+                 p1: QPoint,
+                 p2: QPoint,
+                 p3: QPoint):
+        self.__p0: QPoint = p0
+        self.__p1: QPoint = p1
+        self.__p2: QPoint = p2
+        self.__p3: QPoint = p3
+
+    @property
+    def points(self) -> List[QPoint]:
+        return [self.__p0, self.__p1, self.__p2, self.__p3]
+
+    def pointAtT(self, t) -> QPoint:
+        A = (1-t)**3 * self.__p0
+        B = 3 * (1-t)**2 * t * self.__p1
+        C = 3 * (1-t)*t**2 * self.__p2
+        D = t**3 * self.__p3
+
+        return A + B + C + D
+
+class MaskSplineModel:
+    def __init__(self):
+        self.__numberOfSegments: int = 3
+        self.__firstAnchor: QPoint = QPoint(-1, -1)
+        defaultBezierCurve = BezierCurve(QPoint(100, 100),
+                                         QPoint(200,200),
+                                         QPoint(300, 150),
+                                         QPoint(400, 300))
+        self.__curves: List[BezierCurve] = [defaultBezierCurve,]
+
+    def addAnchor(self, anchor: QPoint):
+        if self.__firstAnchor == QPoint(-1, -1):
+            self.__firstAnchor = anchor
+        else:
+            distanceBetweenPointsAlongXAxis = anchor.x() - self.__firstAnchor.x()
+            stepByXAxis = distanceBetweenPointsAlongXAxis / 3
+            stepByYAxis = 20
+            p0 = self.__firstAnchor
+            p1 = QPoint(p0.x() + stepByXAxis, p0.y() + stepByYAxis)
+            p2 = QPoint(p1.x() + stepByXAxis, p0.y() - stepByYAxis)
+            p3 = anchor
+            bezierCurve = BezierCurve(p0, p1, p2, p3)
+            self.__curves.append(bezierCurve)
+
+    def removeLastAnchor(self):
+        if len(self.__curves) == 0:
+            return
+        else:
+            self.__curves.remove(self.__curves[len(self.__curves)-1])
+
+    # Индексатор
+    def getCurveAtIndex(self, index) -> BezierCurve:
+        return self.__curves[index]
+
+
+    # TODO Реализовать
+    def getPointAtT(self, t) -> QPoint:
+        T = t * len(self.__curves)
+        indexOfCurve = int(T)
+        t = T - indexOfCurve
+        print("index =  {0}. t = {1}".format(indexOfCurve, t))
+        return self.__curves[indexOfCurve].pointAtT(t)
+        #return self.__curves[0].pointAtT(t)
+
+    # Значит есть что рисовать (отображать)
+    @property
+    def isAvailableToDraw(self) -> bool:
+        return len(self.__curves) > 0
+
+    # TODO: Переименовать (количество состовляющих кривых)
+    @property
+    def numberOfCurves(self):
+        return len(self.__curves)
+
+    def increaseNumberOfSegments(self):
+        self.__numberOfSegments += 1
+
+    def decreaseNumberOfSegments(self):
+        if self.__numberOfSegments > 3:
+            self.__numberOfSegments -= 1
+
+
+
+#TODO: старевшее
 class CurveModel:
     def __init__(self, indexer: ImagesIndexer):
         self.__imagesIndexer = indexer
@@ -191,6 +300,7 @@ class SolarEditorModel:
         self.__solarViewModel = SolarViewModel(indexer)
         self.__timeLineModel = TimeLineModel(indexer)
         self.__currentChannelModel = CurrentChannelModel(indexer)
+        self.__maskSpline = MaskSplineModel()
 
 
     @property
@@ -210,11 +320,14 @@ class SolarEditorModel:
         return self.__currentChannelModel
 
     @property
+    def maskSpline(self) -> MaskSplineModel:
+        return self.__maskSpline
+
+    @property
     def currentSolarImage(self) -> QImage:
         channel = self.__currentChannelModel.currentChannel
         indexOfImage = self.__timeLineModel.indexImage
         return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
-        #return self.__imagesIndexer.getImage(channel, indexOfImage)
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

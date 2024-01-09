@@ -159,7 +159,6 @@ class ImagesIndexer:
         self.__cursor = self.__connection.cursor()
         command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
         countImages = int(self.__cursor.execute(command).fetchall()[0][0])
-        print(countImages)
         self.__connection.close()
         return countImages
 
