@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGr
 
 from Controllers.curve_editor_controller import CurveEditorController
 from Controllers.solar_viewer_controller import SolarViewerController
+from Controllers.mask_spline_controller import MaskSplineConroller
 
 from images_indexer import ImagesIndexer
 
@@ -27,7 +28,8 @@ class CurveEditorWindow(QMainWindow):
 
         self.solarEditorModel = SolarEditorModel(indexer)
 
-        self.curveEditorController = CurveEditorController(self.solarEditorModel, self)
+        self.maskSplineController = MaskSplineConroller(self.solarEditorModel, self)
+        #self.curveEditorController = CurveEditorController(self.solarEditorModel, self)
         self.solarViewerController = SolarViewerController(self.solarEditorModel, self)
         self.timeLineController = TimeLineController(self.solarEditorModel, self)
         self.channelSwitchController = ChannelSwitchController(self.solarEditorModel, self)
