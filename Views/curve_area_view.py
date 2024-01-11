@@ -13,12 +13,11 @@ class CurveAreaView:
         parentWindow.layout.addWidget(self.widget, 0, 0, 1, 2)
         self.model.addObserver(self)
         self.widget.mouseDoubleClickSignal.connect(self.createNewPointWidget)
-        self.widget.drawSpline(self.model.maskSpline, self.model, 10)
-        #self.widget.drawSplineCurve(self.model.maskSpline, 10, self.model)
+        self.widget.drawMask(self.model.maskSpline, self.model)
 
     def createNewPointWidget(self, x, y):
         self.controller.createNewPoint(x, y)
 
     def modelIsChanged(self):
         if self.model.maskSpline.isAvailableToDraw:
-            self.widget.updateSpline(self.model.maskSpline, 10)
+            self.widget.updateSpline(self.model.maskSpline)

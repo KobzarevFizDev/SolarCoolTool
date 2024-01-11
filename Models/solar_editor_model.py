@@ -11,6 +11,7 @@ from transformations import (transformPointFromViewToImage,
                              transformRectangeIntoSquare)
 
 
+# TODO: Устаревшее удалить
 class CurveAreaSegment:
     def __init__(self, topRight, topLeft, bottomRight, bottomLeft):
         self.topRight = topRight
@@ -188,6 +189,34 @@ class BezierCurve:
         tangent = self.tangentAtT(t)
         return QPoint(tangent.y(), -tangent.x())
 
+class MaskSegmentModel:
+    def __init__(self,
+                 topLeft: QPoint,
+                 topRight: QPoint,
+                 bottomLeft: QPoint,
+                 bottomRight: QPoint):
+        self.__topLeft: QPoint = topLeft
+        self.__topRight: QPoint = topRight
+        self.__bottomLeft: QPoint = bottomLeft
+        self.__bottomRight: QPoint = bottomRight
+
+    @property
+    def topLeftPoint(self) -> QPoint:
+        return self.__topLeft
+
+    @property
+    def topRight(self) -> QPoint:
+        return self.__topRight
+
+    @property
+    def bottomLeft(self) -> QPoint:
+        return self.__bottomLeft
+
+    @property
+    def bottomRight(self) -> QPoint:
+        return self.__bottomRight
+
+
 class MaskSplineModel:
     def __init__(self):
         self.__numberOfSegments: int = 10
@@ -258,6 +287,18 @@ class MaskSplineModel:
                 pointsOfTopBorder.append(finishPoint)
         return pointsOfTopBorder
 
+    def getSegmentsOfMask(self) -> List[MaskSegmentModel]:
+        maskSegments: List[MaskSegmentModel] = list()
+        pointsOfTopBorder: List[QPoint] = self.getPointsOfTopBorder()
+        pointsOfBottomBorder: List[QPoint] = self.getPointsOfBottomBorder()
+        for i in range(self.__numberOfSegments):
+            topLeft: QPoint = pointsOfTopBorder[i]
+            bottomLeft: QPoint = pointsOfBottomBorder[i]
+            topRight: QPoint = pointsOfTopBorder[i + 1]
+            bottomRight: QPoint = pointsOfBottomBorder[i + 1]
+            segment = MaskSegmentModel(topLeft, topRight, bottomLeft, bottomRight)
+            maskSegments.append(segment)
+
     def increaseNumberOfSegments(self):
         self.__numberOfSegments += 1
 
@@ -265,74 +306,15 @@ class MaskSplineModel:
         if self.__numberOfSegments > 3:
             self.__numberOfSegments -= 1
 
-
-
-#TODO: Устаревшее
-class CurveModel:
-    def __init__(self, indexer: ImagesIndexer):
-        self.__imagesIndexer = indexer
-        self.numberOfSegments = 10
-        self.points = list()
-
-    @property
-    def numberOfPoints(self):
-        return len(self.points)
-
-    def addPoint(self, point):
-        self.points.append(point)
-        if self.numberOfPoints > 3:
-            self.rebuildSpline()
-
-    def removePoint(self, point):
-        self.points.remove(point)
-        if self.numberOfPoints > 3:
-            self.rebuildSpline()
-
-    def increaseNumberOfCurveSegments(self):
-        self.numberOfSegments += 1
-
-    def decreaseNumberOfCurveSegments(self):
-        if self.numberOfSegments > 3:
-            self.numberOfSegments -= 1
-
-    def getPoints(self):
-        return self.points
-
-    def rebuildSpline(self):
-        x = self.__get_x_values()
-        y = self.__get_y_values()
-        self.x0 = min(x)
-        self.xn = max(x)
-        self.spline = CubicSpline(x, y)
-
-    def getPoint(self, t):
-        x = self.__get_x_by_t(t)
-        return QPoint(x, int(self.spline(x)))
-
-    def __get_x_values(self):
-        return [point.x for point in self.points]
-
-    def __get_y_values(self):
-        return [point.y for point in self.points]
-
-    def __get_x_by_t(self, t):
-        return self.x0 + (self.xn - self.x0) * t
-
-
 class SolarEditorModel:
     def __init__(self, indexer: ImagesIndexer):
         self.__imagesIndexer = indexer
         self.__observers = []
-        self.__curveModel = CurveModel(indexer)
         self.__solarViewModel = SolarViewModel(indexer)
         self.__timeLineModel = TimeLineModel(indexer)
         self.__currentChannelModel = CurrentChannelModel(indexer)
         self.__maskSpline = MaskSplineModel()
 
-
-    @property
-    def curveModel(self):
-        return self.__curveModel
 
     @property
     def solarViewModel(self):

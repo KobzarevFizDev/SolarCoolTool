@@ -32,7 +32,7 @@ class CurveAreaWidget(QWidget):
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.view = QGraphicsView(self.scene, self)
-        self.view.setGeometry(0 ,0, 600, 600)
+        self.view.setGeometry(0, 0, 600, 600)
         self.view.show()
 
         self.__anchorWidget1: AnchorPointWidget = None
@@ -57,33 +57,24 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawSpline(self,
-                   spline: MaskSplineModel,
-                   solarEditorModel: SolarEditorModel,
-                   resolution: int) -> None:
+    def drawMask(self,
+                 spline: MaskSplineModel,
+                 solarEditorModel: SolarEditorModel) -> None:
         self.__drawPointsWidgets(spline.getCurveAtIndex(0), solarEditorModel)
         self.__drawBottomLineOfMask(spline)
         self.__drawTopLineOfMask(spline)
+        self.__drawBorderBetweenSection(spline)
+        self.__drawControlLines(spline.getCurveAtIndex(0))
 
 
-        #self.__drawNormalsToBezierCurve(spline.getCurveAtIndex(0), 10)
+    def updateSpline(self, spline: MaskSplineModel) -> None:
+        self.__clearCurrentMask()
+        self.__updatePositionPointsWidgets(spline.getCurveAtIndex(0))
+        self.__drawBottomLineOfMask(spline)
+        self.__drawTopLineOfMask(spline)
+        self.__drawBorderBetweenSection(spline)
+        self.__drawControlLines(spline.getCurveAtIndex(0))
 
-        #for i in range(spline.numberOfCurves):
-        #    bezierCurve = spline.getCurveAtIndex(i)
-        #    self.__drawPointsWidgets(bezierCurve, solarEditorModel)
-        #    self.__drawBezierCurve(bezierCurve, resolution)
-        #    self.__drawControlLines(bezierCurve)
-
-
-    # TODO: Все расчеты перетащить в модель
-    def updateSpline(self, spline: MaskSplineModel, resolution: int) -> None:
-        self.__clearCurrentBezierCurve()
-        for i in range(spline.numberOfCurves):
-            bezierCurve = spline.getCurveAtIndex(i)
-            self.__drawBezierCurve(bezierCurve, resolution)
-            self.__updatePositionPointsWidgets(bezierCurve)
-            self.__drawControlLines(bezierCurve)
-            self.__drawNormalsToBezierCurve(bezierCurve, 10)
 
     def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
         pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
@@ -95,10 +86,18 @@ class CurveAreaWidget(QWidget):
 
     def __drawTopLineOfMask(self, maskSpline: MaskSplineModel):
         pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
-        print(pointsOfTopBorderMask)
         for i in range(len(pointsOfTopBorderMask) - 1):
             p1: QPoint = pointsOfTopBorderMask[i]
             p2: QPoint = pointsOfTopBorderMask[i + 1]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            self.__tempsObjectsOnScene.append(newLine)
+
+    def __drawBorderBetweenSection(self, maskSpline: MaskSplineModel):
+        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+        for i in range(len(pointsOfBottomBorderMask)):
+            p1: QPoint = pointsOfTopBorderMask[i]
+            p2: QPoint = pointsOfBottomBorderMask[i]
             newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
             self.__tempsObjectsOnScene.append(newLine)
 
@@ -120,17 +119,8 @@ class CurveAreaWidget(QWidget):
         self.scene.addItem(self.__anchorWidget2)
         self.scene.addItem(self.__controlWidget2)
 
-    def __drawBezierCurve(self, bezierCurve: BezierCurve, numberOfSegments: int) -> None:
-        tValues = [1 / numberOfSegments * i for i in range(numberOfSegments + 1)]
-        points = [bezierCurve.pointAtT(t) for t in tValues]
-        for i in range(len(points) - 1):
-            p1 = points[i]
-            p2 = points[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
-            self.__tempsObjectsOnScene.append(newLine)
 
-
-    def __clearCurrentBezierCurve(self) -> None:
+    def __clearCurrentMask(self) -> None:
         for item in self.__tempsObjectsOnScene:
             self.scene.removeItem(item)
 
@@ -158,34 +148,3 @@ class CurveAreaWidget(QWidget):
         self.__controlWidget1.setPos(p1)
         self.__controlWidget2.setPos(p2)
         self.__anchorWidget2.setPos(p3)
-
-
-    def __drawTangentsToBezierCurve(self, bezierCurve: BezierCurve, numberOfSegments: int) -> None:
-        for i in range(numberOfSegments):
-            t = i * 1/numberOfSegments
-            sizeOfTangent = 50
-            tangentValue: QPoint = bezierCurve.tangentAtT(t)
-            pointOnCurve: QPoint = bezierCurve.pointAtT(t)
-            magnitudeOfTangent = math.sqrt(tangentValue.x()**2 + tangentValue.y()**2)
-
-            normalizeTangent = QPoint(sizeOfTangent * tangentValue.y() / magnitudeOfTangent,
-                                      -sizeOfTangent * tangentValue.x() / magnitudeOfTangent)
-
-            self.__tempsObjectsOnScene.append(self.scene.addLine(pointOnCurve.x(),
-                                               pointOnCurve.y(),
-                                               pointOnCurve.x() + normalizeTangent.x(),
-                                               pointOnCurve.y() + normalizeTangent.y()))
-
-    def __drawNormalsToBezierCurve(self, bezierCurve: BezierCurve, numberOfNormals: int) -> None:
-        for i in range(numberOfNormals):
-            t = i * 1/numberOfNormals
-            sizeOfNormal = 30
-            normalValue: QPoint = bezierCurve.normalAtT(t)
-            pointOnCurve: QPoint = bezierCurve.pointAtT(t)
-            magnitudeOfNormal = math.sqrt(normalValue.x()**2 + normalValue.y()**2)
-            finishPoint = QPoint(sizeOfNormal * normalValue.x()/magnitudeOfNormal, sizeOfNormal * normalValue.y()/magnitudeOfNormal)
-
-            self.__tempsObjectsOnScene.append(self.scene.addLine(pointOnCurve.x(),
-                                               pointOnCurve.y(),
-                                               pointOnCurve.x() + finishPoint.x(),
-                                               pointOnCurve.y() + finishPoint.y()))

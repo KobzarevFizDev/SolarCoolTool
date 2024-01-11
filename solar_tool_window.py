@@ -5,7 +5,6 @@ from Controllers.time_line_controller import TimeLineController
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
 
-from Controllers.curve_editor_controller import CurveEditorController
 from Controllers.solar_viewer_controller import SolarViewerController
 from Controllers.mask_spline_controller import MaskSplineConroller
 
