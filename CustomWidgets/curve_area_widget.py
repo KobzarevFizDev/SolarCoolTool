@@ -67,6 +67,7 @@ class CurveAreaWidget(QWidget):
             self.__drawControlLines(bezierCurve)
 
 
+    # TODO: Все расчеты перетащить в модель
     def updateSpline(self, spline: MaskSplineModel, resolution: int) -> None:
         self.__clearCurrentBezierCurve()
         for i in range(spline.numberOfCurves):
@@ -74,7 +75,8 @@ class CurveAreaWidget(QWidget):
             self.__drawBezierCurve(bezierCurve, resolution)
             self.__updatePositionPointsWidgets(bezierCurve)
             self.__drawControlLines(bezierCurve)
-            self.__drawTangentsToBezierCurve(bezierCurve, resolution)
+            self.__drawNormalsToBezierCurve(bezierCurve, 10)
+            #self.__drawTangentsToBezierCurve(bezierCurve, resolution)
 
     def __drawPointsWidgets(self,
                             bezierCurve: BezierCurve,
@@ -142,12 +144,24 @@ class CurveAreaWidget(QWidget):
             pointOnCurve: QPoint = bezierCurve.pointAtT(t)
             magnitudeOfTangent = math.sqrt(tangentValue.x()**2 + tangentValue.y()**2)
 
-            #normalizeTangent = QPoint(sizeOfTangent * tangentValue.x() / magnitudeOfTangent, sizeOfTangent * tangentValue.y() / magnitudeOfTangent)
-            normalizeTangent = QPoint(sizeOfTangent * tangentValue.y() / magnitudeOfTangent, -sizeOfTangent * tangentValue.x() / magnitudeOfTangent)
+            normalizeTangent = QPoint(sizeOfTangent * tangentValue.y() / magnitudeOfTangent,
+                                      -sizeOfTangent * tangentValue.x() / magnitudeOfTangent)
+
             self.__tempsObjectsOnScene.append(self.scene.addLine(pointOnCurve.x(),
                                                pointOnCurve.y(),
                                                pointOnCurve.x() + normalizeTangent.x(),
                                                pointOnCurve.y() + normalizeTangent.y()))
 
     def __drawNormalsToBezierCurve(self, bezierCurve: BezierCurve, numberOfNormals: int) -> None:
-        pass
+        for i in range(numberOfNormals):
+            t = i * 1/numberOfNormals
+            sizeOfNormal = 30
+            normalValue: QPoint = bezierCurve.normalAtT(t)
+            pointOnCurve: QPoint = bezierCurve.pointAtT(t)
+            magnitudeOfNormal = math.sqrt(normalValue.x()**2 + normalValue.y()**2)
+            finishPoint = QPoint(sizeOfNormal * normalValue.x()/magnitudeOfNormal, sizeOfNormal * normalValue.y()/magnitudeOfNormal)
+
+            self.__tempsObjectsOnScene.append(self.scene.addLine(pointOnCurve.x(),
+                                               pointOnCurve.y(),
+                                               pointOnCurve.x() + finishPoint.x(),
+                                               pointOnCurve.y() + finishPoint.y()))

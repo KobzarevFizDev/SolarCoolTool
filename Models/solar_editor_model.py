@@ -185,7 +185,7 @@ class BezierCurve:
 
     def normalAtT(self, t) -> QPoint:
         tangent = self.tangentAtT(t)
-        return -tangent
+        return QPoint(tangent.y(), -tangent.x())
 
 class MaskSplineModel:
     def __init__(self):
@@ -196,6 +196,16 @@ class MaskSplineModel:
                                          QPoint(300, 150),
                                          QPoint(400, 300))
         self.__curves: List[BezierCurve] = [defaultBezierCurve,]
+
+    # Значит есть что рисовать (отображать)
+    @property
+    def isAvailableToDraw(self) -> bool:
+        return len(self.__curves) > 0
+
+    # TODO: Переименовать (количество состовляющих кривых)
+    @property
+    def numberOfCurves(self):
+        return len(self.__curves)
 
     def addAnchor(self, anchor: QPoint):
         if self.__firstAnchor == QPoint(-1, -1):
@@ -217,29 +227,23 @@ class MaskSplineModel:
         else:
             self.__curves.remove(self.__curves[len(self.__curves)-1])
 
-    # Индексатор
+    # TODO: Индексатор
+    # TODO: Это приватный метод
     def getCurveAtIndex(self, index) -> BezierCurve:
         return self.__curves[index]
 
+    def getBottomBorder(self, numberOfSegments: int):
+        pointsOfBottomBorder: List[QPoint] = list()
+        for i in range(self.numberOfCurves):
+            bezierCurve = self.getCurveAtIndex(i)
+            for j in range(numberOfSegments + 1):
+                t = i * 1 / numberOfSegments
+                point: QPoint = bezierCurve.pointAtT(t)
+                pointsOfBottomBorder.append(point)
 
-    # TODO Реализовать
-    def getPointAtT(self, t) -> QPoint:
-        T = t * len(self.__curves)
-        indexOfCurve = int(T)
-        t = T - indexOfCurve
-        print("index =  {0}. t = {1}".format(indexOfCurve, t))
-        return self.__curves[indexOfCurve].pointAtT(t)
-        #return self.__curves[0].pointAtT(t)
 
-    # Значит есть что рисовать (отображать)
-    @property
-    def isAvailableToDraw(self) -> bool:
-        return len(self.__curves) > 0
-
-    # TODO: Переименовать (количество состовляющих кривых)
-    @property
-    def numberOfCurves(self):
-        return len(self.__curves)
+    def getTomBorder(self, numberOfSegment: int):
+        pass
 
     def increaseNumberOfSegments(self):
         self.__numberOfSegments += 1
@@ -250,7 +254,7 @@ class MaskSplineModel:
 
 
 
-#TODO: старевшее
+#TODO: Устаревшее
 class CurveModel:
     def __init__(self, indexer: ImagesIndexer):
         self.__imagesIndexer = indexer

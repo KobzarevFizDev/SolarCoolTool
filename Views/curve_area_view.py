@@ -22,4 +22,3 @@ class CurveAreaView:
     def modelIsChanged(self):
         if self.model.maskSpline.isAvailableToDraw:
             self.widget.updateSpline(self.model.maskSpline, 10)
-            #self.widget.updateSplineCurve(self.model.maskSpline, 10)
