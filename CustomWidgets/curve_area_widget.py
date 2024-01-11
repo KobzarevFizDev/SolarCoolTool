@@ -1,3 +1,5 @@
+import math
+
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
     QGraphicsView, QGraphicsEllipseItem
@@ -72,6 +74,7 @@ class CurveAreaWidget(QWidget):
             self.__drawBezierCurve(bezierCurve, resolution)
             self.__updatePositionPointsWidgets(bezierCurve)
             self.__drawControlLines(bezierCurve)
+            self.__drawTangentsToBezierCurve(bezierCurve, resolution)
 
     def __drawPointsWidgets(self,
                             bezierCurve: BezierCurve,
@@ -99,6 +102,7 @@ class CurveAreaWidget(QWidget):
             p2 = points[i + 1]
             newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
             self.__tempsObjectsOnScene.append(newLine)
+
 
     def __clearCurrentBezierCurve(self) -> None:
         for item in self.__tempsObjectsOnScene:
@@ -128,3 +132,22 @@ class CurveAreaWidget(QWidget):
         self.__controlWidget1.setPos(p1)
         self.__controlWidget2.setPos(p2)
         self.__anchorWidget2.setPos(p3)
+
+
+    def __drawTangentsToBezierCurve(self, bezierCurve: BezierCurve, numberOfSegments: int) -> None:
+        for i in range(numberOfSegments):
+            t = i * 1/numberOfSegments
+            sizeOfTangent = 50
+            tangentValue: QPoint = bezierCurve.tangentAtT(t)
+            pointOnCurve: QPoint = bezierCurve.pointAtT(t)
+            magnitudeOfTangent = math.sqrt(tangentValue.x()**2 + tangentValue.y()**2)
+
+            #normalizeTangent = QPoint(sizeOfTangent * tangentValue.x() / magnitudeOfTangent, sizeOfTangent * tangentValue.y() / magnitudeOfTangent)
+            normalizeTangent = QPoint(sizeOfTangent * tangentValue.y() / magnitudeOfTangent, -sizeOfTangent * tangentValue.x() / magnitudeOfTangent)
+            self.__tempsObjectsOnScene.append(self.scene.addLine(pointOnCurve.x(),
+                                               pointOnCurve.y(),
+                                               pointOnCurve.x() + normalizeTangent.x(),
+                                               pointOnCurve.y() + normalizeTangent.y()))
+
+    def __drawNormalsToBezierCurve(self, bezierCurve: BezierCurve, numberOfNormals: int) -> None:
+        pass

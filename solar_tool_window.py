@@ -37,14 +37,14 @@ class CurveEditorWindow(QMainWindow):
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
-
+"""
     def wheelEvent(self, event):
         deltaWheel = event.angleDelta().y()
         if deltaWheel > 0:
             self.curveEditorController.increaseNumberOfCurveSegments()
         else:
             self.curveEditorController.decreaseNumberOfCurveSegments()
-
+"""
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

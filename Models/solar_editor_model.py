@@ -177,6 +177,16 @@ class BezierCurve:
 
         return A + B + C + D
 
+    def tangentAtT(self, t) -> QPoint:
+        A = 3 * (1-t)**2 * (self.__p1 - self.__p0)
+        B = 6 * (1 - t) * t * (self.__p2 - self.__p1)
+        C = 3 * t**2 * (self.__p3 - self.__p2)
+        return A + B + C
+
+    def normalAtT(self, t) -> QPoint:
+        tangent = self.tangentAtT(t)
+        return -tangent
+
 class MaskSplineModel:
     def __init__(self):
         self.__numberOfSegments: int = 3
