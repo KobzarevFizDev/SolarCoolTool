@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from PyQt5.QtCore import Qt, QPoint
@@ -189,10 +190,11 @@ class BezierCurve:
 
 class MaskSplineModel:
     def __init__(self):
-        self.__numberOfSegments: int = 3
+        self.__numberOfSegments: int = 10
         self.__firstAnchor: QPoint = QPoint(-1, -1)
+        self.__widthOfMask: int = 30
         defaultBezierCurve = BezierCurve(QPoint(100, 100),
-                                         QPoint(200,200),
+                                         QPoint(200, 200),
                                          QPoint(300, 150),
                                          QPoint(400, 300))
         self.__curves: List[BezierCurve] = [defaultBezierCurve,]
@@ -232,18 +234,29 @@ class MaskSplineModel:
     def getCurveAtIndex(self, index) -> BezierCurve:
         return self.__curves[index]
 
-    def getBottomBorder(self, numberOfSegments: int):
+    # TODO: Дублирование вычислений
+    def getPointsOfBottomBorder(self) -> List[QPoint]:
         pointsOfBottomBorder: List[QPoint] = list()
         for i in range(self.numberOfCurves):
-            bezierCurve = self.getCurveAtIndex(i)
-            for j in range(numberOfSegments + 1):
-                t = i * 1 / numberOfSegments
+            bezierCurve: BezierCurve = self.getCurveAtIndex(i)
+            for j in range(self.__numberOfSegments + 1):
+                t = j * 1 / self.__numberOfSegments
                 point: QPoint = bezierCurve.pointAtT(t)
                 pointsOfBottomBorder.append(point)
+        return pointsOfBottomBorder
 
 
-    def getTomBorder(self, numberOfSegment: int):
-        pass
+    def getPointsOfTopBorder(self) -> List[QPoint]:
+        pointsOfTopBorder: List[QPoint] = list()
+        for i in range(self.numberOfCurves):
+            bezierCurve: BezierCurve = self.getCurveAtIndex(i)
+            for j in range(self.__numberOfSegments + 1):
+                t = j * 1 / self.__numberOfSegments
+                normal: QPoint = bezierCurve.normalAtT(t)
+                magnitudeOfNormal = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
+                finishPoint = bezierCurve.pointAtT(t) + QPoint(self.__widthOfMask * normal.x()/magnitudeOfNormal, self.__widthOfMask * normal.y()/magnitudeOfNormal)
+                pointsOfTopBorder.append(finishPoint)
+        return pointsOfTopBorder
 
     def increaseNumberOfSegments(self):
         self.__numberOfSegments += 1

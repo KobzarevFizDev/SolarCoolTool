@@ -1,4 +1,5 @@
 import math
+from typing import List
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
@@ -60,11 +61,18 @@ class CurveAreaWidget(QWidget):
                    spline: MaskSplineModel,
                    solarEditorModel: SolarEditorModel,
                    resolution: int) -> None:
-        for i in range(spline.numberOfCurves):
-            bezierCurve = spline.getCurveAtIndex(i)
-            self.__drawPointsWidgets(bezierCurve, solarEditorModel)
-            self.__drawBezierCurve(bezierCurve, resolution)
-            self.__drawControlLines(bezierCurve)
+        self.__drawPointsWidgets(spline.getCurveAtIndex(0), solarEditorModel)
+        self.__drawBottomLineOfMask(spline)
+        self.__drawTopLineOfMask(spline)
+
+
+        #self.__drawNormalsToBezierCurve(spline.getCurveAtIndex(0), 10)
+
+        #for i in range(spline.numberOfCurves):
+        #    bezierCurve = spline.getCurveAtIndex(i)
+        #    self.__drawPointsWidgets(bezierCurve, solarEditorModel)
+        #    self.__drawBezierCurve(bezierCurve, resolution)
+        #    self.__drawControlLines(bezierCurve)
 
 
     # TODO: Все расчеты перетащить в модель
@@ -76,7 +84,23 @@ class CurveAreaWidget(QWidget):
             self.__updatePositionPointsWidgets(bezierCurve)
             self.__drawControlLines(bezierCurve)
             self.__drawNormalsToBezierCurve(bezierCurve, 10)
-            #self.__drawTangentsToBezierCurve(bezierCurve, resolution)
+
+    def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
+        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+        for i in range(len(pointsOfBottomBorderMask) - 1):
+            p1: QPoint = pointsOfBottomBorderMask[i]
+            p2: QPoint = pointsOfBottomBorderMask[i + 1]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            self.__tempsObjectsOnScene.append(newLine)
+
+    def __drawTopLineOfMask(self, maskSpline: MaskSplineModel):
+        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+        print(pointsOfTopBorderMask)
+        for i in range(len(pointsOfTopBorderMask) - 1):
+            p1: QPoint = pointsOfTopBorderMask[i]
+            p2: QPoint = pointsOfTopBorderMask[i + 1]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            self.__tempsObjectsOnScene.append(newLine)
 
     def __drawPointsWidgets(self,
                             bezierCurve: BezierCurve,
