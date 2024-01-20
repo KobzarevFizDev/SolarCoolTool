@@ -83,6 +83,11 @@ class SolarViewModel:
                                                                        self.__zoom,
                                                                        self.__offset)
 
+    # todo: Получить участок изображения солнца, который выделен в данный момент
+    def getSelectedPlotInImage(self):
+        pass
+
+
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
 
