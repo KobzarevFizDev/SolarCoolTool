@@ -1,11 +1,12 @@
 import sys
 
+from PyQt5 import QtCore
+
 from Controllers.channel_switch_controller import ChannelSwitchController
 from Controllers.time_line_controller import TimeLineController
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
 
-from Controllers.curve_editor_controller import CurveEditorController
 from Controllers.solar_viewer_controller import SolarViewerController
 from Controllers.mask_spline_controller import MaskSplineConroller
 
@@ -29,7 +30,6 @@ class CurveEditorWindow(QMainWindow):
         self.solarEditorModel = SolarEditorModel(indexer)
 
         self.maskSplineController = MaskSplineConroller(self.solarEditorModel, self)
-        #self.curveEditorController = CurveEditorController(self.solarEditorModel, self)
         self.solarViewerController = SolarViewerController(self.solarEditorModel, self)
         self.timeLineController = TimeLineController(self.solarEditorModel, self)
         self.channelSwitchController = ChannelSwitchController(self.solarEditorModel, self)
@@ -38,13 +38,11 @@ class CurveEditorWindow(QMainWindow):
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
 
-    def wheelEvent(self, event):
-        deltaWheel = event.angleDelta().y()
-        if deltaWheel > 0:
-            self.curveEditorController.increaseNumberOfCurveSegments()
-        else:
-            self.curveEditorController.decreaseNumberOfCurveSegments()
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_E:
+            print("Export bmp")
 
+        event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

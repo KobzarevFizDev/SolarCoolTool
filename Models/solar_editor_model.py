@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 from PyQt5.QtCore import Qt, QPoint
@@ -10,6 +11,7 @@ from transformations import (transformPointFromViewToImage,
                              transformRectangeIntoSquare)
 
 
+# TODO: Устаревшее удалить
 class CurveAreaSegment:
     def __init__(self, topRight, topLeft, bottomRight, bottomLeft):
         self.topRight = topRight
@@ -80,6 +82,11 @@ class SolarViewModel:
                                                                        self.__sizeOfImageInPixels,
                                                                        self.__zoom,
                                                                        self.__offset)
+
+    # todo: Получить участок изображения солнца, который выделен в данный момент
+    def getSelectedPlotInImage(self):
+        pass
+
 
     def setOriginSolarPreviewImage(self, originImageScale):
         self.__originImageScale = originImageScale
@@ -177,15 +184,64 @@ class BezierCurve:
 
         return A + B + C + D
 
+    def tangentAtT(self, t) -> QPoint:
+        A = 3 * (1-t)**2 * (self.__p1 - self.__p0)
+        B = 6 * (1 - t) * t * (self.__p2 - self.__p1)
+        C = 3 * t**2 * (self.__p3 - self.__p2)
+        return A + B + C
+
+    def normalAtT(self, t) -> QPoint:
+        tangent = self.tangentAtT(t)
+        return QPoint(tangent.y(), -tangent.x())
+
+class MaskSegmentModel:
+    def __init__(self,
+                 topLeft: QPoint,
+                 topRight: QPoint,
+                 bottomLeft: QPoint,
+                 bottomRight: QPoint):
+        self.__topLeft: QPoint = topLeft
+        self.__topRight: QPoint = topRight
+        self.__bottomLeft: QPoint = bottomLeft
+        self.__bottomRight: QPoint = bottomRight
+
+    @property
+    def topLeftPoint(self) -> QPoint:
+        return self.__topLeft
+
+    @property
+    def topRight(self) -> QPoint:
+        return self.__topRight
+
+    @property
+    def bottomLeft(self) -> QPoint:
+        return self.__bottomLeft
+
+    @property
+    def bottomRight(self) -> QPoint:
+        return self.__bottomRight
+
+
 class MaskSplineModel:
     def __init__(self):
-        self.__numberOfSegments: int = 3
+        self.__numberOfSegments: int = 10
         self.__firstAnchor: QPoint = QPoint(-1, -1)
+        self.__widthOfMask: int = 30
         defaultBezierCurve = BezierCurve(QPoint(100, 100),
-                                         QPoint(200,200),
+                                         QPoint(200, 200),
                                          QPoint(300, 150),
                                          QPoint(400, 300))
         self.__curves: List[BezierCurve] = [defaultBezierCurve,]
+
+    # Значит есть что рисовать (отображать)
+    @property
+    def isAvailableToDraw(self) -> bool:
+        return len(self.__curves) > 0
+
+    # TODO: Переименовать (количество состовляющих кривых)
+    @property
+    def numberOfCurves(self):
+        return len(self.__curves)
 
     def addAnchor(self, anchor: QPoint):
         if self.__firstAnchor == QPoint(-1, -1):
@@ -207,29 +263,46 @@ class MaskSplineModel:
         else:
             self.__curves.remove(self.__curves[len(self.__curves)-1])
 
-    # Индексатор
+    # TODO: Индексатор
+    # TODO: Это приватный метод
     def getCurveAtIndex(self, index) -> BezierCurve:
         return self.__curves[index]
 
+    # TODO: Дублирование вычислений
+    def getPointsOfBottomBorder(self) -> List[QPoint]:
+        pointsOfBottomBorder: List[QPoint] = list()
+        for i in range(self.numberOfCurves):
+            bezierCurve: BezierCurve = self.getCurveAtIndex(i)
+            for j in range(self.__numberOfSegments + 1):
+                t = j * 1 / self.__numberOfSegments
+                point: QPoint = bezierCurve.pointAtT(t)
+                pointsOfBottomBorder.append(point)
+        return pointsOfBottomBorder
 
-    # TODO Реализовать
-    def getPointAtT(self, t) -> QPoint:
-        T = t * len(self.__curves)
-        indexOfCurve = int(T)
-        t = T - indexOfCurve
-        print("index =  {0}. t = {1}".format(indexOfCurve, t))
-        return self.__curves[indexOfCurve].pointAtT(t)
-        #return self.__curves[0].pointAtT(t)
 
-    # Значит есть что рисовать (отображать)
-    @property
-    def isAvailableToDraw(self) -> bool:
-        return len(self.__curves) > 0
+    def getPointsOfTopBorder(self) -> List[QPoint]:
+        pointsOfTopBorder: List[QPoint] = list()
+        for i in range(self.numberOfCurves):
+            bezierCurve: BezierCurve = self.getCurveAtIndex(i)
+            for j in range(self.__numberOfSegments + 1):
+                t = j * 1 / self.__numberOfSegments
+                normal: QPoint = bezierCurve.normalAtT(t)
+                magnitudeOfNormal = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
+                finishPoint = bezierCurve.pointAtT(t) + QPoint(self.__widthOfMask * normal.x()/magnitudeOfNormal, self.__widthOfMask * normal.y()/magnitudeOfNormal)
+                pointsOfTopBorder.append(finishPoint)
+        return pointsOfTopBorder
 
-    # TODO: Переименовать (количество состовляющих кривых)
-    @property
-    def numberOfCurves(self):
-        return len(self.__curves)
+    def getSegmentsOfMask(self) -> List[MaskSegmentModel]:
+        maskSegments: List[MaskSegmentModel] = list()
+        pointsOfTopBorder: List[QPoint] = self.getPointsOfTopBorder()
+        pointsOfBottomBorder: List[QPoint] = self.getPointsOfBottomBorder()
+        for i in range(self.__numberOfSegments):
+            topLeft: QPoint = pointsOfTopBorder[i]
+            bottomLeft: QPoint = pointsOfBottomBorder[i]
+            topRight: QPoint = pointsOfTopBorder[i + 1]
+            bottomRight: QPoint = pointsOfBottomBorder[i + 1]
+            segment = MaskSegmentModel(topLeft, topRight, bottomLeft, bottomRight)
+            maskSegments.append(segment)
 
     def increaseNumberOfSegments(self):
         self.__numberOfSegments += 1
@@ -238,74 +311,15 @@ class MaskSplineModel:
         if self.__numberOfSegments > 3:
             self.__numberOfSegments -= 1
 
-
-
-#TODO: старевшее
-class CurveModel:
-    def __init__(self, indexer: ImagesIndexer):
-        self.__imagesIndexer = indexer
-        self.numberOfSegments = 10
-        self.points = list()
-
-    @property
-    def numberOfPoints(self):
-        return len(self.points)
-
-    def addPoint(self, point):
-        self.points.append(point)
-        if self.numberOfPoints > 3:
-            self.rebuildSpline()
-
-    def removePoint(self, point):
-        self.points.remove(point)
-        if self.numberOfPoints > 3:
-            self.rebuildSpline()
-
-    def increaseNumberOfCurveSegments(self):
-        self.numberOfSegments += 1
-
-    def decreaseNumberOfCurveSegments(self):
-        if self.numberOfSegments > 3:
-            self.numberOfSegments -= 1
-
-    def getPoints(self):
-        return self.points
-
-    def rebuildSpline(self):
-        x = self.__get_x_values()
-        y = self.__get_y_values()
-        self.x0 = min(x)
-        self.xn = max(x)
-        self.spline = CubicSpline(x, y)
-
-    def getPoint(self, t):
-        x = self.__get_x_by_t(t)
-        return QPoint(x, int(self.spline(x)))
-
-    def __get_x_values(self):
-        return [point.x for point in self.points]
-
-    def __get_y_values(self):
-        return [point.y for point in self.points]
-
-    def __get_x_by_t(self, t):
-        return self.x0 + (self.xn - self.x0) * t
-
-
 class SolarEditorModel:
     def __init__(self, indexer: ImagesIndexer):
         self.__imagesIndexer = indexer
         self.__observers = []
-        self.__curveModel = CurveModel(indexer)
         self.__solarViewModel = SolarViewModel(indexer)
         self.__timeLineModel = TimeLineModel(indexer)
         self.__currentChannelModel = CurrentChannelModel(indexer)
         self.__maskSpline = MaskSplineModel()
 
-
-    @property
-    def curveModel(self):
-        return self.__curveModel
 
     @property
     def solarViewModel(self):

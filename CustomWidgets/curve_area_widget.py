@@ -1,3 +1,6 @@
+import math
+from typing import List
+
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
     QGraphicsView, QGraphicsEllipseItem
@@ -29,7 +32,7 @@ class CurveAreaWidget(QWidget):
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.view = QGraphicsView(self.scene, self)
-        self.view.setGeometry(0 ,0, 600, 600)
+        self.view.setGeometry(0, 0, 600, 600)
         self.view.show()
 
         self.__anchorWidget1: AnchorPointWidget = None
@@ -54,90 +57,94 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawSplineCurve(self, spline: MaskSplineModel, resolution: int, solarEditorModel: SolarEditorModel):
-        for i in range(spline.numberOfCurves):
-            bezierCurve = spline.getCurveAtIndex(i)
-            self.__drawBezierCurve(bezierCurve, resolution, solarEditorModel)
-
-    # TODO: Обновлять положение контролов и перерисовывать линию 
-    def updateSplineCurve(self, spline: MaskSplineModel, resolution: int):
-        for item in self.__tempsObjectsOnScene:
-            self.scene.removeItem(item)
-
-        for i in range(spline.numberOfCurves):
-            bezierCurve = spline.getCurveAtIndex(i)
-            p0: QPoint = bezierCurve.points[0]
-            p1: QPoint = bezierCurve.points[1]
-            p2: QPoint = bezierCurve.points[2]
-            p3: QPoint = bezierCurve.points[3]
-            self.__anchorWidget1.setPos(p0)
-            self.__controlWidget1.setPos(p1)
-            self.__controlWidget2.setPos(p2)
-            self.__anchorWidget2.setPos(p3)
-
-            newLine = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y())
-            self.__tempsObjectsOnScene.append(newLine)
-
-            newLine = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y())
-            self.__tempsObjectsOnScene.append(newLine)
-
-            for i in range(resolution - 1):
-                t1 = 1/resolution * i
-                t2 = 1/resolution * (i+1)
-
-                p1: QPoint = bezierCurve.pointAtT(t1)
-                p2: QPoint = bezierCurve.pointAtT(t2)
-
-                newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
-                self.__tempsObjectsOnScene.append(newLine)
+    def drawMask(self,
+                 spline: MaskSplineModel,
+                 solarEditorModel: SolarEditorModel) -> None:
+        self.__drawPointsWidgets(spline.getCurveAtIndex(0), solarEditorModel)
+        self.__drawBottomLineOfMask(spline)
+        self.__drawTopLineOfMask(spline)
+        self.__drawBorderBetweenSection(spline)
+        self.__drawControlLines(spline.getCurveAtIndex(0))
 
 
+    def updateSpline(self, spline: MaskSplineModel) -> None:
+        self.__clearCurrentMask()
+        self.__updatePositionPointsWidgets(spline.getCurveAtIndex(0))
+        self.__drawBottomLineOfMask(spline)
+        self.__drawTopLineOfMask(spline)
+        self.__drawBorderBetweenSection(spline)
+        self.__drawControlLines(spline.getCurveAtIndex(0))
 
-    def __drawBezierCurve(self,
-                          bezierCurve: BezierCurve,
-                          resolution: int,
-                          solarEditorModel: SolarEditorModel):
-        anchor1: QPoint = bezierCurve.points[0]
-        control1: QPoint = bezierCurve.points[1]
-        control2: QPoint = bezierCurve.points[2]
-        anchor2: QPoint = bezierCurve.points[3]
 
-        self.__anchorWidget1, self.__controlWidget1 = self.__drawBezierCurveController(anchor1,
-                                                                                       control1,
-                                                                                       solarEditorModel)
-
-        self.__anchorWidget2, self.__controlWidget2 = self.__drawBezierCurveController(anchor2,
-                                                                                       control2,                                                                             solarEditorModel)
-
-        # TODO: Дублирование кода
-        for i in range(resolution - 1):
-            t1 = 1/resolution * i
-            t2 = 1/resolution * (i+1)
-
-            p1: QPoint = bezierCurve.pointAtT(t1)
-            p2: QPoint = bezierCurve.pointAtT(t2)
-
+    def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
+        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+        for i in range(len(pointsOfBottomBorderMask) - 1):
+            p1: QPoint = pointsOfBottomBorderMask[i]
+            p2: QPoint = pointsOfBottomBorderMask[i + 1]
             newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
             self.__tempsObjectsOnScene.append(newLine)
 
+    def __drawTopLineOfMask(self, maskSpline: MaskSplineModel):
+        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+        for i in range(len(pointsOfTopBorderMask) - 1):
+            p1: QPoint = pointsOfTopBorderMask[i]
+            p2: QPoint = pointsOfTopBorderMask[i + 1]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            self.__tempsObjectsOnScene.append(newLine)
 
-    def __drawBezierCurveController(self,
-                                    anchorPointModel: QPoint,
-                                    controlPointModel: QPoint,
-                                    solarEditorModel: SolarEditorModel) -> (AnchorPointWidget, ControlPointWidget):
-        # TODO: их нужно создать один раз а не перерисовывать каждый раз
-        anchorPointWidget = AnchorPointWidget(anchorPointModel, solarEditorModel)
-        controlPointWidget = ControlPointWidget(controlPointModel, solarEditorModel)
+    def __drawBorderBetweenSection(self, maskSpline: MaskSplineModel):
+        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+        for i in range(len(pointsOfBottomBorderMask)):
+            p1: QPoint = pointsOfTopBorderMask[i]
+            p2: QPoint = pointsOfBottomBorderMask[i]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            self.__tempsObjectsOnScene.append(newLine)
 
-        newLine = self.scene.addLine(anchorPointModel.x(),
-                                     anchorPointModel.y(),
-                                     controlPointModel.x(),
-                                     controlPointModel.y())
+    def __drawPointsWidgets(self,
+                            bezierCurve: BezierCurve,
+                            solarEditorModel: SolarEditorModel) -> None:
+        p0 = bezierCurve.points[0]
+        p1 = bezierCurve.points[1]
+        p2 = bezierCurve.points[2]
+        p3 = bezierCurve.points[3]
 
-        self.__tempsObjectsOnScene.append(newLine)
+        self.__anchorWidget1 = AnchorPointWidget(p0, solarEditorModel)
+        self.__controlWidget1 = ControlPointWidget(p1, solarEditorModel)
+        self.__controlWidget2 = ControlPointWidget(p2, solarEditorModel)
+        self.__anchorWidget2 = AnchorPointWidget(p3, solarEditorModel)
 
-        self.scene.addItem(anchorPointWidget)
-        self.scene.addItem(controlPointWidget)
+        self.scene.addItem(self.__anchorWidget1)
+        self.scene.addItem(self.__controlWidget1)
+        self.scene.addItem(self.__anchorWidget2)
+        self.scene.addItem(self.__controlWidget2)
 
-        return anchorPointWidget, controlPointWidget
 
+    def __clearCurrentMask(self) -> None:
+        for item in self.__tempsObjectsOnScene:
+            self.scene.removeItem(item)
+
+        self.__tempsObjectsOnScene.clear()
+
+    def __drawControlLines(self, bezierCurve: BezierCurve) -> None:
+        p0: QPoint = bezierCurve.points[0]
+        p1: QPoint = bezierCurve.points[1]
+        p2: QPoint = bezierCurve.points[2]
+        p3: QPoint = bezierCurve.points[3]
+
+        controlLine1 = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y())
+        controlLine2 = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y())
+
+        self.__tempsObjectsOnScene.append(controlLine1)
+        self.__tempsObjectsOnScene.append(controlLine2)
+
+    def __updatePositionPointsWidgets(self, bezierCurve: BezierCurve) -> None:
+        p0: QPoint = bezierCurve.points[0]
+        p1: QPoint = bezierCurve.points[1]
+        p2: QPoint = bezierCurve.points[2]
+        p3: QPoint = bezierCurve.points[3]
+
+        self.__anchorWidget1.setPos(p0)
+        self.__controlWidget1.setPos(p1)
+        self.__controlWidget2.setPos(p2)
+        self.__anchorWidget2.setPos(p3)
