@@ -4,8 +4,8 @@ from typing import List
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
     QGraphicsView, QGraphicsEllipseItem
-from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor, QPixmap
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal, QRect
 
 from CustomWidgets.curve_point_widget import CurvePointWidget
 from CustomWidgets.mask_spline_points_widget import AnchorPointWidget, ControlPointWidget
@@ -40,6 +40,10 @@ class CurveAreaWidget(QWidget):
         self.__controlWidget1: ControlPointWidget = None
         self.__controlWidget2: ControlPointWidget = None
 
+        defaultPlot = QPixmap(600, 600)
+        defaultPlot.fill(Qt.red)
+        self.__currentPixmapOfPlot = self.scene.addPixmap(defaultPlot)
+
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__tempsObjectsOnScene = []
 
@@ -66,6 +70,9 @@ class CurveAreaWidget(QWidget):
         self.__drawBorderBetweenSection(spline)
         self.__drawControlLines(spline.getCurveAtIndex(0))
 
+
+    def updateSolarPlot(self, plot: QPixmap) -> None:
+        self.__currentPixmapOfPlot.setPixmap(plot)
 
     def updateSpline(self, spline: MaskSplineModel) -> None:
         self.__clearCurrentMask()

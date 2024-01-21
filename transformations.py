@@ -22,7 +22,6 @@ def transformPointFromViewToImage(pointInView: QPoint,
 
     return QPoint(int((pointInView.x() - offset.x()) * ratio), int((pointInView.y() - offset.y()) * ratio))
 
-# TODO: Эта функция неработает корректно
 def transformPointFromImageToView(pointInImage: QPoint,
                                   sizeOfViewInPixels: (int, int),
                                   sizeOfImageInPixels: (int, int),

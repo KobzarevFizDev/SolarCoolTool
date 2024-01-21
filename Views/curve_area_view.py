@@ -1,4 +1,9 @@
+import math
 from typing import TYPE_CHECKING
+
+from PyQt5.QtCore import QRect
+from PyQt5.QtGui import QImage, QPixmap
+
 from CustomWidgets.curve_area_widget import CurveAreaWidget
 
 if TYPE_CHECKING:
@@ -19,5 +24,12 @@ class CurveAreaView:
         self.controller.createNewPoint(x, y)
 
     def modelIsChanged(self):
+        currentSolarImage: QImage = self.model.currentSolarImage
+        topLeft, bottomRight = self.model.solarViewModel.selectedPlotInImage
+        mask = QRect(topLeft, bottomRight)
+        pixmapOfSolarPlot = QPixmap.fromImage(currentSolarImage.copy(mask))
+        pixmapOfSolarPlot = pixmapOfSolarPlot.scaled(600, 600)
+
+        self.widget.updateSolarPlot(pixmapOfSolarPlot)
         if self.model.maskSpline.isAvailableToDraw:
             self.widget.updateSpline(self.model.maskSpline)

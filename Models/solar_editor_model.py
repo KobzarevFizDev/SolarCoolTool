@@ -2,7 +2,7 @@ import math
 from typing import List
 
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPixmap
 from scipy.interpolate import CubicSpline
 
 from images_indexer import ImagesIndexer
@@ -65,6 +65,13 @@ class SolarViewModel:
                                                                self.__zoom,
                                                                self.__offset)
         return (topLeftPointInView, bottomRightPointInView)
+
+    @property
+    def selectedPlotInImage(self) -> (QPoint, QPoint):
+        return (self.__topLeftPointInImage, self.__bottomRightPointInImage)
+
+    def pixmapOfSelectedPlot(self) -> QPixmap:
+        topLeft, bottomRight = self.selectedPlotInView
 
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
@@ -339,7 +346,6 @@ class SolarEditorModel:
 
     @property
     def currentSolarImage(self) -> QImage:
-        channel = self.__currentChannelModel.currentChannel
         indexOfImage = self.__timeLineModel.indexImage
         return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
 
