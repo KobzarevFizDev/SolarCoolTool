@@ -1,6 +1,7 @@
 import sys
 
 from PyQt5 import QtCore
+from mask_exporter import MaskExporter
 
 from Controllers.channel_switch_controller import ChannelSwitchController
 from Controllers.time_line_controller import TimeLineController
@@ -29,6 +30,8 @@ class CurveEditorWindow(QMainWindow):
 
         self.solarEditorModel = SolarEditorModel(indexer)
 
+        self.maskExporter: MaskExporter = MaskExporter(self.solarEditorModel)
+
         self.maskSplineController = MaskSplineConroller(self.solarEditorModel, self)
         self.solarViewerController = SolarViewerController(self.solarEditorModel, self)
         self.timeLineController = TimeLineController(self.solarEditorModel, self)
@@ -40,7 +43,9 @@ class CurveEditorWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
-            print("Export bmp")
+            path = "C:\SolarImages\mask.bmp"
+            self.maskExporter.exportToBmp(path)
+            print("Exported mask to bmp. Path = {0}".format(path))
 
         event.accept()
 

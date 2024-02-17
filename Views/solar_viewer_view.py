@@ -17,7 +17,7 @@ class SolarViewerView:
         self.model.addObserver(self)
         self.widget.wheelScrollSignal.connect(self.zoom)
         self.widget.mouseMoveSignal.connect(self.move)
-        self.widget.plotWasAllocatedSignal.connect(self.selectedPlot)
+        self.widget.plotWasAllocatedSignal.connect(self.onSelectPlot)
 
     def zoom(self, x, y):
         if y > 0:
@@ -28,9 +28,8 @@ class SolarViewerView:
     def move(self, x, y):
         self.controller.moveSolarImage(QPoint(x,y))
 
-    def selectedPlot(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
+    def onSelectPlot(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
         self.controller.selectPlotOfImage(topLeftPoint, bottomRightPoint)
-        #print("SELECTED = {0} <-> {1}".format((topLeftPoint.x(), topLeftPoint.y()), (bottomRightPoint.x(), bottomRightPoint.y())))
 
 
     def modelIsChanged(self):

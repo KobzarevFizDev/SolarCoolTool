@@ -82,6 +82,7 @@ class SolarViewerWidget(QWidget):
         self.__offset = offset
         self.update()
 
+    # TODO: Переименовать -> Нарисовать границы
     def displaySelectedPlot(self, topLeftPoint: QPoint, bottomRightPoint: QPoint):
         self.__topLeftPointOfSelectedPlot = topLeftPoint
         self.__bottomRightPointOfSelectedPlot = bottomRightPoint

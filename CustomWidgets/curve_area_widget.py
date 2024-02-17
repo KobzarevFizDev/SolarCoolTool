@@ -4,8 +4,8 @@ from typing import List
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
     QGraphicsView, QGraphicsEllipseItem
-from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal
+from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor, QPixmap
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal, QRect
 
 from CustomWidgets.curve_point_widget import CurvePointWidget
 from CustomWidgets.mask_spline_points_widget import AnchorPointWidget, ControlPointWidget
@@ -25,7 +25,7 @@ class CurveAreaWidget(QWidget):
         self.setMouseTracking(True)
         self.setAutoFillBackground(True)
         palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(Qt.red))
+        palette.setColor(QPalette.Window, QColor(Qt.green))
         self.setPalette(palette)
         self.label = QLabel(self)
 
@@ -39,6 +39,10 @@ class CurveAreaWidget(QWidget):
         self.__anchorWidget2: AnchorPointWidget = None
         self.__controlWidget1: ControlPointWidget = None
         self.__controlWidget2: ControlPointWidget = None
+
+        defaultPlot = QPixmap(600, 600)
+        defaultPlot.fill(Qt.green)
+        self.__currentPixmapOfPlot = self.scene.addPixmap(defaultPlot)
 
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__tempsObjectsOnScene = []
@@ -67,6 +71,9 @@ class CurveAreaWidget(QWidget):
         self.__drawControlLines(spline.getCurveAtIndex(0))
 
 
+    def updateSolarPlot(self, plot: QPixmap) -> None:
+        self.__currentPixmapOfPlot.setPixmap(plot)
+
     def updateSpline(self, spline: MaskSplineModel) -> None:
         self.__clearCurrentMask()
         self.__updatePositionPointsWidgets(spline.getCurveAtIndex(0))
@@ -78,27 +85,49 @@ class CurveAreaWidget(QWidget):
 
     def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
         pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         for i in range(len(pointsOfBottomBorderMask) - 1):
             p1: QPoint = pointsOfBottomBorderMask[i]
             p2: QPoint = pointsOfBottomBorderMask[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
             self.__tempsObjectsOnScene.append(newLine)
 
     def __drawTopLineOfMask(self, maskSpline: MaskSplineModel):
         pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         for i in range(len(pointsOfTopBorderMask) - 1):
             p1: QPoint = pointsOfTopBorderMask[i]
             p2: QPoint = pointsOfTopBorderMask[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
             self.__tempsObjectsOnScene.append(newLine)
 
     def __drawBorderBetweenSection(self, maskSpline: MaskSplineModel):
         pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
         pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
-        for i in range(len(pointsOfBottomBorderMask)):
+
+        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        newLine = self.scene.addLine(pointsOfBottomBorderMask[0].x(),
+                                     pointsOfBottomBorderMask[0].y(),
+                                     pointsOfTopBorderMask[0].x(),
+                                     pointsOfTopBorderMask[0].y(),
+                                     pen)
+
+        self.__tempsObjectsOnScene.append(newLine)
+
+
+        newLine = self.scene.addLine(pointsOfBottomBorderMask[len(pointsOfBottomBorderMask) - 1].x(),
+                                     pointsOfBottomBorderMask[len(pointsOfBottomBorderMask) - 1].y(),
+                                     pointsOfTopBorderMask[len(pointsOfBottomBorderMask) - 1].x(),
+                                     pointsOfTopBorderMask[len(pointsOfBottomBorderMask) - 1].y(),
+                                     pen)
+
+        self.__tempsObjectsOnScene.append(newLine)
+
+        pen = QPen(Qt.white, 1.0, Qt.DotLine, Qt.RoundCap, Qt.RoundJoin)
+        for i in range(1, len(pointsOfBottomBorderMask) - 1):
             p1: QPoint = pointsOfTopBorderMask[i]
             p2: QPoint = pointsOfBottomBorderMask[i]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y())
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
             self.__tempsObjectsOnScene.append(newLine)
 
     def __drawPointsWidgets(self,
@@ -132,8 +161,10 @@ class CurveAreaWidget(QWidget):
         p2: QPoint = bezierCurve.points[2]
         p3: QPoint = bezierCurve.points[3]
 
-        controlLine1 = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y())
-        controlLine2 = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y())
+        pen = QPen(Qt.red, 3.0, Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
+
+        controlLine1 = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y(), pen)
+        controlLine2 = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y(), pen)
 
         self.__tempsObjectsOnScene.append(controlLine1)
         self.__tempsObjectsOnScene.append(controlLine2)
