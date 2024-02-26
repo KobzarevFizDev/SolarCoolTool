@@ -33,7 +33,7 @@ class SolarViewerView:
 
 
     def modelIsChanged(self):
-        solarImage = self.model.currentSolarImage
+        solarImage = self.model.currentSolarImageAsQTImage
         scale = self.model.solarViewModel.zoom * self.model.solarViewModel.originImageScale
         offset = self.model.solarViewModel.offset
         zoom = self.model.solarViewModel.zoom

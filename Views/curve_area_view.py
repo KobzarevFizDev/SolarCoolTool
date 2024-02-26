@@ -24,7 +24,7 @@ class CurveAreaView:
         self.controller.createNewPoint(x, y)
 
     def modelIsChanged(self):
-        currentSolarImage: QImage = self.model.currentSolarImage
+        currentSolarImage: QImage = self.model.currentSolarImageAsQTImage
         topLeft, bottomRight = self.model.solarViewModel.selectedPlotInImage
         mask = QRect(topLeft, bottomRight)
         pixmapOfSolarPlot = QPixmap.fromImage(currentSolarImage.copy(mask))
