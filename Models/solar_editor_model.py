@@ -275,6 +275,19 @@ class MaskSplineModel:
     def getCurveAtIndex(self, index) -> BezierCurve:
         return self.__curves[index]
 
+    def getSliceOfMaskSpline(self, offset: int) -> List[QPoint]:
+        points: List[QPoint] = list()
+        for i in range(self.numberOfCurves):
+            bezierCurve: BezierCurve = self.getCurveAtIndex(i)
+            for j in range(self.__numberOfSegments + 1):
+                t = j * 1 / self.__numberOfSegments
+                normal: QPoint = bezierCurve.normalAtT(t)
+                magnitudeOfNormal = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
+                finishPoint = bezierCurve.pointAtT(t) + QPoint(offset * normal.x() / magnitudeOfNormal,
+                                                               offset * normal.y() / magnitudeOfNormal)
+                points.append(finishPoint)
+        return points
+
     # TODO: Дублирование вычислений
     def getPointsOfBottomBorder(self) -> List[QPoint]:
         pointsOfBottomBorder: List[QPoint] = list()
@@ -345,9 +358,14 @@ class SolarEditorModel:
         return self.__maskSpline
 
     @property
-    def currentSolarImage(self) -> QImage:
+    def currentSolarImageAsQTImage(self) -> QImage:
         indexOfImage = self.__timeLineModel.indexImage
-        return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage)
+        return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage).qtimage
+
+    @property
+    def currentSolarImageAsFITS(self):
+        indexOfImage = self.__timeLineModel.indexImage
+        return self.__imagesIndexer.getImageInChannelByIndex(indexOfImage).data
 
     def addObserver(self, inObserver):
         self.__observers.append(inObserver)

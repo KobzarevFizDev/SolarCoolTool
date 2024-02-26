@@ -16,6 +16,7 @@ class SolarImage:
 
         hdul = fits.open(self.__path)
         data = hdul[1].data
+        self.__data = data
         hdul.close()
         img_w = data.shape[0]
         img_h = data.shape[1]
@@ -28,7 +29,7 @@ class SolarImage:
               355: sunpy.visualization.colormaps.cm.sdoaia335}[channel]
 
         a = np.array(255 * cm(data), dtype=np.uint8)
-        self.__image = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
+        self.__qtimage = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
         hdul.close()
 
     @property
@@ -48,8 +49,12 @@ class SolarImage:
         return self.__date
 
     @property
-    def image(self):
-        return self.__image
+    def data(self):
+        return self.__data
+
+    @property
+    def qtimage(self):
+        return self.__qtimage
 
 class ImagesIndexer:
     def __init__(self, path):
@@ -162,5 +167,5 @@ class ImagesIndexer:
         self.__connection.close()
         return countImages
 
-    def getImageInChannelByIndex(self, indexInChannel: int) -> QImage:
-        return self.__images[indexInChannel].image
+    def getImageInChannelByIndex(self, indexInChannel: int) -> SolarImage:
+        return self.__images[indexInChannel]

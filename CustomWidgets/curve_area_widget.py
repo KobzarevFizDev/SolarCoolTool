@@ -80,8 +80,21 @@ class CurveAreaWidget(QWidget):
         self.__drawBottomLineOfMask(spline)
         self.__drawTopLineOfMask(spline)
         self.__drawBorderBetweenSection(spline)
+
+        #for i in range(30):
+        #    self.__drawTestSlices(spline, i)
+
         self.__drawControlLines(spline.getCurveAtIndex(0))
 
+    def __drawTestSlices(self, maskSpline: MaskSplineModel, offset):
+        points: List[QPoint] = maskSpline.getSliceOfMaskSpline(offset)
+
+        pen = QPen(Qt.blue, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        for i in range(len(points) - 1):
+            p1: QPoint = points[i]
+            p2: QPoint = points[i + 1]
+            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
+            self.__tempsObjectsOnScene.append(newLine)
 
     def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
         pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
