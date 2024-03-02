@@ -4,12 +4,169 @@ import sqlite3
 from typing import List
 
 import numpy as np
-from PyQt5.QtCore import QPoint
+from PyQt5.QtCore import QPoint, QRect
 import transformations
 import sunpy.visualization.colormaps.cm
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
+
+
+class SolarFrame:
+    def __init__(self,
+                 id: int,
+                 path_to_fits_file: str,
+                 channel: int,
+                 date: str):
+        self.__id: int = id
+        self.__path_to_fits_file: str = path_to_fits_file
+        self.__channel: int = channel
+        self.__date: str = date
+        self.__pixels_array: npt.NDArray = self.__get_pixels_array()
+        self.__qimage = self.__get_qtimage()
+
+
+    @property
+    def id(self) -> int:
+        return self.__id
+
+    @property
+    def channel(self) -> int:
+        return self.__channel
+
+    @property
+    def pixels_array(self) -> npt.NDArray:
+        return self.__pixels_array
+
+    @property
+    def qtimage(self) -> QImage:
+        return self.__qimage
+
+    def get_pixmap_of_solar_region(self,
+                                   top_left: QPoint,
+                                   bottom_right: QPoint) -> QPixmap:
+        rect = QRect(top_left, bottom_right)
+        pixmap_from_origin_frame = QPixmap.fromImage(self.__qimage.copy(rect))
+        scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
+        return scaled_pixmap_of_frame
+
+    def __get_pixels_array(self) -> npt.NDArray:
+        hdul = fits.open(self.__path_to_fits_file)
+        pixels_array = hdul[1].data
+        hdul.close()
+        return pixels_array
+
+    def __get_qtimage(self) -> QImage:
+        img_w = self.__pixels_array.shape[0]
+        img_h = self.__pixels_array.shape[1]
+        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
+              131: sunpy.visualization.colormaps.cm.sdoaia131,
+              171: sunpy.visualization.colormaps.cm.sdoaia171,
+              193: sunpy.visualization.colormaps.cm.sdoaia193,
+              211: sunpy.visualization.colormaps.cm.sdoaia211,
+              304: sunpy.visualization.colormaps.cm.sdoaia304,
+              355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
+
+        a = np.array(255 * cm(self.__pixels_array), dtype=np.uint8)
+        qimage = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
+        return qimage
+
+# todo: Валидацию на корректное значение channel
+class SolarFramesStorage:
+    def __init__(self,
+                 initial_channel: int,
+                 path_to_directory: str):
+        self.__path_to_directory: str = path_to_directory
+        self.__loaded_channel: List[SolarFrame] = list()
+        self.__initialize_database()
+        self.load_channel(initial_channel)
+
+    def __initialize_database(self) -> None:
+        files = self.__get_files_in_directory()
+        channels = self.__get_channels(files)
+        dates = self.__get_dates_of_this_files(files)
+
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        cursor.execute("DROP TABLE IF EXISTS Images")
+        cursor.execute("""
+        CREATE TABLE Images(
+        Id INTEGER PRIMARY KEY,
+        Path TEXT NOT NULL,
+        Channel INTEGER NOT NULL,
+        Date TEXT NOT NULL
+        )
+        """)
+        for i, file in enumerate(files):
+            insert_command = "INSERT INTO Images (Id, Path, Channel, Date) VALUES (?,?,?,?)"
+            insert_data = (i, file, channels[i], dates[i])
+            cursor.execute(insert_command, insert_data)
+        connection.commit()
+        connection.close()
+
+    def __get_files_in_directory(self) -> List[str]:
+        relative_file_paths = list(filter((lambda f: "image" in f), os.listdir(self.__path_to_directory)))
+        absolute_file_paths = [self.__path_to_directory + "\\" + rf for rf in relative_file_paths]
+        return absolute_file_paths
+
+    def __get_channels(self, files) -> List[int]:
+        return [f.split('.')[3] for f in files]
+
+    def __get_dates_of_this_files(self, files) -> List[str]:
+        return [f.split('.')[2][0:10] for f in files]
+
+    def load_channel(self, channel: int) -> None:
+        self.__loaded_channel.clear()
+
+        files = self.__get_files_in_channel(channel)
+        ids = self.__get_ids_of_frames_in_channel(channel)
+        dates = self.__get_dates_of_files_in_channel(channel)
+
+        for i, path in enumerate(files):
+            id = ids[i]
+            date = dates[i]
+            solar_frame = SolarFrame(id, path, channel, date)
+            self.__loaded_channel.append(solar_frame)
+
+    # todo: Валидация параметров
+    def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
+        return self.__loaded_channel[index]
+
+    def get_number_of_frames_in_channel(self, channel: int) -> int:
+        connection = sqlite3.connect("my_database.db")
+        cursor = connection.cursor()
+        command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
+        number_of_images = int(cursor.execute(command).fetchall()[0][0])
+        connection.close()
+        return number_of_images
+
+    def __get_ids_of_frames_in_channel(self, channel: int) -> List[int]:
+        connection = sqlite3.connect("my_database.db")
+        cursor = connection.cursor()
+        command = "SELECT Id FROM Images WHERE Channel = {0}".format(channel)
+        ids = cursor.execute(command).fetchall()
+        ids = [ids[i][0] for i in range(len(ids))]
+        connection.close()
+        return ids
+
+    def __get_files_in_channel(self, channel: int) -> List[str]:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        paths_to_files = cursor.execute(command).fetchall()
+        paths_to_files = [paths_to_files[i][0] for i in range(len(paths_to_files))]
+        connection.close()
+        return paths_to_files
+
+    def __get_dates_of_files_in_channel(self, channel: int) -> List[str]:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
+        dates = cursor.execute(command).fetchall()
+        dates = [dates[i][0] for i in range(len(dates))]
+        connection.close()
+        return dates
+
 
 
 class BezierCurve:
@@ -60,6 +217,10 @@ class BezierMask:
         self.__bezier_curve: BezierCurve = self.__create_initial_bezier_curve()
 
     @property
+    def bezier_curve(self) -> BezierCurve:
+        return self.__bezier_curve
+
+    @property
     def number_of_segments(self) -> int:
         return self.__number_of_segments
 
@@ -78,8 +239,9 @@ class BezierMask:
         for i in range(self.__number_of_segments + 1):
             t = i / self.__number_of_segments
             normal_at_t: QPoint = self.__bezier_curve.normal_at_t(t)
+            point_at_t: QPoint = self.__bezier_curve.point_at_t(t)
             magnitude_of_normal = math.sqrt(normal_at_t.x() ** 2 + normal_at_t.y() ** 2)
-            border_point = normal_at_t + QPoint(self.__width_in_pixels * normal_at_t.x() / magnitude_of_normal,
+            border_point = point_at_t + QPoint(self.__width_in_pixels * normal_at_t.x() / magnitude_of_normal,
                                                 self.__width_in_pixels * normal_at_t.y() / magnitude_of_normal)
             border_points.append(border_point)
         return border_points
@@ -153,12 +315,20 @@ class InterestingSolarRegion:
             raise Exception("Top right point was not selected")
 
     @property
+    def top_left(self) -> QPoint:
+        return QPoint(self.__bottom_left.x(), self.__top_right.y())
+
+    @property
     def bottom_left(self) -> QPoint:
         if self.__bottom_left_point_was_selected:
             self.__bottom_left_point_was_selected = False
             return self.__bottom_left
         else:
             raise Exception("Bottom left point was not selected")
+
+    @property
+    def bottom_right(self) -> QPoint:
+        return QPoint(self.__top_right.x(), self.__bottom_left.y())
 
     def set_top_right(self, point: QPoint) -> None:
         self.__top_right_point_was_selected = True
@@ -229,7 +399,8 @@ class ViewportTransform:
         return viewport_pixel
 
 class TimeLine:
-    def __init__(self):
+    def __init__(self, solar_frames_storage: SolarFramesStorage):
+        self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__number_of_solar_frames_in_current_channel: int = 0
         self.__index_of_current_solar_frame: int = 0
 
@@ -253,142 +424,47 @@ class TimeLine:
             raise Exception("Index of current solar frame cannot be >= number of solar frames in current channel")
         self.__index_of_current_solar_frame = index
 
-
-class SolarFrame:
-    def __init__(self,
-                 id: int,
-                 path_to_fits_file: str,
-                 channel: int,
-                 date: str):
-        self.__id: int = id
-        self.__path_to_fits_file: str = path_to_fits_file
-        self.__channel: int = channel
-        self.__date: str = date
-        self.__pixels_array: npt.NDArray = self.__get_pixels_array()
-        self.__qimage = self.__get_qtimage()
-
-
     @property
-    def id(self) -> int:
-        return self.__id
-
-    @property
-    def channel(self) -> int:
-        return self.__channel
-
-    @property
-    def pixels_array(self) -> npt.NDArray:
-        return self.__pixels_array
-
-    @property
-    def qtimage(self) -> QImage:
-        return self.__qimage
-
-    def __get_pixels_array(self) -> npt.NDArray:
-        hdul = fits.open(self.__path_to_fits_file)
-        pixels_array = hdul[1].data
-        hdul.close()
-        return pixels_array
-
-    def __get_qtimage(self) -> QImage:
-        img_w = self.__pixels_array.shape[0]
-        img_h = self.__pixels_array.shape[1]
-        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
-              131: sunpy.visualization.colormaps.cm.sdoaia131,
-              171: sunpy.visualization.colormaps.cm.sdoaia171,
-              193: sunpy.visualization.colormaps.cm.sdoaia193,
-              211: sunpy.visualization.colormaps.cm.sdoaia211,
-              304: sunpy.visualization.colormaps.cm.sdoaia304,
-              355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
-
-        a = np.array(255 * cm(self.__pixels_array), dtype=np.uint8)
-        qimage = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
-        return qimage
-
-# todo: Валидацию на корректное значение channel
-class SolarFramesStorage:
-    def __init__(self,
-                 initial_channel: int,
-                 path_to_directory: str):
-        self.__path_to_directory: str = path_to_directory
-        self.__loaded_channel: List[SolarFrame] = list()
-        self.__initialize_database()
-        self.load_channel(initial_channel)
-
-    def __initialize_database(self) -> None:
-        files = self.__get_files_in_directory()
-        channels = self.__get_channels(files)
-        dates = self.__get_dates(files)
-
-        connection = sqlite3.connect('my_database.db')
-        cursor = connection.cursor()
-        cursor.execute("DROP TABLE IF EXISTS Images")
-        cursor.execute("""
-        CREATE TABLE Images(
-        Id INTEGER PRIMARY KEY,
-        Path TEXT NOT NULL,
-        Channel INTEGER NOT NULL,
-        Date TEXT NOT NULL
-        )
-        """)
-        for i, file in enumerate(files):
-            insert_command = "INSERT INTO Images (Id, Path, Channel, Date) VALUES (?,?,?,?)"
-            insert_data = (i, file, channels[i], dates[i])
-            cursor.execute(insert_command, insert_data)
-        connection.commit()
-        connection.close()
-
-    def __get_files_in_directory(self) -> List[str]:
-        relative_file_paths = list(filter((lambda f: "image" in f), os.listdir(self.__path_to_directory)))
-        absolute_file_paths = [self.__path_to_directory + "\\" + rf for rf in relative_file_paths]
-        return absolute_file_paths
-
-    def __get_channels(self, files) -> List[int]:
-        return [f.split('.')[3] for f in files]
-
-    def __get_dates(self, files) -> List[str]:
-        return [f.split('.')[2][0:10] for f in files]
-
-    def load_channel(self, channel: int) -> None:
-        self.__loaded_channel.clear()
-
-        files = self.__get_files_in_directory()
-        ids = self.get_ids_of_frames_in_channel(channel)
-        dates = self.__get_dates(files)
-
-        for i, path in enumerate(files):
-            id = ids[i]
-            date = dates[i]
-            solar_frame = SolarFrame(id, path, channel, date)
-            self.__loaded_channel.append(solar_frame)
-
-    def get_number_of_frames_in_channel(self, channel: int) -> int:
-        connection = sqlite3.connect("my_database.db")
-        cursor = connection.cursor()
-        command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
-        number_of_images = int(cursor.execute(command).fetchall()[0][0])
-        connection.close()
-        return number_of_images
-
-    def get_ids_of_frames_in_channel(self, channel: int) -> List[int]:
-        connection = sqlite3.connect("my_database.db")
-        cursor = connection.cursor()
-        command = "SELECT Id FROM Images WHERE Channel = {0}".format(channel)
-        ids = cursor.execute(command).fetchall()
-        ids = [ids[i][0] for i in range(len(ids))]
-        connection.close()
-        return ids
+    def current_solar_frame(self) -> SolarFrame:
+        i = self.__index_of_current_solar_frame
+        return (self.__solar_frames_storage
+                .get_solar_frame_by_index_from_current_channel(i))
 
 
 class AppModel:
     def __init__(self, path_to_files: str):
         self.__solar_frames_storage = SolarFramesStorage(94, path_to_files)
         self.__viewport_transform = ViewportTransform()
-        self.__time_line = TimeLine()
+        self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel()
-        self.__bezierMask = BezierMask()
+        self.__bezier_mask = BezierMask()
+        self.__interesting_solar_region = InterestingSolarRegion()
 
         self.__observers = []
+
+    @property
+    def solar_frames_storage(self) -> SolarFramesStorage:
+        return self.__solar_frames_storage
+
+    @property
+    def viewport_transform(self) -> ViewportTransform:
+        return self.__viewport_transform
+
+    @property
+    def time_line(self) -> TimeLine:
+        return self.__time_line
+
+    @property
+    def current_channel(self) -> CurrentChannel:
+        return self.__current_channel
+
+    @property
+    def bezier_mask(self) -> BezierMask:
+        return self.__bezier_mask
+
+    @property
+    def interesting_solar_region(self) -> InterestingSolarRegion:
+        return self.__interesting_solar_region
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)
@@ -401,4 +477,4 @@ class AppModel:
             channel_need_to_load = self.__current_channel.channel
             self.__solar_frames_storage.load_channel(channel_need_to_load)
         for x in self.__observers:
-            x.modelIsChanged()
+            x.model_is_changed()

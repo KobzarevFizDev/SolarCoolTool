@@ -1,25 +1,23 @@
-import math
 from typing import List
 
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QSlider, QVBoxLayout, QGridLayout, QGraphicsScene, \
-    QGraphicsView, QGraphicsEllipseItem
-from PyQt5.QtGui import QPainter, QPen, QBrush, QPalette, QColor, QPixmap
-from PyQt5.QtCore import Qt, QPoint, pyqtSignal, QRect
+from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
+from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap
+from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
-from CustomWidgets.curve_point_widget import CurvePointWidget
-from CustomWidgets.mask_spline_points_widget import AnchorPointWidget, ControlPointWidget
-from Models.solar_editor_model import MaskSplineModel, BezierCurve, SolarEditorModel
+from CustomWidgets.bezier_points_widget import BezierAnchorPointWidget, BezierControlPointWidget
+from Models.app_models import (BezierMask,
+                               BezierCurve,
+                               AppModel)
 
 
-class CurveAreaWidget(QWidget):
+class BezierMaskWidget(QWidget):
     mousePressSignal = pyqtSignal(int, int)
     mouseReleaseSignal = pyqtSignal(int, int)
     mouseDoubleClickSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
 
     def __init__(self, parent):
-        super(CurveAreaWidget, self).__init__()
+        super(BezierMaskWidget, self).__init__()
         self.setMinimumSize(600, 600)
         self.setMaximumSize(600, 600)
         self.setMouseTracking(True)
@@ -35,17 +33,17 @@ class CurveAreaWidget(QWidget):
         self.view.setGeometry(0, 0, 600, 600)
         self.view.show()
 
-        self.__anchorWidget1: AnchorPointWidget = None
-        self.__anchorWidget2: AnchorPointWidget = None
-        self.__controlWidget1: ControlPointWidget = None
-        self.__controlWidget2: ControlPointWidget = None
+        self.__anchor_widget1: BezierAnchorPointWidget = None
+        self.__anchor_widget2: BezierAnchorPointWidget = None
+        self.__control_widget1: BezierControlPointWidget = None
+        self.__control_widget2: BezierControlPointWidget = None
 
-        defaultPlot = QPixmap(600, 600)
-        defaultPlot.fill(Qt.green)
-        self.__currentPixmapOfPlot = self.scene.addPixmap(defaultPlot)
+        default_plot = QPixmap(600, 600)
+        default_plot.fill(Qt.green)
+        self.__currentPixmapOfPlot = self.scene.addPixmap(default_plot)
 
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
-        self.__tempsObjectsOnScene = []
+        self.__temps_objects_on_scene = []
 
 
 # TODO: Событие колеса мыши необходимо перенести сюда
@@ -61,134 +59,135 @@ class CurveAreaWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def drawMask(self,
-                 spline: MaskSplineModel,
-                 solarEditorModel: SolarEditorModel) -> None:
-        self.__drawPointsWidgets(spline.getCurveAtIndex(0), solarEditorModel)
-        self.__drawBottomLineOfMask(spline)
-        self.__drawTopLineOfMask(spline)
-        self.__drawBorderBetweenSection(spline)
-        self.__drawControlLines(spline.getCurveAtIndex(0))
+    def draw_mask(self,
+                  spline: BezierMask,
+                  app_model: AppModel) -> None:
+        self.__draw_points_widgets(spline.bezier_curve, app_model)
+        self.__draw_bottom_line_of_mask(spline)
+        self.__draw_top_line_of_mask(spline)
+        self.__draw_border_between_section(spline)
+        self.__drawControlLines(spline.bezier_curve)
 
 
-    def updateSolarPlot(self, plot: QPixmap) -> None:
+    def update_solar_plot(self, plot: QPixmap) -> None:
         self.__currentPixmapOfPlot.setPixmap(plot)
 
-    def updateSpline(self, spline: MaskSplineModel) -> None:
-        self.__clearCurrentMask()
-        self.__updatePositionPointsWidgets(spline.getCurveAtIndex(0))
-        self.__drawBottomLineOfMask(spline)
-        self.__drawTopLineOfMask(spline)
-        self.__drawBorderBetweenSection(spline)
+    def update_spline(self, spline: BezierMask) -> None:
+        self.__clear_current_mask()
+        self.__updatePositionPointsWidgets(spline.bezier_curve)
+        self.__draw_bottom_line_of_mask(spline)
+        self.__draw_top_line_of_mask(spline)
+        self.__draw_border_between_section(spline)
 
         #for i in range(30):
         #    self.__drawTestSlices(spline, i)
 
-        self.__drawControlLines(spline.getCurveAtIndex(0))
+        self.__drawControlLines(spline.bezier_curve)
 
-    def __drawTestSlices(self, maskSpline: MaskSplineModel, offset):
-        points: List[QPoint] = maskSpline.getSliceOfMaskSpline(offset)
+    """
+    def __draw_test_slices(self, bezier_mask: BezierMask, offset):
+        points: List[QPoint] = bezier_mask.getSliceOfMaskSpline(offset)
 
         pen = QPen(Qt.blue, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         for i in range(len(points) - 1):
             p1: QPoint = points[i]
             p2: QPoint = points[i + 1]
             newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__tempsObjectsOnScene.append(newLine)
+            self.__temps_objects_on_scene.append(newLine)
+            """
 
-    def __drawBottomLineOfMask(self, maskSpline: MaskSplineModel):
-        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+    def __draw_bottom_line_of_mask(self, bezier_mask: BezierMask):
+        points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
         pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(len(pointsOfBottomBorderMask) - 1):
-            p1: QPoint = pointsOfBottomBorderMask[i]
-            p2: QPoint = pointsOfBottomBorderMask[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__tempsObjectsOnScene.append(newLine)
+        for i in range(len(points_of_bottom_border_mask) - 1):
+            p1: QPoint = points_of_bottom_border_mask[i]
+            p2: QPoint = points_of_bottom_border_mask[i + 1]
+            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
+            self.__temps_objects_on_scene.append(new_line)
 
-    def __drawTopLineOfMask(self, maskSpline: MaskSplineModel):
-        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
+    def __draw_top_line_of_mask(self, bezier_mask: BezierMask):
+        points_of_top_border_mask: List[QPoint] = bezier_mask.get_top_border()
         pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(len(pointsOfTopBorderMask) - 1):
-            p1: QPoint = pointsOfTopBorderMask[i]
-            p2: QPoint = pointsOfTopBorderMask[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__tempsObjectsOnScene.append(newLine)
+        for i in range(len(points_of_top_border_mask) - 1):
+            p1: QPoint = points_of_top_border_mask[i]
+            p2: QPoint = points_of_top_border_mask[i + 1]
+            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
+            self.__temps_objects_on_scene.append(new_line)
 
-    def __drawBorderBetweenSection(self, maskSpline: MaskSplineModel):
-        pointsOfTopBorderMask: List[QPoint] = maskSpline.getPointsOfTopBorder()
-        pointsOfBottomBorderMask: List[QPoint] = maskSpline.getPointsOfBottomBorder()
+    def __draw_border_between_section(self, bezier_mask: BezierMask):
+        points_of_top_border_mask: List[QPoint] = bezier_mask.get_top_border()
+        points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
 
         pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        newLine = self.scene.addLine(pointsOfBottomBorderMask[0].x(),
-                                     pointsOfBottomBorderMask[0].y(),
-                                     pointsOfTopBorderMask[0].x(),
-                                     pointsOfTopBorderMask[0].y(),
-                                     pen)
+        new_line = self.scene.addLine(points_of_bottom_border_mask[0].x(),
+                                      points_of_bottom_border_mask[0].y(),
+                                      points_of_top_border_mask[0].x(),
+                                      points_of_top_border_mask[0].y(),
+                                      pen)
 
-        self.__tempsObjectsOnScene.append(newLine)
+        self.__temps_objects_on_scene.append(new_line)
 
+        new_line = self.scene.addLine(points_of_bottom_border_mask[len(points_of_bottom_border_mask) - 1].x(),
+                                      points_of_bottom_border_mask[len(points_of_bottom_border_mask) - 1].y(),
+                                      points_of_top_border_mask[len(points_of_bottom_border_mask) - 1].x(),
+                                      points_of_top_border_mask[len(points_of_bottom_border_mask) - 1].y(),
+                                      pen)
 
-        newLine = self.scene.addLine(pointsOfBottomBorderMask[len(pointsOfBottomBorderMask) - 1].x(),
-                                     pointsOfBottomBorderMask[len(pointsOfBottomBorderMask) - 1].y(),
-                                     pointsOfTopBorderMask[len(pointsOfBottomBorderMask) - 1].x(),
-                                     pointsOfTopBorderMask[len(pointsOfBottomBorderMask) - 1].y(),
-                                     pen)
-
-        self.__tempsObjectsOnScene.append(newLine)
+        self.__temps_objects_on_scene.append(new_line)
 
         pen = QPen(Qt.white, 1.0, Qt.DotLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(1, len(pointsOfBottomBorderMask) - 1):
-            p1: QPoint = pointsOfTopBorderMask[i]
-            p2: QPoint = pointsOfBottomBorderMask[i]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__tempsObjectsOnScene.append(newLine)
+        for i in range(1, len(points_of_bottom_border_mask) - 1):
+            p1: QPoint = points_of_top_border_mask[i]
+            p2: QPoint = points_of_bottom_border_mask[i]
+            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
+            self.__temps_objects_on_scene.append(new_line)
 
-    def __drawPointsWidgets(self,
-                            bezierCurve: BezierCurve,
-                            solarEditorModel: SolarEditorModel) -> None:
-        p0 = bezierCurve.points[0]
-        p1 = bezierCurve.points[1]
-        p2 = bezierCurve.points[2]
-        p3 = bezierCurve.points[3]
+    def __draw_points_widgets(self,
+                              bezier_curve: BezierCurve,
+                              app_model: AppModel) -> None:
+        p0 = bezier_curve.points[0]
+        p1 = bezier_curve.points[1]
+        p2 = bezier_curve.points[2]
+        p3 = bezier_curve.points[3]
 
-        self.__anchorWidget1 = AnchorPointWidget(p0, solarEditorModel)
-        self.__controlWidget1 = ControlPointWidget(p1, solarEditorModel)
-        self.__controlWidget2 = ControlPointWidget(p2, solarEditorModel)
-        self.__anchorWidget2 = AnchorPointWidget(p3, solarEditorModel)
+        self.__anchor_widget1 = BezierAnchorPointWidget(p0, app_model)
+        self.__control_widget1 = BezierControlPointWidget(p1, app_model)
+        self.__control_widget2 = BezierControlPointWidget(p2, app_model)
+        self.__anchor_widget2 = BezierAnchorPointWidget(p3, app_model)
 
-        self.scene.addItem(self.__anchorWidget1)
-        self.scene.addItem(self.__controlWidget1)
-        self.scene.addItem(self.__anchorWidget2)
-        self.scene.addItem(self.__controlWidget2)
+        self.scene.addItem(self.__anchor_widget1)
+        self.scene.addItem(self.__control_widget1)
+        self.scene.addItem(self.__anchor_widget2)
+        self.scene.addItem(self.__control_widget2)
 
 
-    def __clearCurrentMask(self) -> None:
-        for item in self.__tempsObjectsOnScene:
+    def __clear_current_mask(self) -> None:
+        for item in self.__temps_objects_on_scene:
             self.scene.removeItem(item)
 
-        self.__tempsObjectsOnScene.clear()
+        self.__temps_objects_on_scene.clear()
 
-    def __drawControlLines(self, bezierCurve: BezierCurve) -> None:
-        p0: QPoint = bezierCurve.points[0]
-        p1: QPoint = bezierCurve.points[1]
-        p2: QPoint = bezierCurve.points[2]
-        p3: QPoint = bezierCurve.points[3]
+    def __drawControlLines(self, bezier_curve: BezierCurve) -> None:
+        p0: QPoint = bezier_curve.points[0]
+        p1: QPoint = bezier_curve.points[1]
+        p2: QPoint = bezier_curve.points[2]
+        p3: QPoint = bezier_curve.points[3]
 
         pen = QPen(Qt.red, 3.0, Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
 
-        controlLine1 = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y(), pen)
-        controlLine2 = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y(), pen)
+        control_line1 = self.scene.addLine(p0.x(), p0.y(), p1.x(), p1.y(), pen)
+        control_line2 = self.scene.addLine(p3.x(), p3.y(), p2.x(), p2.y(), pen)
 
-        self.__tempsObjectsOnScene.append(controlLine1)
-        self.__tempsObjectsOnScene.append(controlLine2)
+        self.__temps_objects_on_scene.append(control_line1)
+        self.__temps_objects_on_scene.append(control_line2)
 
-    def __updatePositionPointsWidgets(self, bezierCurve: BezierCurve) -> None:
-        p0: QPoint = bezierCurve.points[0]
-        p1: QPoint = bezierCurve.points[1]
-        p2: QPoint = bezierCurve.points[2]
-        p3: QPoint = bezierCurve.points[3]
+    def __updatePositionPointsWidgets(self, bezier_curve: BezierCurve) -> None:
+        p0: QPoint = bezier_curve.points[0]
+        p1: QPoint = bezier_curve.points[1]
+        p2: QPoint = bezier_curve.points[2]
+        p3: QPoint = bezier_curve.points[3]
 
-        self.__anchorWidget1.setPos(p0)
-        self.__controlWidget1.setPos(p1)
-        self.__controlWidget2.setPos(p2)
-        self.__anchorWidget2.setPos(p3)
+        self.__anchor_widget1.setPos(p0)
+        self.__control_widget1.setPos(p1)
+        self.__control_widget2.setPos(p2)
+        self.__anchor_widget2.setPos(p3)

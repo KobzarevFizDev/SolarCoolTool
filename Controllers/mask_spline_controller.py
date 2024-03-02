@@ -2,31 +2,21 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QPoint
 
-from Views.curve_area_view import CurveAreaView
+from Views.bezier_mask_view import BezierMaskView
 
 if TYPE_CHECKING:
-    from Models.solar_editor_model import SolarEditorModel
+    from Models.app_models import AppModel
 
 
-class MaskSplineConroller:
+class BezierMaskController:
     def __init__(self, model, mainAppWindow):
-        self.model: SolarEditorModel = model
-        self.view = CurveAreaView(self, model, mainAppWindow)
+        self.model: AppModel = model
+        self.view = BezierMaskView(self, model, mainAppWindow)
 
-    def createNewPoint(self, x, y):
-        newPoint = QPoint(x, y)
-        self.model.maskSpline.addAnchor(newPoint)
-        self.model.notifyObservers()
-        return newPoint
+    def increase_number_of_segments(self):
+        self.model.bezier_mask.increase_number_of_segments()
+        self.model.notify_observers()
 
-    def deletePoint(self, point):
-        self.model.maskSpline.removeLastAnchor()
-        self.model.notifyObservers()
-
-    def increaseNumberOfSegments(self):
-        self.model.maskSpline.increaseNumberOfSegments()
-        self.model.notifyObservers()
-
-    def decreaseNumberOfSegments(self):
-        self.model.maskSpline.decreaseNumberOfSegments()
-        self.model.notifyObservers()
+    def decrease_number_of_segments(self):
+        self.model.bezier_mask.decrease_number_of_segments()
+        self.model.notify_observers()

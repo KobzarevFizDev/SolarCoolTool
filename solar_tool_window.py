@@ -10,13 +10,13 @@ from Controllers.time_line_controller import TimeLineController
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
 
 from Controllers.solar_viewer_controller import SolarViewerController
-from Controllers.mask_spline_controller import MaskSplineConroller
+from Controllers.mask_spline_controller import BezierMaskController
 
 from images_indexer import ImagesIndexer
 
 from Models.solar_editor_model import SolarEditorModel
 
-
+from Models.app_models import AppModel, SolarFramesStorage
 
 class CurveEditorWindow(QMainWindow):
     def __init__(self):
@@ -25,7 +25,11 @@ class CurveEditorWindow(QMainWindow):
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
+        app_model = AppModel("C:\\SolarImages")
 
+        self.__bezier_mask_controller = BezierMaskController(app_model, self)
+
+        """
         indexer = ImagesIndexer("C:\\SolarImages")
         indexer.indexContents()
 
@@ -38,7 +42,7 @@ class CurveEditorWindow(QMainWindow):
         self.solarViewerController = SolarViewerController(self.solarEditorModel, self)
         self.timeLineController = TimeLineController(self.solarEditorModel, self)
         self.channelSwitchController = ChannelSwitchController(self.solarEditorModel, self)
-
+        """
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
