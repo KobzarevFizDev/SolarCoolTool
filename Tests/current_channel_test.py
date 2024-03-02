@@ -1,5 +1,6 @@
 from unittest import main, TestCase
-from Models.models import CurrentChannel
+from Models.app_models import CurrentChannel
+
 
 class CurrentChannelTest(TestCase):
     def test_change_to_available_channel(self) -> None:

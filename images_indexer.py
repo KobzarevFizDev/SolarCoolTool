@@ -17,6 +17,7 @@ class SolarImage:
         hdul = fits.open(self.__path)
         data = hdul[1].data
         self.__data = data
+        print(type(data))
         hdul.close()
         img_w = data.shape[0]
         img_h = data.shape[1]

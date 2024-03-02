@@ -1,5 +1,5 @@
 from unittest import main, TestCase
-from Models.models import BezierMask
+from Models.app_models import BezierMask
 
 class BezierMaskTest(TestCase):
     def test_increase_number_of_segments(self) -> None:

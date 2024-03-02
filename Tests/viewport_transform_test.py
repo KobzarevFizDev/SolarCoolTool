@@ -1,8 +1,7 @@
 from unittest import main, TestCase
-
 from PyQt5.QtCore import QPoint
+from Models.app_models import ViewportTransform
 
-from Models.models import ViewportTransform
 
 class ViewportTransformTest(TestCase):
     def setUp(self) -> None:

@@ -2,7 +2,7 @@ from unittest import main, TestCase
 
 from PyQt5.QtCore import QPoint
 
-from Models.models import InterestingSolarRegion
+from Models.app_models import InterestingSolarRegion
 
 class InterestingSolarRegionTest(TestCase):
     def test_align_to_square(self) -> None:
