@@ -18,6 +18,7 @@ class SolarViewportView:
         self.widget.wheelScrollSignal.connect(self.zoom)
         self.widget.mouseMoveSignal.connect(self.move)
         self.widget.plotWasAllocatedSignal.connect(self.on_select_plot)
+        self.controller.select_plot_of_image(QPoint(0, 600), QPoint(600, 0))
 
     def zoom(self, x, y):
         if y > 0:
@@ -29,9 +30,8 @@ class SolarViewportView:
         self.controller.move_solar_image(QPoint(x, y))
 
     def on_select_plot(self, top_right_point: QPoint, bottom_left_point: QPoint):
-        print("zone_interesting: {0} <-> {1}".format(top_right_point, bottom_left_point))
+        print(top_right_point, bottom_left_point)
         self.controller.select_plot_of_image(top_right_point, bottom_left_point)
-        #self.controller.select_plot_of_image(topLeftPoint, bottomRightPoint)
 
     def model_is_changed(self):
         solar_frame = self.model.time_line.current_solar_frame
@@ -42,13 +42,3 @@ class SolarViewportView:
         bottom_right = self.model.interesting_solar_region.bottom_right_in_view
         self.widget.set_selected_zone_interesting(top_left, bottom_right)
         self.widget.update_widget()
-"""
-    def modelIsChanged(self):
-        solarImage = self.model.currentSolarImageAsQTImage
-        scale = self.model.solarViewModel.zoom * self.model.solarViewModel.originImageScale
-        offset = self.model.solarViewModel.offset
-        zoom = self.model.solarViewModel.zoom
-        self.widget.displayImage(solarImage, scale, zoom, offset)
-        tp, br = self.model.solarViewModel.selectedPlotInView
-        self.widget.displaySelectedPlot(tp, br)
-"""

@@ -1,8 +1,6 @@
 import sys
 
 from PyQt5 import QtCore
-from mask_exporter import MaskExporter
-from result_exporter import ResultExporter
 
 from Controllers.channel_switch_controller import ChannelSwitchController
 from Controllers.time_line_controller import TimeLineController
@@ -12,11 +10,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGr
 from Controllers.solar_viewer_controller import SolarViewportController
 from Controllers.mask_spline_controller import BezierMaskController
 
-from images_indexer import ImagesIndexer
-
-from Models.solar_editor_model import SolarEditorModel
-
-from Models.app_models import AppModel, SolarFramesStorage
+from Models.app_models import AppModel
 
 class CurveEditorWindow(QMainWindow):
     def __init__(self):

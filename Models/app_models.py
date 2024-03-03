@@ -24,6 +24,7 @@ class SolarFrame:
         self.__date: str = date
         self.__pixels_array: npt.NDArray = self.__get_pixels_array()
         self.__qimage = self.__get_qtimage()
+        self.__viewport_transform: ViewportTransform = None
 
 
     @property
@@ -42,10 +43,17 @@ class SolarFrame:
     def qtimage(self) -> QImage:
         return self.__qimage
 
+    def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
+        self.__viewport_transform = viewport_transform
+
     def get_pixmap_of_solar_region(self,
-                                   top_left: QPoint,
-                                   bottom_right: QPoint) -> QPixmap:
-        rect = QRect(top_left, bottom_right)
+                                   top_left_in_view: QPoint,
+                                   bottom_right_in_view: QPoint) -> QPixmap:
+        top_left_in_image = (self.__viewport_transform
+                             .transform_from_viewport_pixel_to_image_pixel(top_left_in_view))
+        bottom_right_in_image = (self.__viewport_transform
+                                 .transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view))
+        rect = QRect(top_left_in_image, bottom_right_in_image)
         pixmap_from_origin_frame = QPixmap.fromImage(self.__qimage.copy(rect))
         scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
         return scaled_pixmap_of_frame
@@ -75,7 +83,9 @@ class SolarFrame:
 class SolarFramesStorage:
     def __init__(self,
                  initial_channel: int,
-                 path_to_directory: str):
+                 path_to_directory: str,
+                 viewport_transform: 'ViewportTransform'):
+        self.__viewport_transform = viewport_transform
         self.__current_channel: int = initial_channel
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
@@ -128,6 +138,7 @@ class SolarFramesStorage:
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
+            solar_frame.set_viewport_transform(self.__viewport_transform)
             self.__loaded_channel.append(solar_frame)
 
     # todo: Валидация параметров
@@ -349,7 +360,7 @@ class InterestingSolarRegion:
     @property
     def top_right_in_view(self) -> QPoint:
         if self.__top_right_point_was_selected:
-            self.__top_right_point_was_selected = False
+            #self.__top_right_point_was_selected = False
             return self.__top_right_in_view
         else:
             raise Exception("Top right point was not selected")
@@ -361,7 +372,7 @@ class InterestingSolarRegion:
     @property
     def bottom_left_in_view(self) -> QPoint:
         if self.__bottom_left_point_was_selected:
-            self.__bottom_left_point_was_selected = False
+            #self.__bottom_left_point_was_selected = False
             return self.__bottom_left_in_view
         else:
             raise Exception("Bottom left point was not selected")
@@ -459,6 +470,7 @@ class TimeLine:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception("Index of current solar frame cannot be >= number of solar frames in current channel")
+
         self.__index_of_current_solar_frame = new_index
 
     @property
@@ -470,8 +482,8 @@ class TimeLine:
 
 class AppModel:
     def __init__(self, path_to_files: str):
-        self.__solar_frames_storage = SolarFramesStorage(94, path_to_files)
         self.__viewport_transform = ViewportTransform()
+        self.__solar_frames_storage = SolarFramesStorage(94, path_to_files, self.__viewport_transform)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage)
         self.__bezier_mask = BezierMask()

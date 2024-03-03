@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from PyQt5.QtCore import QRect, QPoint
 from PyQt5.QtGui import QImage, QPixmap
 
-from CustomWidgets.curve_area_widget import BezierMaskWidget
+from CustomWidgets.bezier_mask_widget import BezierMaskWidget
 
 if TYPE_CHECKING:
     from Models.app_models import AppModel, SolarFrame
@@ -21,8 +21,8 @@ class BezierMaskView:
 
     def model_is_changed(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame
-        top_left: QPoint = self.model.interesting_solar_region.top_left_in_view
-        bottom_right: QPoint = self.model.interesting_solar_region.bottom_right_in_view
-        pixmap_of_interesting_solar_region = current_solar_frame.get_pixmap_of_solar_region(top_left, bottom_right)
+        top_right: QPoint = self.model.interesting_solar_region.top_right_in_view
+        bottom_left: QPoint = self.model.interesting_solar_region.bottom_left_in_view
+        pixmap_of_interesting_solar_region = current_solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
         self.widget.update_solar_plot(pixmap_of_interesting_solar_region)
         self.widget.update_spline(self.model.bezier_mask)
