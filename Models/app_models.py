@@ -76,6 +76,7 @@ class SolarFramesStorage:
     def __init__(self,
                  initial_channel: int,
                  path_to_directory: str):
+        self.__current_channel: int = initial_channel
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
         self.__initialize_database()
@@ -116,6 +117,7 @@ class SolarFramesStorage:
         return [f.split('.')[2][0:10] for f in files]
 
     def load_channel(self, channel: int) -> None:
+        self.__current_channel = channel
         self.__loaded_channel.clear()
 
         files = self.__get_files_in_channel(channel)
@@ -135,10 +137,29 @@ class SolarFramesStorage:
     def get_number_of_frames_in_channel(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
         cursor = connection.cursor()
-        command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
+        command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
         number_of_images = int(cursor.execute(command).fetchall()[0][0])
         connection.close()
         return number_of_images
+
+    def get_number_of_frames_in_current_channel(self) -> int:
+        return len(self.__loaded_channel)
+    
+    def is_exist_solar_frames_in_channel(self, channel: int) -> bool:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        frames = cursor.execute(command).fetchall()
+        connection.close()
+        return len(frames) > 0
+    
+    def is_exist_solar_frames_in_current_channel(self) -> bool:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(self.__current_channel)
+        frames = cursor.execute(command).fetchall()
+        connection.close()
+        return len(frames) > 0
 
     def __get_ids_of_frames_in_channel(self, channel: int) -> List[int]:
         connection = sqlite3.connect("my_database.db")
@@ -265,13 +286,31 @@ class BezierMask:
             self.__number_of_segments = self.__min_number_of_segments
 
 
+# todo: присвоение начального канала является ошибкой, нужно также убиться что данный канал есть на диске
 class CurrentChannel:
-    def __init__(self, initial_channel=94):
-        self.__available_channels = [94, 131, 171, 193, 211, 355]
+    def __init__(self, solar_frames_storage: SolarFramesStorage, initial_channel=94):
+        self.__solar_frames_storage = solar_frames_storage
+        self.__total_channels_of_sdo = [94, 131, 171, 193, 211, 355]
         self.__current_channel: int = initial_channel \
-            if self.__is_this_channel_available(initial_channel) \
-            else self.__available_channels[0]
+            if self.__is_this_channel_valid(initial_channel) \
+            else self.__total_channels_of_sdo[0]
         self.__current_channel_was_changed: bool = False
+
+    @property
+    def available_channels(self) -> List[int]:
+        available_channels_list = list()
+        for channel in self.__total_channels_of_sdo:
+            if self.__solar_frames_storage.is_exist_solar_frames_in_channel(channel):
+                available_channels_list.append(channel)
+        return available_channels_list
+
+    @property
+    def not_available_channels(self) -> List[int]:
+        not_available_channels_list = list()
+        for channel in self.__total_channels_of_sdo:
+            if not self.__solar_frames_storage.is_exist_solar_frames_in_channel(channel):
+                not_available_channels_list.append(channel)
+        return not_available_channels_list
 
     @property
     def channel(self) -> int:
@@ -279,7 +318,7 @@ class CurrentChannel:
 
     @channel.setter
     def channel(self, new_channel) -> None:
-        if self.__is_this_channel_available(new_channel):
+        if self.__is_this_channel_valid(new_channel):
             self.__current_channel = new_channel
         else:
             raise Exception("This channel = {0} isn't correct".format(new_channel))
@@ -292,68 +331,70 @@ class CurrentChannel:
 
     @property
     def number_of_images_in_current_channel(self) -> int:
-        return 100
+        channel = self.__current_channel
+        return self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
 
-    def __is_this_channel_available(self, channel: int) -> bool:
-        return channel in self.__available_channels
+    def __is_this_channel_valid(self, channel: int) -> bool:
+        return channel in self.__total_channels_of_sdo
 
 
 class InterestingSolarRegion:
     def __init__(self):
-        self.__top_right: QPoint = QPoint(600, 0)
-        self.__bottom_left: QPoint = QPoint(0, 600)
+        self.__top_right_in_view: QPoint = QPoint(600, 0)
+        self.__bottom_left_in_view: QPoint = QPoint(0, 600)
 
         self.__top_right_point_was_selected: bool = False
         self.__bottom_left_point_was_selected: bool = False
 
     @property
-    def top_right(self) -> QPoint:
+    def top_right_in_view(self) -> QPoint:
         if self.__top_right_point_was_selected:
             self.__top_right_point_was_selected = False
-            return self.__top_right
+            return self.__top_right_in_view
         else:
             raise Exception("Top right point was not selected")
 
     @property
-    def top_left(self) -> QPoint:
-        return QPoint(self.__bottom_left.x(), self.__top_right.y())
+    def top_left_in_view(self) -> QPoint:
+        return QPoint(self.__bottom_left_in_view.x(), self.__top_right_in_view.y())
 
     @property
-    def bottom_left(self) -> QPoint:
+    def bottom_left_in_view(self) -> QPoint:
         if self.__bottom_left_point_was_selected:
             self.__bottom_left_point_was_selected = False
-            return self.__bottom_left
+            return self.__bottom_left_in_view
         else:
             raise Exception("Bottom left point was not selected")
 
     @property
-    def bottom_right(self) -> QPoint:
-        return QPoint(self.__top_right.x(), self.__bottom_left.y())
+    def bottom_right_in_view(self) -> QPoint:
+        return QPoint(self.__top_right_in_view.x(), self.__bottom_left_in_view.y())
 
-    def set_top_right(self, point: QPoint) -> None:
+    def set_top_right_in_view(self, point: QPoint) -> None:
         self.__top_right_point_was_selected = True
-        self.__top_right = point
+        self.__top_right_in_view = point
         if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
             self.__align_to_square_if_necessary()
 
-    def set_bottom_left(self, point: QPoint) -> None:
+    def set_bottom_left_in_view(self, point: QPoint) -> None:
         self.__bottom_left_point_was_selected = True
-        self.__bottom_left = point
+        self.__bottom_left_in_view = point
         if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
             self.__align_to_square_if_necessary()
 
     def __align_to_square_if_necessary(self) -> None:
-        x_side_size = self.__top_right.x() - self.__bottom_left.x()
-        y_side_size = self.__bottom_left.y() - self.__top_right.y()
+        x_side_size = self.__bottom_left_in_view.x() - self.__top_right_in_view.x()
+        y_side_size = self.__top_right_in_view.y() - self.__bottom_left_in_view.y()
         side_size = (x_side_size + y_side_size)/2
         half_side_size = side_size/2
-        center_of_square = QPoint(int((self.__top_right.x() + self.__bottom_left.x())/2),
-                                  int((self.__top_right.x() + self.__bottom_left.y())/2))
+        center_of_square = QPoint(int((self.__top_right_in_view.x() + self.__bottom_left_in_view.x()) / 2),
+                                  int((self.__top_right_in_view.y() + self.__bottom_left_in_view.y()) / 2))
 
-        self.__top_right = QPoint(int(center_of_square.x() + half_side_size),
-                                  int(center_of_square.y() + half_side_size))
-        self.__bottom_left = QPoint(int(center_of_square.x() - half_side_size),
-                                    int(center_of_square.y() - half_side_size))
+        self.__top_right_in_view = QPoint(int(center_of_square.x() + half_side_size),
+                                          int(center_of_square.y() + half_side_size))
+        self.__bottom_left_in_view = QPoint(int(center_of_square.x() - half_side_size),
+                                            int(center_of_square.y() - half_side_size))
+
 
 
 # todo: Подумать над названием
@@ -398,31 +439,27 @@ class ViewportTransform:
                                                                             self.__offset)
         return viewport_pixel
 
+    def get_transformed_pixmap_for_viewport(self, solar_frame: SolarFrame) -> QPixmap:
+        scale = self.__zoom * self.__origin_size_image
+        scaled_solar_frame = solar_frame.qtimage.scaled(scale, scale)
+        pixmap_for_draw = QPixmap.fromImage(scaled_solar_frame)
+        return pixmap_for_draw
+
 class TimeLine:
     def __init__(self, solar_frames_storage: SolarFramesStorage):
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
-        self.__number_of_solar_frames_in_current_channel: int = 0
         self.__index_of_current_solar_frame: int = 0
-
-    @property
-    def number_of_solar_frames_in_current_channel(self) -> int:
-        return self.__number_of_solar_frames_in_current_channel
-
-    @number_of_solar_frames_in_current_channel.setter
-    def number_of_solar_frames_in_current_channel(self, value) -> None:
-        if value < 0:
-            raise Exception("Number of solar frames cannot be negative")
-        self.__number_of_solar_frames_in_current_channel = value
 
     @property
     def index_of_current_solar_frame(self) -> int:
         return self.__index_of_current_solar_frame
 
     @index_of_current_solar_frame.setter
-    def index_of_current_solar_frame(self, index) -> None:
-        if index >= self.__number_of_solar_frames_in_current_channel:
+    def index_of_current_solar_frame(self, new_index) -> None:
+        number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
+        if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception("Index of current solar frame cannot be >= number of solar frames in current channel")
-        self.__index_of_current_solar_frame = index
+        self.__index_of_current_solar_frame = new_index
 
     @property
     def current_solar_frame(self) -> SolarFrame:
@@ -436,7 +473,7 @@ class AppModel:
         self.__solar_frames_storage = SolarFramesStorage(94, path_to_files)
         self.__viewport_transform = ViewportTransform()
         self.__time_line = TimeLine(self.__solar_frames_storage)
-        self.__current_channel = CurrentChannel()
+        self.__current_channel = CurrentChannel(self.__solar_frames_storage)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
 

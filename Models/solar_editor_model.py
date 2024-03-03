@@ -340,7 +340,6 @@ class SolarEditorModel:
         self.__currentChannelModel = CurrentChannelModel(indexer)
         self.__maskSpline = MaskSplineModel()
 
-
     @property
     def solarViewModel(self):
         return self.__solarViewModel

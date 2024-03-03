@@ -1,32 +1,29 @@
 from PyQt5.QtCore import QPoint
 
-from Views.solar_viewer_view import SolarViewerView
-from Models.solar_editor_model import SolarEditorModel
+from Views.solar_viewer_view import SolarViewportView
+from Models.app_models import AppModel
 
-class SolarViewerController:
+class SolarViewportController:
     def __init__(self, model, mainAppWindow):
-        self.model: SolarEditorModel = model
-        self.view = SolarViewerView(self, model, mainAppWindow)
+        self.model: AppModel = model
+        self.view = SolarViewportView(self, model, mainAppWindow)
 
-    def moveImage(self, deltaPosition) -> None:
-        self.model.solarViewModel.moveImage(deltaPosition)
-        self.model.notifyObservers()
+    def increase_zoom(self, delta) -> None:
+        self.model.viewport_transform.zoom += delta
+        self.model.notify_observers()
 
-    def increaseZoom(self, delta) -> None:
-        self.model.solarViewModel.changeZoom(delta)
-        self.model.notifyObservers()
+    def decrease_zoom(self, delta) -> None:
+        self.model.viewport_transform.zoom -= delta
+        self.model.notify_observers()
 
+    def move_solar_image(self, delta) -> None:
+        self.model.viewport_transform.offset += delta
+        self.model.notify_observers()
 
-    def decreaseZoom(self, delta) -> None:
-        self.model.solarViewModel.changeZoom(-delta)
-        self.model.notifyObservers()
+    def select_plot_of_image(self,
+                             top_right_point_in_view: QPoint,
+                             bottom_left_point_in_view: QPoint) -> None:
+        self.model.interesting_solar_region.set_top_right_in_view(top_right_point_in_view)
+        self.model.interesting_solar_region.set_bottom_left_in_view(bottom_left_point_in_view)
+        self.model.notify_observers()
 
-    def moveSolarImage(self, delta) -> None:
-        self.model.solarViewModel.changeOffsetSolarPreviewImage(delta)
-        self.model.notifyObservers()
-
-    def selectPlotOfImage(self,
-                          topLeftPointInView: QPoint,
-                          bottomRightPointInView: QPoint) -> None:
-        self.model.solarViewModel.selectPlotOfImage(topLeftPointInView, bottomRightPointInView)
-        self.model.notifyObservers()

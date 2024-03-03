@@ -6,7 +6,7 @@ minValueOfTimeLineSlider = 0
 maxValueOfTimeLineSlider = 200
 
 class TimeLineWidget(QWidget):
-    selectedImageInChannel = pyqtSignal(int)
+    selected_image_in_channel = pyqtSignal(int)
     def __init__(self, parent):
         super(TimeLineWidget, self).__init__()
         self.setMinimumSize(1000, 300)
@@ -21,18 +21,16 @@ class TimeLineWidget(QWidget):
         self.setLayout(layout)
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(minValueOfTimeLineSlider,maxValueOfTimeLineSlider)
-        self.slider.valueChanged.connect(self.changeValueOfSlider)
+        self.slider.valueChanged.connect(self.change_value_of_slider)
         layout.addWidget(self.slider)
-        #self.setNumberImagesInChannel(181)
+        #self.set_number_images_in_channel(181)
 
-    def setNumberImagesInChannel(self, numberOfImagesInChannel: int):
-        self.numberOfImagesInChannel = numberOfImagesInChannel
+    def set_number_images_in_channel(self, number_of_images_in_channel: int):
+        self.number_of_images_in_channel = number_of_images_in_channel
 
-    def changeValueOfSlider(self, value):
-        step = (self.numberOfImagesInChannel-1)/maxValueOfTimeLineSlider
-        indexOfImage = int(value*step)
-        self.selectedImageInChannel.emit(indexOfImage)
-
-
+    def change_value_of_slider(self, value):
+        step = (self.number_of_images_in_channel - 1) / maxValueOfTimeLineSlider
+        index_of_image = int(value*step)
+        self.selected_image_in_channel.emit(index_of_image)
 
 

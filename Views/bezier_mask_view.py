@@ -21,8 +21,8 @@ class BezierMaskView:
 
     def model_is_changed(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame
-        top_left: QPoint = self.model.interesting_solar_region.top_left
-        bottom_right: QPoint = self.model.interesting_solar_region.bottom_right
+        top_left: QPoint = self.model.interesting_solar_region.top_left_in_view
+        bottom_right: QPoint = self.model.interesting_solar_region.bottom_right_in_view
         pixmap_of_interesting_solar_region = current_solar_frame.get_pixmap_of_solar_region(top_left, bottom_right)
         self.widget.update_solar_plot(pixmap_of_interesting_solar_region)
         self.widget.update_spline(self.model.bezier_mask)
