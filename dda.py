@@ -5,24 +5,24 @@ from PyQt5.QtCore import QPoint
 
 
 def main():
-    raster = createRaster(10)
+    raster = create_raster(10)
     DDALine(raster, 1, 1, 9, 9)
-    showRaster(raster, 10)
+    show_raster(raster, 10)
 
-def createRaster(size):
+def create_raster(size):
     raster = ['[ ]'] * size # создает одномерный массив длинной size
     for i in range(size):
         raster[i] = ['[ ]'] * size
     return raster
 
-def showRaster(raster, size):
+def show_raster(raster, size):
     for x in range(size):
         line = ""
         for y in range(size):
             line += str(raster[x][y])
         print(line)
 
-def getRasterOfLine(x1, y1, x2, y2) -> List[QPoint]:
+def get_pixels_of_line(x1, y1, x2, y2) -> List[QPoint]:
     L = max(abs(round(x1) - round(x2)), abs(round(y1) - round(y2)))
     delta_x = (x2 - x1)/L
     delta_y = (y2 - y1)/L
@@ -49,11 +49,11 @@ def DDALine(raster, x1, y1, x2, y2):
     while L > 0:
         x += delta_x
         y += delta_y
-        setPixelInRaster(raster, round(x), round(y), '[*]')
+        set_pixel_in_raster(raster, round(x), round(y), '[*]')
         L -= 1
 
 
-def setPixelInRaster(raster, x, y, symbol):
+def set_pixel_in_raster(raster, x, y, symbol):
     print("set {0} {1}".format(x, y))
     raster[x][y] = symbol
 

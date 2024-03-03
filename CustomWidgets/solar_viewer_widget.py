@@ -3,8 +3,6 @@ from PyQt5.QtWidgets import QLabel, QWidget
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 
-from IOSolarData import imagesStorage
-
 
 class SolarViewerWidget(QWidget):
     wheelScrollSignal = pyqtSignal(int, int)
@@ -30,23 +28,6 @@ class SolarViewerWidget(QWidget):
 
         self.__previous_x: int = -1
         self.__previous_y: int = -1
-
-        """
-        self.__scale: int = 600
-        self.__offset: QPoint = QPoint(0, 0)
-        self.__previousX: int = -1
-        self.__previousY: int = -1
-        self.__zoom: float = 1
-        self.__isMoved: bool = False
-
-        self.__firstPointOfPlotWasSelected: bool = False
-
-        self.__topLeftPointOfSelectedPlot: QPoint = QPoint(-1, -1)
-        self.__bottomRightPointOfSelectedPlot: QPoint = QPoint(-1, -1)
-
-        i = imagesStorage.ImagesStorage()
-        self.displayImage(i.read_image_by_index(1), 600,1, QPoint(0,0))
-        """
 
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap

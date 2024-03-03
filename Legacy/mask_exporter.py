@@ -5,7 +5,7 @@ from transformations import transform_point_from_view_to_image
 from PyQt5.QtCore import QPoint
 
 if TYPE_CHECKING:
-    from Models.solar_editor_model import SolarEditorModel
+    from Legacy.solar_editor_model import SolarEditorModel
 
 # todo: класс должен содержить метод, возращающий содержащий прямоугольник
 class TrianglePolygon:

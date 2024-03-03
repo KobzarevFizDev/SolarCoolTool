@@ -90,7 +90,7 @@ class SolarFramesStorage:
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
         self.__initialize_database()
-        self.load_channel(initial_channel)
+        self.cache_channel(initial_channel)
 
     def __initialize_database(self) -> None:
         files = self.__get_files_in_directory()
@@ -126,7 +126,23 @@ class SolarFramesStorage:
     def __get_dates_of_this_files(self, files) -> List[str]:
         return [f.split('.')[2][0:10] for f in files]
 
-    def load_channel(self, channel: int) -> None:
+    def __load_channel(self, channel: int) -> List[SolarFrame]:
+        files = self.__get_files_in_channel(channel)
+        ids = self.__get_ids_of_frames_in_channel(channel)
+        dates = self.__get_dates_of_files_in_channel(channel)
+
+        solar_frames_of_channel = list()
+        for i, path in enumerate(files):
+            id = ids[i]
+            date = dates[i]
+            solar_frame = SolarFrame(id, path, channel, date)
+            solar_frame.set_viewport_transform(self.__viewport_transform)
+            solar_frames_of_channel.append(solar_frame)
+
+        return solar_frames_of_channel
+
+    # todo: Дублирование кода с методом __load_channel
+    def cache_channel(self, channel: int) -> None:
         self.__current_channel = channel
         self.__loaded_channel.clear()
 
@@ -144,6 +160,9 @@ class SolarFramesStorage:
     # todo: Валидация параметров
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
         return self.__loaded_channel[index]
+
+    def get_solar_frame_by_index_from_channel(self, channel: int, index: int) -> SolarFrame:
+        return self.__load_channel(channel)[index]
 
     def get_number_of_frames_in_channel(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
@@ -249,6 +268,10 @@ class BezierMask:
         self.__bezier_curve: BezierCurve = self.__create_initial_bezier_curve()
 
     @property
+    def width_in_pixels(self) -> int:
+        return self.__width_in_pixels
+
+    @property
     def bezier_curve(self) -> BezierCurve:
         return self.__bezier_curve
 
@@ -262,9 +285,6 @@ class BezierMask:
                                    QPoint(300, 150),
                                    QPoint(400, 300))
         return bezier_curve
-
-    def __get_longitudinal_slice(self):
-        pass
 
     def get_top_border(self) -> List[QPoint]:
         border_points: List[QPoint] = list()
@@ -524,6 +544,6 @@ class AppModel:
     def notify_observers(self):
         if self.__current_channel.current_channel_was_changed:
             channel_need_to_load = self.__current_channel.channel
-            self.__solar_frames_storage.load_channel(channel_need_to_load)
+            self.__solar_frames_storage.cache_channel(channel_need_to_load)
         for x in self.__observers:
             x.model_is_changed()

@@ -1,9 +1,9 @@
-from dda import getRasterOfLine
+from dda import get_pixels_of_line
 from typing import TYPE_CHECKING, List
 from PyQt5.QtCore import QPoint
 
 if TYPE_CHECKING:
-    from Models.solar_editor_model import SolarEditorModel
+    from Legacy.solar_editor_model import SolarEditorModel
 
 class ResultExporter:
     def __init__(self, solarEditorModel):
@@ -34,7 +34,7 @@ class ResultExporter:
             p2x = int(p2.x())
             p2y = int(p2.y())
 
-            raster += getRasterOfLine(p1x, p1y, p2x, p2y)
+            raster += get_pixels_of_line(p1x, p1y, p2x, p2y)
         return raster
 
     def __createResult2dArray(self, slices: List[List[QPoint]]):

@@ -1,11 +1,10 @@
 import math
 from typing import List
 
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QImage, QPixmap
-from scipy.interpolate import CubicSpline
 
-from images_indexer import ImagesIndexer
+from Legacy.images_indexer import ImagesIndexer
 from transformations import (transform_point_from_view_to_image,
                              transform_point_from_image_to_view,
                              transform_rectangle_into_square)

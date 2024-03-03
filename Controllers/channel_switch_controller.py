@@ -8,5 +8,5 @@ class ChannelSwitchController:
 
     def switch_channel(self, channel: int):
         self.model.current_channel.channel = channel
-        self.model.solar_frames_storage.load_channel(channel)
+        self.model.solar_frames_storage.cache_channel(channel)
         self.model.notify_observers()
