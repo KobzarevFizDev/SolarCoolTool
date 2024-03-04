@@ -1,11 +1,23 @@
-from typing import List
+from typing import List, TYPE_CHECKING
+
+import sunpy.visualization.colormaps.cm
+
+if TYPE_CHECKING:
+    from Models.app_models import AppModel, BezierMask, ViewportTransform, SolarFramesStorage
 
 from PyQt5.QtCore import QPoint
-from Models.app_models import AppModel, BezierMask, ViewportTransform, SolarFramesStorage, SolarFrame
 from dda import get_pixels_of_line
 import numpy.typing as npt
 import numpy as np
+import matplotlib.pyplot as plt
 
+
+class TimeDistancePlot:
+    def __init__(self, cubedata: 'CubeData'):
+        self.__cubedata: 'CubeData' = cubedata
+
+    def show(self) -> None:
+        pass
 
 class CubeData:
     def __init__(self, x_size_of_frame: int,
@@ -14,20 +26,28 @@ class CubeData:
         self.__x_size_of_frame = x_size_of_frame
         self.__y_size_of_frame = y_size_of_frame
         self.__number_of_frame = number_of_frames
-        self.__data: List[npt.NDArray] = list()
+        self.__data: List[npt.NDArray] = [None] * self.__number_of_frame
 
     def set_frame(self, frame_like_array: npt.NDArray, index: int) -> None:
         self.__data[index] = frame_like_array
 
+    def show_time_distance_plot(self) -> None:
+        cm = sunpy.visualization.colormaps.cm.sdoaia211
+        plt.imshow(self.__data[0].astype(np.float32), cmap=cm)
+        plt.colorbar()
+        plt.show()
+
 
 class MaskExporter:
-    def __init__(self, solar_frames_storage: SolarFramesStorage,
-                 viewport_transform: ViewportTransform,
-                 bezier_mask: BezierMask):
-        self.__solar_frames_storage = solar_frames_storage
+    def __init__(self, solar_frames_storage: 'SolarFramesStorage',
+                 viewport_transform: 'ViewportTransform',
+                 bezier_mask: 'BezierMask'):
+        self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__bezier_mask: BezierMask = bezier_mask
         self.__viewport_transform: ViewportTransform = viewport_transform
-        self.__pixels_of_mask: npt.NDArray = None
+        self.__pixels_of_mask: List[QPoint] = list()
+        self.__mask_width: int = 10_000
+        self.__mask_length: int = 0
 
         self.__cubedata_for_a94: CubeData = None
         self.__cubedata_for_a131: CubeData = None
@@ -43,33 +63,51 @@ class MaskExporter:
         solar_frame = (self.__solar_frames_storage
                        .get_solar_frame_by_index_from_channel(channel, index))
 
-        y_size = self.__pixels_of_mask.shape[0]
-        x_size = self.__pixels_of_mask.shape[1]
+        value_of_mask_pixels_for_this_frame = self.__create_2darray(self.__mask_length, self.__mask_width)
 
-        value_of_mask_pixels_for_this_frame = self.__create_2darray(x_size, y_size)
-
-        for y in range(y_size):
-            for x in range(x_size):
-                pixel = self.__pixels_of_mask[y][x]
+        i = 0
+        for y in range(self.__mask_width):
+            for x in range(self.__mask_length):
+                pixel = self.__pixels_of_mask[i]
                 pixel_value = solar_frame.pixels_array[pixel.y()][pixel.x()]
                 value_of_mask_pixels_for_this_frame[y][x] = pixel_value
+                i += 1
         return value_of_mask_pixels_for_this_frame
 
     def __get_cube_data_for_channel(self, channel: int) -> CubeData:
-        cube_data = None
         number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
+        cube_data = CubeData(self.__mask_length, self.__mask_width, number_of_solar_frames_for_this_channel)
         for index_of_frame in range(number_of_solar_frames_for_this_channel):
             pixels_values = self.__get_value_of_mask_pixels_for_frame(channel, index_of_frame)
-            y_size_of_frame = pixels_values.shape[0]
-            x_size_of_frame = pixels_values.shape[1]
-            cube_data = CubeData(x_size_of_frame, y_size_of_frame, number_of_solar_frames_for_this_channel)
+            cube_data.set_frame(pixels_values, index_of_frame)
         return cube_data
 
-    def transform_to_rectangle_use_cross_section(self, number_of_sections: int) -> 'MaskExporter':
-        self.__pixels_of_mask = self.__create_2darray(number_of_sections, self.__bezier_mask.width_in_pixels)
+    def __initialize_size_of_mask(self, number_of_sections: int) -> None:
+        self.__mask_length = number_of_sections
+        top_border = self.__bezier_mask.get_top_border(number_of_sections)
+        bottom_border = self.__bezier_mask.get_bottom_border(number_of_sections)
+        for x in range(number_of_sections):
+            top_point_in_view: QPoint = top_border[x]
+            bottom_point_in_view: QPoint = bottom_border[x]
+            top_point_in_image = (self.__viewport_transform
+                                  .transform_from_viewport_pixel_to_image_pixel(top_point_in_view))
+            bottom_point_in_image = (self.__viewport_transform
+                                     .transform_from_viewport_pixel_to_image_pixel(bottom_point_in_view))
 
-        top_border = self.__bezier_mask.get_top_border()
-        bottom_border = self.__bezier_mask.get_bottom_border()
+            pixels_in_image_of_current_section = get_pixels_of_line(top_point_in_image.x(),
+                                                                    top_point_in_image.y(),
+                                                                    bottom_point_in_image.x(),
+                                                                    bottom_point_in_image.y())
+
+            if self.__mask_width > len(pixels_in_image_of_current_section):
+                self.__mask_width = len(pixels_in_image_of_current_section)
+
+
+
+    def transform_to_rectangle_use_cross_section(self, number_of_sections: int) -> 'MaskExporter':
+        self.__initialize_size_of_mask(number_of_sections)
+        top_border = self.__bezier_mask.get_top_border(number_of_sections)
+        bottom_border = self.__bezier_mask.get_bottom_border(number_of_sections)
         for x in range(number_of_sections):
             top_point_in_view: QPoint = top_border[x]
             bottom_point_in_view: QPoint = bottom_border[x]
@@ -83,8 +121,9 @@ class MaskExporter:
                                                    bottom_point_in_image.x(),
                                                    bottom_point_in_image.y())
 
-            for y in range(len(pixels_in_image_of_current_section)):
-                self.__pixels_of_mask[y][x] = pixels_in_image_of_current_section[y]
+            for y in range(self.__mask_width):
+                self.__pixels_of_mask.append(pixels_in_image_of_current_section[y])
+
         return self
 
 
@@ -109,12 +148,21 @@ class MaskExporter:
         else:
             return self
 
+    def export_for_a211_if_possible(self) -> 'MaskTransform':
+        if self.__solar_frames_storage.is_exist_solar_frames_in_channel(211):
+            self.__cubedata_for_a211 = self.__get_cube_data_for_channel(211)
+            self.__cubedata_for_a211.show_time_distance_plot()
+            return self
+        else:
+            return self
+
+
     def save(self) -> None:
         pass
 
 class Exporter:
-    def __init__(self, app_model: AppModel, path_to_export: str):
-        self.__app_model = app_model
+    def __init__(self, app_model: 'AppModel', path_to_export: str):
+        self.__app_model: AppModel = app_model
         self.__path_to_export = path_to_export
 
     def export_result(self):
@@ -126,4 +174,5 @@ class Exporter:
         (mask_exporter
          .transform_to_rectangle_use_cross_section(100)
          .export_for_a94_if_possible()
-         .export_for_a131_if_possible())
+         .export_for_a131_if_possible()
+         .export_for_a211_if_possible())

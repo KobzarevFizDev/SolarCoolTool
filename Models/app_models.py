@@ -11,6 +11,8 @@ from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
 
+from exporter import Exporter
+
 
 class SolarFrame:
     def __init__(self,
@@ -286,22 +288,24 @@ class BezierMask:
                                    QPoint(400, 300))
         return bezier_curve
 
-    def get_top_border(self) -> List[QPoint]:
+    def get_top_border(self, number_of_segments=-1) -> List[QPoint]:
+        number_of_segments = self.__number_of_segments if number_of_segments == -1 else number_of_segments
         border_points: List[QPoint] = list()
-        for i in range(self.__number_of_segments + 1):
-            t = i / self.__number_of_segments
+        for i in range(number_of_segments + 1):
+            t = i / number_of_segments
             normal_at_t: QPoint = self.__bezier_curve.normal_at_t(t)
             point_at_t: QPoint = self.__bezier_curve.point_at_t(t)
             magnitude_of_normal = math.sqrt(normal_at_t.x() ** 2 + normal_at_t.y() ** 2)
             border_point = point_at_t + QPoint(self.__width_in_pixels * normal_at_t.x() / magnitude_of_normal,
-                                                self.__width_in_pixels * normal_at_t.y() / magnitude_of_normal)
+                                               self.__width_in_pixels * normal_at_t.y() / magnitude_of_normal)
             border_points.append(border_point)
         return border_points
 
-    def get_bottom_border(self) -> List[QPoint]:
+    def get_bottom_border(self, number_of_segments=-1) -> List[QPoint]:
+        number_of_segments = self.__number_of_segments if number_of_segments == -1 else number_of_segments
         border_points: List[QPoint] = list()
-        for i in range(self.__number_of_segments + 1):
-            t = i / self.__number_of_segments
+        for i in range(number_of_segments + 1):
+            t = i / number_of_segments
             border_point = self.__bezier_curve.point_at_t(t)
             border_points.append(border_point)
         return border_points
@@ -501,15 +505,20 @@ class TimeLine:
 
 
 class AppModel:
-    def __init__(self, path_to_files: str):
+    def __init__(self, path_to_files: str, path_to_export_result):
         self.__viewport_transform = ViewportTransform()
         self.__solar_frames_storage = SolarFramesStorage(94, path_to_files, self.__viewport_transform)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
+        self.__exporter = Exporter(self, path_to_export_result)
 
         self.__observers = []
+
+    @property
+    def exporter(self) -> Exporter:
+        return self.__exporter
 
     @property
     def solar_frames_storage(self) -> SolarFramesStorage:
