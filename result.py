@@ -36,6 +36,7 @@ class CubeData:
         return self.__number_of_frames
 
     def set_frame(self, frame_like_array: npt.NDArray, index: int) -> None:
+        print(f"create cubedata = {index}/{self.__number_of_frames-1}")
         self.__data[index] = frame_like_array
 
     # todo: Проверка на выход за пределы массива
@@ -55,15 +56,29 @@ class CubeData:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 class TimeDistancePlot:
-    def __init__(self, cubedata: CubeData):
+    def __init__(self, cubedata: CubeData, channel: int):
         self.__cubedata: CubeData = cubedata
+        self.__channel = channel
         Ny = self.__cubedata.y_size_of_frame
         Nx = self.__cubedata.number_of_frames
         N = Nx * Ny
         self.__plot: npt.NDArray = np.arange(N).reshape(Ny, Nx)
         self.__create_plot()
 
-    def __create_plot(self):
+    def show(self) -> None:
+        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
+              131: sunpy.visualization.colormaps.cm.sdoaia131,
+              171: sunpy.visualization.colormaps.cm.sdoaia171,
+              193: sunpy.visualization.colormaps.cm.sdoaia193,
+              211: sunpy.visualization.colormaps.cm.sdoaia211,
+              304: sunpy.visualization.colormaps.cm.sdoaia304,
+              355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
+
+        plt.imshow(self.__plot.astype(np.float32), cmap=cm)
+        plt.colorbar()
+        plt.show()
+
+    def __create_plot(self) -> None:
         number_of_frames = self.__cubedata.number_of_frames
         for i in range(number_of_frames):
             midline = self.__get_midline_of_frame_with_index(i)
@@ -182,15 +197,15 @@ class SaverResults:
         mask_exporter = MaskExporter(frames_storage, viewport_transform, bezier_mask)
         mask_exporter.transform_to_rectangle_use_cross_section(100)
 
-        self.__save_cube_data_for_channel(mask_exporter, 94)
+        self.__save_cube_data_for_channel(mask_exporter, self.__app_model.current_channel.channel)
 
         # todo: для всех каналов
 
     def create_time_distance_plot_for_saved_data_if_possible(self):
-        if self.__is_exist_saved_cubedata_for_channel(94):
-            cube_data_a94 = self.__load_cubedata_for_channel(94)
-            time_distance_plot = TimeDistancePlot(cube_data_a94)
-            time_distance_plot
+        if self.__is_exist_saved_cubedata_for_channel(211):
+            cube_data_a211 = self.__load_cubedata_for_channel(211)
+            time_distance_plot = TimeDistancePlot(cube_data_a211, 211)
+            time_distance_plot.show()
         else:
             print("Not found saved cube data for channel A94")
 

@@ -153,6 +153,10 @@ class SolarFramesStorage:
         dates = self.__get_dates_of_files_in_channel(channel)
 
         for i, path in enumerate(files):
+            if i > 50:
+                break
+            print(f"caching {i}/{len(files)}")
+
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
