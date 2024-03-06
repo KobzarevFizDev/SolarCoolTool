@@ -2,12 +2,16 @@ import math
 from typing import List
 
 from PyQt5.QtCore import QPoint
-
+import numpy as np
+import numpy.typing as npt
 
 def main():
-    raster = create_raster(10)
-    DDALine(raster, 1, 1, 9, 9)
-    show_raster(raster, 10)
+    a: npt.NDArray = np.arange(50).reshape(10,5)
+    print(a)
+    print(a.T[0])
+    #raster = create_raster(10)
+    #DDALine(raster, 1, 1, 9, 9)
+    #show_raster(raster, 10)
 
 def create_raster(size):
     raster = ['[ ]'] * size # создает одномерный массив длинной size

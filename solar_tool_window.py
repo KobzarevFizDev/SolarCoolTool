@@ -19,7 +19,7 @@ class CurveEditorWindow(QMainWindow):
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
-        self.__app_model = AppModel("C:\\SolarImages", "C:\\SolarImages")
+        self.__app_model = AppModel("D:\\SolarImages", "D:\\SolarImages")
 
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
@@ -32,7 +32,9 @@ class CurveEditorWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
-            self.__app_model.exporter.export_result()
+            self.__app_model.saver_results.save_result()
+        elif event.key() == QtCore.Qt.Key_C:
+            self.__app_model.saver_results.create_time_distance_plot_for_saved_data_if_possible()
 
         event.accept()
 

@@ -11,7 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
 
-from exporter import Exporter
+from result import SaverResults
 
 
 class SolarFrame:
@@ -512,13 +512,13 @@ class AppModel:
         self.__current_channel = CurrentChannel(self.__solar_frames_storage)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
-        self.__exporter = Exporter(self, path_to_export_result)
+        self.__saver_results = SaverResults(self, path_to_export_result)
 
         self.__observers = []
 
     @property
-    def exporter(self) -> Exporter:
-        return self.__exporter
+    def saver_results(self) -> SaverResults:
+        return self.__saver_results
 
     @property
     def solar_frames_storage(self) -> SolarFramesStorage:

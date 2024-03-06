@@ -10,14 +10,9 @@ from dda import get_pixels_of_line
 import numpy.typing as npt
 import numpy as np
 import matplotlib.pyplot as plt
+import pickle
+import os
 
-
-class TimeDistancePlot:
-    def __init__(self, cubedata: 'CubeData'):
-        self.__cubedata: 'CubeData' = cubedata
-
-    def show(self) -> None:
-        pass
 
 class CubeData:
     def __init__(self, x_size_of_frame: int,
@@ -25,18 +20,60 @@ class CubeData:
                  number_of_frames: int):
         self.__x_size_of_frame = x_size_of_frame
         self.__y_size_of_frame = y_size_of_frame
-        self.__number_of_frame = number_of_frames
-        self.__data: List[npt.NDArray] = [None] * self.__number_of_frame
+        self.__number_of_frames = number_of_frames
+        self.__data: List[npt.NDArray] = [None] * self.__number_of_frames
+
+    @property
+    def x_size_of_frame(self) -> int:
+        return self.__x_size_of_frame
+
+    @property
+    def y_size_of_frame(self) -> int:
+        return self.__y_size_of_frame
+
+    @property
+    def number_of_frames(self) -> int:
+        return self.__number_of_frames
 
     def set_frame(self, frame_like_array: npt.NDArray, index: int) -> None:
         self.__data[index] = frame_like_array
 
-    def show_time_distance_plot(self) -> None:
+    # todo: Проверка на выход за пределы массива
+    def get_frame(self, index: int) -> npt.NDArray:
+        return self.__data[index]
+
+    """
+    def create_time_distance_plot(self) -> None:
         cm = sunpy.visualization.colormaps.cm.sdoaia211
         plt.imshow(self.__data[0].astype(np.float32), cmap=cm)
         plt.colorbar()
         plt.show()
+    """
 
+    def save_to(self, path: str):
+        with open(path, 'wb') as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+class TimeDistancePlot:
+    def __init__(self, cubedata: CubeData):
+        self.__cubedata: CubeData = cubedata
+        Ny = self.__cubedata.y_size_of_frame
+        Nx = self.__cubedata.number_of_frames
+        N = Nx * Ny
+        self.__plot: npt.NDArray = np.arange(N).reshape(Ny, Nx)
+        self.__create_plot()
+
+    def __create_plot(self):
+        number_of_frames = self.__cubedata.number_of_frames
+        for i in range(number_of_frames):
+            midline = self.__get_midline_of_frame_with_index(i)
+            self.__plot.T[i] = midline
+        print(self.__plot)
+
+    def __get_midline_of_frame_with_index(self, index_of_frame: int) -> npt.NDArray:
+        y = int(self.__cubedata.y_size_of_frame / 2)
+        frame = self.__cubedata.get_frame(index_of_frame)
+        return frame.T[y]
 
 class MaskExporter:
     def __init__(self, solar_frames_storage: 'SolarFramesStorage',
@@ -74,7 +111,7 @@ class MaskExporter:
                 i += 1
         return value_of_mask_pixels_for_this_frame
 
-    def __get_cube_data_for_channel(self, channel: int) -> CubeData:
+    def __getcube_data_for_channel(self, channel: int) -> CubeData:
         number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
         cube_data = CubeData(self.__mask_length, self.__mask_width, number_of_solar_frames_for_this_channel)
         for index_of_frame in range(number_of_solar_frames_for_this_channel):
@@ -126,53 +163,53 @@ class MaskExporter:
 
         return self
 
+    def is_possible_export_cubedata_for_channel(self, channel: int) -> bool:
+        return self.__solar_frames_storage.is_exist_solar_frames_in_channel(channel)
 
-    def export_for_a94_if_possible(self) -> 'MaskTransform':
-        if self.__solar_frames_storage.is_exist_solar_frames_in_channel(94):
-            self.__cubedata_for_a94 = self.__get_cube_data_for_channel(94)
-            return self
-        else:
-            return self
-
-    def export_for_a131_if_possible(self) -> 'MaskTransform':
-        if self.__solar_frames_storage.is_exist_solar_frames_in_channel(131):
-            self.__cubedata_for_a131 = self.__get_cube_data_for_channel(131)
-            return self
-        else:
-            return self
-
-    def export_for_a171_if_possible(self) -> 'MaskTransform':
-        if self.__solar_frames_storage.is_exist_solar_frames_in_channel(171):
-            self.__cubedata_for_a171 = self.__get_cube_data_for_channel(171)
-            return self
-        else:
-            return self
-
-    def export_for_a211_if_possible(self) -> 'MaskTransform':
-        if self.__solar_frames_storage.is_exist_solar_frames_in_channel(211):
-            self.__cubedata_for_a211 = self.__get_cube_data_for_channel(211)
-            self.__cubedata_for_a211.show_time_distance_plot()
-            return self
-        else:
-            return self
+    def export_cubedata_for_channel(self, channel: int) -> CubeData:
+        return self.__getcube_data_for_channel(channel)
 
 
-    def save(self) -> None:
-        pass
-
-class Exporter:
+class SaverResults:
     def __init__(self, app_model: 'AppModel', path_to_export: str):
         self.__app_model: AppModel = app_model
         self.__path_to_export = path_to_export
 
-    def export_result(self):
+    def save_result(self):
         frames_storage = self.__app_model.solar_frames_storage
         viewport_transform = self.__app_model.viewport_transform
         bezier_mask = self.__app_model.bezier_mask
         mask_exporter = MaskExporter(frames_storage, viewport_transform, bezier_mask)
+        mask_exporter.transform_to_rectangle_use_cross_section(100)
 
-        (mask_exporter
-         .transform_to_rectangle_use_cross_section(100)
-         .export_for_a94_if_possible()
-         .export_for_a131_if_possible()
-         .export_for_a211_if_possible())
+        self.__save_cube_data_for_channel(mask_exporter, 94)
+
+        # todo: для всех каналов
+
+    def create_time_distance_plot_for_saved_data_if_possible(self):
+        if self.__is_exist_saved_cubedata_for_channel(94):
+            cube_data_a94 = self.__load_cubedata_for_channel(94)
+            time_distance_plot = TimeDistancePlot(cube_data_a94)
+            time_distance_plot
+        else:
+            print("Not found saved cube data for channel A94")
+
+
+    def __save_cube_data_for_channel(self, mask_exporter: MaskExporter, channel: int) -> None:
+        if mask_exporter.is_possible_export_cubedata_for_channel(channel):
+            cube_data_a94: CubeData = mask_exporter.export_cubedata_for_channel(channel)
+            path_to_save = self.__get_path_to_cubedata_for_channel(channel)
+            cube_data_a94.save_to(path_to_save)
+            print(f"Saved cubedata for channel {channel}")
+
+    def __is_exist_saved_cubedata_for_channel(self, channel: int) -> bool:
+        path_to_cubedata = self.__get_path_to_cubedata_for_channel(channel)
+        return os.path.isfile(path_to_cubedata)
+
+    def __get_path_to_cubedata_for_channel(self, channel: int) -> str:
+        return self.__path_to_export + f"\\cube_data_a{channel}.cubedata"
+
+    def __load_cubedata_for_channel(self, channel: int) -> CubeData:
+        path_to_cubedata = self.__get_path_to_cubedata_for_channel(channel)
+        with open(path_to_cubedata, "rb") as f:
+            return pickle.load(f)
