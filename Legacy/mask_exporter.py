@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, List
 from PIL import Image
 import numpy as np
-from transformations import transformPointFromViewToImage
+from transformations import transform_point_from_view_to_image
 from PyQt5.QtCore import QPoint
 
 if TYPE_CHECKING:
-    from Models.solar_editor_model import SolarEditorModel
+    from Legacy.solar_editor_model import SolarEditorModel
 
 # todo: класс должен содержить метод, возращающий содержащий прямоугольник
 class TrianglePolygon:
@@ -51,8 +51,8 @@ class MaskExporter:
         zoom = self.__solarEditorModel.solarViewModel.zoom
         offset = self.__solarEditorModel.solarViewModel.offset
 
-        topBorder: List[QPoint] = [transformPointFromViewToImage(p, (600, 600), (4096, 4096), zoom, offset) for p in topBorder]
-        bottomBorder: List[QPoint] = [transformPointFromViewToImage(p, (600, 600), (4096, 4096), zoom, offset) for p in bottomBorder]
+        topBorder: List[QPoint] = [transform_point_from_view_to_image(p, (600, 600), (4096, 4096), zoom, offset) for p in topBorder]
+        bottomBorder: List[QPoint] = [transform_point_from_view_to_image(p, (600, 600), (4096, 4096), zoom, offset) for p in bottomBorder]
 
         numberOfRectangePolygon = len(topBorder) - 1
         trianglePolygons: List[TrianglePolygon] = list()

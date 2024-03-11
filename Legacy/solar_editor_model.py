@@ -1,14 +1,13 @@
 import math
 from typing import List
 
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QImage, QPixmap
-from scipy.interpolate import CubicSpline
 
-from images_indexer import ImagesIndexer
-from transformations import (transformPointFromViewToImage,
-                             transformPointFromImageToView,
-                             transformRectangeIntoSquare)
+from Legacy.images_indexer import ImagesIndexer
+from transformations import (transform_point_from_view_to_image,
+                             transform_point_from_image_to_view,
+                             transform_rectangle_into_square)
 
 
 # TODO: Устаревшее удалить
@@ -54,16 +53,16 @@ class SolarViewModel:
 
     @property
     def selectedPlotInView(self) -> (QPoint, QPoint):
-        topLeftPointInView = transformPointFromImageToView(self.__topLeftPointInImage,
-                                                           self.__sizeOfViewInPixels,
-                                                           self.__sizeOfImageInPixels,
-                                                           self.__zoom,
-                                                           self.__offset)
-        bottomRightPointInView = transformPointFromImageToView(self.__bottomRightPointInImage,
-                                                               self.__sizeOfViewInPixels,
-                                                               self.__sizeOfImageInPixels,
-                                                               self.__zoom,
-                                                               self.__offset)
+        topLeftPointInView = transform_point_from_image_to_view(self.__topLeftPointInImage,
+                                                                self.__sizeOfViewInPixels,
+                                                                self.__sizeOfImageInPixels,
+                                                                self.__zoom,
+                                                                self.__offset)
+        bottomRightPointInView = transform_point_from_image_to_view(self.__bottomRightPointInImage,
+                                                                    self.__sizeOfViewInPixels,
+                                                                    self.__sizeOfImageInPixels,
+                                                                    self.__zoom,
+                                                                    self.__offset)
         return (topLeftPointInView, bottomRightPointInView)
 
     @property
@@ -76,19 +75,19 @@ class SolarViewModel:
     def selectPlotOfImage(self,
                           topLeftPointInView: QPoint,
                           bottomRightPointInView: QPoint) -> None:
-        topLeftPointInView, bottomRightPointInView = transformRectangeIntoSquare(topLeftPointInView, bottomRightPointInView)
-        self.__topLeftPointInImage = transformPointFromViewToImage(topLeftPointInView,
-                                                                   self.__sizeOfViewInPixels,
-                                                                   self.__sizeOfImageInPixels,
-                                                                   self.__zoom,
-                                                                   self.__offset)
+        topLeftPointInView, bottomRightPointInView = transform_rectangle_into_square(topLeftPointInView, bottomRightPointInView)
+        self.__topLeftPointInImage = transform_point_from_view_to_image(topLeftPointInView,
+                                                                        self.__sizeOfViewInPixels,
+                                                                        self.__sizeOfImageInPixels,
+                                                                        self.__zoom,
+                                                                        self.__offset)
 
 
-        self.__bottomRightPointInImage = transformPointFromViewToImage(bottomRightPointInView,
-                                                                       self.__sizeOfViewInPixels,
-                                                                       self.__sizeOfImageInPixels,
-                                                                       self.__zoom,
-                                                                       self.__offset)
+        self.__bottomRightPointInImage = transform_point_from_view_to_image(bottomRightPointInView,
+                                                                            self.__sizeOfViewInPixels,
+                                                                            self.__sizeOfImageInPixels,
+                                                                            self.__zoom,
+                                                                            self.__offset)
 
     # todo: Получить участок изображения солнца, который выделен в данный момент
     def getSelectedPlotInImage(self):
@@ -339,7 +338,6 @@ class SolarEditorModel:
         self.__timeLineModel = TimeLineModel(indexer)
         self.__currentChannelModel = CurrentChannelModel(indexer)
         self.__maskSpline = MaskSplineModel()
-
 
     @property
     def solarViewModel(self):

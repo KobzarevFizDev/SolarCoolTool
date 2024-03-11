@@ -17,6 +17,7 @@ class SolarImage:
         hdul = fits.open(self.__path)
         data = hdul[1].data
         self.__data = data
+        print(type(data))
         hdul.close()
         img_w = data.shape[0]
         img_h = data.shape[1]
@@ -84,7 +85,7 @@ class ImagesIndexer:
             print("Cache channel {0}. Progress = {1}/{2}".format(channel, i, len(paths)))
 
     def __getChannelsStorredInDatabase(self) -> List[int]:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT DISTINCT Channel FROM Images"
         channels = self.__cursor.execute(command).fetchall()
@@ -106,7 +107,7 @@ class ImagesIndexer:
 
     #TODO: Название нехорошее. Эта функция индексирует каталог и вносит все в БД
     def __createDatabase(self, files, channels, dates):
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         self.__cursor.execute("DROP TABLE IF EXISTS Images")
         self.__cursor.execute("""
@@ -125,7 +126,7 @@ class ImagesIndexer:
         self.__connection.close()
 
     def isExistImagesInChannel(self, channel: int) -> bool:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
         images = self.__cursor.execute(command).fetchall()
@@ -133,7 +134,7 @@ class ImagesIndexer:
         return len(images) > 0
 
     def getPathsToImagesInChannel(self, channel: int) -> List[str]:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
         pathsToImages = self.__cursor.execute(command).fetchall()
@@ -142,7 +143,7 @@ class ImagesIndexer:
         return pathsToImages
 
     def getIdOfImagesInChannel(self, channel: int) -> List[int]:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT Id FROM Images WHERE Channel = {0}".format(channel)
         ids = self.__cursor.execute(command).fetchall()
@@ -151,7 +152,7 @@ class ImagesIndexer:
         return ids
 
     def getDatesOfImagesInChannel(self, channel: int) -> List[str]:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
         dates = self.__cursor.execute(command).fetchall()
@@ -160,7 +161,7 @@ class ImagesIndexer:
         return dates
 
     def getCountImagesInChannel(self, channel: int) -> int:
-        self.__connection = sqlite3.connect('my_database.db')
+        self.__connection = sqlite3.connect('../my_database.db')
         self.__cursor = self.__connection.cursor()
         command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
         countImages = int(self.__cursor.execute(command).fetchall()[0][0])

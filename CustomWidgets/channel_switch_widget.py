@@ -12,66 +12,66 @@ class ChannelSwitchWidget(QWidget):
         hbox = QVBoxLayout()
         self.setLayout(hbox)
 
-        self.A94ChannelButton = QPushButton("A94")
-        self.A131ChannelButton = QPushButton("A131")
-        self.A171ChannelButton = QPushButton("A171")
-        self.A193ChannelButton = QPushButton("A193")
-        self.A211ChannelButton = QPushButton("A211")
-        self.A355ChannelButton = QPushButton("A355")
+        self.A94_channel_button = QPushButton("A94")
+        self.A131_channel_button = QPushButton("A131")
+        self.A171_channel_button = QPushButton("A171")
+        self.A193_channel_button = QPushButton("A193")
+        self.A211_channel_button = QPushButton("A211")
+        self.A355_channel_button = QPushButton("A355")
 
-        hbox.addWidget(self.A94ChannelButton)
-        hbox.addWidget(self.A131ChannelButton)
-        hbox.addWidget(self.A171ChannelButton)
-        hbox.addWidget(self.A193ChannelButton)
-        hbox.addWidget(self.A211ChannelButton)
-        hbox.addWidget(self.A355ChannelButton)
+        hbox.addWidget(self.A94_channel_button)
+        hbox.addWidget(self.A131_channel_button)
+        hbox.addWidget(self.A171_channel_button)
+        hbox.addWidget(self.A193_channel_button)
+        hbox.addWidget(self.A211_channel_button)
+        hbox.addWidget(self.A355_channel_button)
 
-        self.A94ChannelButton.clicked.connect(self.__switchedA94)
-        self.A131ChannelButton.clicked.connect(self.__switchedA131)
-        self.A171ChannelButton.clicked.connect(self.__switchedA171)
-        self.A193ChannelButton.clicked.connect(self.__switchedA193)
-        self.A211ChannelButton.clicked.connect(self.__switchedA211)
-        self.A355ChannelButton.clicked.connect(self.__switchedA355)
+        self.A94_channel_button.clicked.connect(self.__switched_a94)
+        self.A131_channel_button.clicked.connect(self.__switched_a131)
+        self.A171_channel_button.clicked.connect(self.__switched_a171)
+        self.A193_channel_button.clicked.connect(self.__switched_a193)
+        self.A211_channel_button.clicked.connect(self.__switched_a211)
+        self.A355_channel_button.clicked.connect(self.__switched_a355)
 
-        self.buttonsMap =  {94  : self.A94ChannelButton,
-                            131 : self.A131ChannelButton,
-                            171 : self.A171ChannelButton,
-                            193 : self.A193ChannelButton,
-                            211 : self.A211ChannelButton,
-                            355 : self.A355ChannelButton}
+        self.buttons_map =  {94  : self.A94_channel_button,
+                             131 : self.A131_channel_button,
+                             171 : self.A171_channel_button,
+                             193 : self.A193_channel_button,
+                             211 : self.A211_channel_button,
+                             355 : self.A355_channel_button}
 
-    def markChannelAsSelected(self, channel: int) -> None:
-        buttonOfSelectedChannel = self.__getButtonByChannel(channel)
-        buttonOfSelectedChannel.setStyleSheet("background-color: green; color: white;")
-        buttonOfSelectedChannel.setEnabled(True)
+    def mark_channel_as_selected(self, channel: int) -> None:
+        button_of_selected_channel = self.__get_button_by_channel(channel)
+        button_of_selected_channel.setStyleSheet("background-color: green; color: white;")
+        button_of_selected_channel.setEnabled(True)
 
-    def markChannelAsNotAvailable(self, channel: int) -> None:
-        buttonOfNotAvailableChannel = self.__getButtonByChannel(channel)
-        buttonOfNotAvailableChannel.setStyleSheet("background-color: red; color: white;")
-        buttonOfNotAvailableChannel.setEnabled(False)
+    def mark_channel_as_not_available(self, channel: int) -> None:
+        button_of_not_available_channel = self.__get_button_by_channel(channel)
+        button_of_not_available_channel.setStyleSheet("background-color: red; color: white;")
+        button_of_not_available_channel.setEnabled(False)
 
-    def markChannelAsAvailable(self, channel: int) -> None:
-        buttonOfAvailableChannel = self.__getButtonByChannel(channel)
-        buttonOfAvailableChannel.setStyleSheet("background-color: blue; color: white;")
-        buttonOfAvailableChannel.setEnabled(True)
+    def mark_channel_as_available(self, channel: int) -> None:
+        button_of_available_channel = self.__get_button_by_channel(channel)
+        button_of_available_channel.setStyleSheet("background-color: blue; color: white;")
+        button_of_available_channel.setEnabled(True)
 
-    def __getButtonByChannel(self, channel: int) -> QPushButton:
-        return self.buttonsMap[channel]
+    def __get_button_by_channel(self, channel: int) -> QPushButton:
+        return self.buttons_map[channel]
 
-    def __switchedA94(self):
+    def __switched_a94(self):
         self.channelSwitchedSignal.emit(94)
 
-    def __switchedA131(self):
+    def __switched_a131(self):
         self.channelSwitchedSignal.emit(131)
 
-    def __switchedA171(self):
+    def __switched_a171(self):
         self.channelSwitchedSignal.emit(171)
 
-    def __switchedA193(self):
+    def __switched_a193(self):
         self.channelSwitchedSignal.emit(193)
 
-    def __switchedA211(self):
+    def __switched_a211(self):
         self.channelSwitchedSignal.emit(211)
 
-    def __switchedA355(self):
+    def __switched_a355(self):
         self.channelSwitchedSignal.emit(355)
