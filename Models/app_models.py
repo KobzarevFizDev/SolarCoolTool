@@ -12,6 +12,7 @@ from astropy.io import fits
 import numpy.typing as npt
 
 from result import SaverResults
+from configuration import ConfigurationApp
 
 
 class SolarFrame:
@@ -86,8 +87,10 @@ class SolarFramesStorage:
     def __init__(self,
                  initial_channel: int,
                  path_to_directory: str,
-                 viewport_transform: 'ViewportTransform'):
+                 viewport_transform: 'ViewportTransform',
+                 configuration_app: 'ConfigurationApp'):
         self.__viewport_transform = viewport_transform
+        self.__configuration_app: 'ConfigurationApp' = configuration_app
         self.__current_channel: int = initial_channel
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
@@ -129,22 +132,45 @@ class SolarFramesStorage:
         return [f.split('.')[2][0:10] for f in files]
 
     def __load_channel(self, channel: int) -> List[SolarFrame]:
+        step = self.__configuration_app.get_step_for_channel(channel)
+        limit = self.__configuration_app.get_limit_for_channel(channel)
+        need_to_skip = step - 1
+        cached_frames = 0
+
         files = self.__get_files_in_channel(channel)
         ids = self.__get_ids_of_frames_in_channel(channel)
         dates = self.__get_dates_of_files_in_channel(channel)
 
         solar_frames_of_channel = list()
         for i, path in enumerate(files):
+            if cached_frames > limit:
+                print("Acheve limit")
+                break
+            print(f"caching {cached_frames}/{len(files)}. i = {i}")
+
+            cached_frames += 1
+            if need_to_skip > 0:
+                print(f"skip {i}")
+                need_to_skip -= 1
+                continue
+
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
             solar_frames_of_channel.append(solar_frame)
 
+            need_to_skip = step - 1
+
         return solar_frames_of_channel
 
     # todo: Дублирование кода с методом __load_channel
     def cache_channel(self, channel: int) -> None:
+        step = self.__configuration_app.get_step_for_channel(channel)
+        limit = self.__configuration_app.get_limit_for_channel(channel)
+        need_to_skip = step - 1
+        cached_frames = 0
+
         self.__current_channel = channel
         self.__loaded_channel.clear()
 
@@ -153,15 +179,24 @@ class SolarFramesStorage:
         dates = self.__get_dates_of_files_in_channel(channel)
 
         for i, path in enumerate(files):
-            if i > 50:
+            if cached_frames > limit:
+                print("Acheve limit")
                 break
-            print(f"caching {i}/{len(files)}")
+            print(f"caching {cached_frames}/{len(files)}. i = {i}")
+
+            cached_frames += 1
+            if need_to_skip > 0:
+                print(f"skip {i}")
+                need_to_skip -= 1
+                continue
 
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
             self.__loaded_channel.append(solar_frame)
+
+            need_to_skip = step - 1
 
     # todo: Валидация параметров
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
@@ -510,8 +545,12 @@ class TimeLine:
 
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):
+        self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
-        self.__solar_frames_storage = SolarFramesStorage(94, path_to_files, self.__viewport_transform)
+        self.__solar_frames_storage = SolarFramesStorage(94,
+                                                         path_to_files,
+                                                         self.__viewport_transform,
+                                                         self.__configaration)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage)
         self.__bezier_mask = BezierMask()
@@ -547,6 +586,10 @@ class AppModel:
     @property
     def interesting_solar_region(self) -> InterestingSolarRegion:
         return self.__interesting_solar_region
+
+    @property
+    def configuration(self) -> ConfigurationApp:
+        return self.__configaration
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

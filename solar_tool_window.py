@@ -12,6 +12,8 @@ from Controllers.mask_spline_controller import BezierMaskController
 
 from Models.app_models import AppModel
 
+from configuration import ConfigurationApp
+
 class CurveEditorWindow(QMainWindow):
     def __init__(self):
         super().__init__()
