@@ -21,14 +21,12 @@ class SolarViewportView:
         self.controller.select_plot_of_image(QPoint(0, 600), QPoint(600, 0))
 
     def zoom(self, x, y):
-        print(f"zoom = {y}")
         if y > 0:
             self.controller.increase_zoom(0.05)
         else:
             self.controller.decrease_zoom(0.05)
 
     def move(self, x, y):
-        print(f"move = {x} {y}")
         self.controller.move_solar_image(QPoint(x, y))
 
     def on_select_plot(self, top_right_point: QPoint, bottom_left_point: QPoint):

@@ -92,10 +92,8 @@ class SolarFramesStorage:
         self.__viewport_transform = viewport_transform
         self.__configuration_app: 'ConfigurationApp' = configuration_app
         self.__current_channel: int = initial_channel
-        self.__additional_channel: int = -1
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
-        self.__additional_loaded_channel: List[SolarFrame] = list()
         self.__initialize_database()
         self.cache_channel(initial_channel)
 
@@ -133,53 +131,15 @@ class SolarFramesStorage:
     def __get_dates_of_this_files(self, files) -> List[str]:
         return [f.split('.')[2][0:10] for f in files]
 
-    '''
-    def __load_channel(self, channel: int) -> List[SolarFrame]:
-        step = self.__configuration_app.get_step_for_channel(channel)
-        limit = self.__configuration_app.get_limit_for_channel(channel)
-        need_to_skip = step - 1
-        cached_frames = 0
-
-        files = self.__get_files_in_channel(channel)
-        ids = self.__get_ids_of_frames_in_channel(channel)
-        dates = self.__get_dates_of_files_in_channel(channel)
-
-        solar_frames_of_channel = list()
-        for i, path in enumerate(files):
-            if cached_frames > limit:
-                print("Acheve limit")
-                break
-            print(f"caching {cached_frames}/{len(files)}. i = {i}")
-
-            cached_frames += 1
-            if need_to_skip > 0:
-                print(f"skip {i}")
-                need_to_skip -= 1
-                continue
-
-            id = ids[i]
-            date = dates[i]
-            solar_frame = SolarFrame(id, path, channel, date)
-            solar_frame.set_viewport_transform(self.__viewport_transform)
-            solar_frames_of_channel.append(solar_frame)
-
-            need_to_skip = step - 1
-
-        return solar_frames_of_channel
-    '''
-
     # todo: Дублирование кода с методом __load_channel
-    def cache_channel(self, channel: int, to_additional=False) -> None:
+    def cache_channel(self, channel: int) -> None:
         step = self.__configuration_app.get_step_for_channel(channel)
         limit = self.__configuration_app.get_limit_for_channel(channel)
         need_to_skip = step - 1
         cached_frames = 0
 
         self.__current_channel = channel
-        if to_additional:
-            self.__additional_loaded_channel.clear()
-        else:
-            self.__loaded_channel.clear()
+        self.__loaded_channel.clear()
 
         files = self.__get_files_in_channel(channel)
         ids = self.__get_ids_of_frames_in_channel(channel)
@@ -202,35 +162,19 @@ class SolarFramesStorage:
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
 
-            if to_additional:
-                self.__additional_loaded_channel.append(solar_frame)
-            else:
-                self.__loaded_channel.append(solar_frame)
+            self.__loaded_channel.append(solar_frame)
 
             need_to_skip = step - 1
-
-        if to_additional:
-            print(f"Additional channel = {channel} was loaded")
-            self.__additional_channel = channel
 
     # todo: Валидация параметров
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
         return self.__loaded_channel[index]
 
-    def get_solar_frame_by_index_from_channel(self, channel: int, index: int) -> SolarFrame:
-        if not self.__additional_channel == channel:
-            self.cache_channel(channel, to_additional=True)
-        return self.__additional_loaded_channel[index]
-
-    def get_number_of_frames_in_channel(self, channel: int) -> int:
-        in_database = self.__get_number_of_frames_of_channel_in_database(channel)
-        max_limit = self.__configuration_app.get_limit_for_channel(channel)
-        return min(in_database, max_limit)
-
     def get_number_of_frames_in_current_channel(self) -> int:
-        in_database = self.__get_number_of_frames_of_channel_in_database(self.__current_channel)
-        max_limit = self.__configuration_app.get_limit_for_channel(self.__current_channel)
-        return min(in_database, max_limit)
+        return len(self.__loaded_channel)
+        #in_database = self.__get_number_of_frames_of_channel_in_database(self.__current_channel)
+        #max_limit = self.__configuration_app.get_limit_for_channel(self.__current_channel)
+        #return min(in_database, max_limit)
 
     def __get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
@@ -430,7 +374,7 @@ class CurrentChannel:
     @property
     def number_of_images_in_current_channel(self) -> int:
         channel = self.__current_channel
-        return self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
+        return self.__solar_frames_storage.get_number_of_frames_in_current_channel()
 
     def __is_this_channel_valid(self, channel: int) -> bool:
         return channel in self.__total_channels_of_sdo

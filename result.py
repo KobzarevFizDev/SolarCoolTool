@@ -112,7 +112,7 @@ class MaskExporter:
 
     def __get_value_of_mask_pixels_for_frame(self, channel: int, index: int) -> npt.NDArray:
         solar_frame = (self.__solar_frames_storage
-                       .get_solar_frame_by_index_from_channel(channel, index))
+                       .get_solar_frame_by_index_from_current_channel(index))
 
         value_of_mask_pixels_for_this_frame = self.__create_2darray(self.__mask_length, self.__mask_width)
 
@@ -126,7 +126,8 @@ class MaskExporter:
         return value_of_mask_pixels_for_this_frame
 
     def __getcube_data_for_channel(self, channel: int) -> CubeData:
-        number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
+        self.__solar_frames_storage.cache_channel(channel)
+        number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         cube_data = CubeData(self.__mask_length, self.__mask_width, number_of_solar_frames_for_this_channel)
         for index_of_frame in range(number_of_solar_frames_for_this_channel):
             pixels_values = self.__get_value_of_mask_pixels_for_frame(channel, index_of_frame)

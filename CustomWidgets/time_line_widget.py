@@ -30,7 +30,7 @@ class TimeLineWidget(QWidget):
         self.slider.setRange(0, number_of_images_in_channel)
 
     def change_value_of_slider(self, value):
-        step = (self.number_of_images_in_channel - 1) / maxValueOfTimeLineSlider
+        step = (self.number_of_images_in_channel - 1) / self.number_of_images_in_channel
         index_of_image = int(value*step)
         self.selected_image_in_channel.emit(index_of_image)
 
