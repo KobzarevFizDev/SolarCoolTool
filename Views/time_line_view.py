@@ -24,5 +24,3 @@ class TimeLineView:
     def model_is_changed(self):
         number_images_in_channel = self.model.current_channel.number_of_images_in_current_channel
         self.widget.set_number_images_in_channel(number_images_in_channel)
-        #numberImagesInChannel = self.model.currentChannelModel.numberOfImagesInChannel
-        #self.widget.setNumberImagesInChannel(numberImagesInChannel)

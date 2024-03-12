@@ -83,7 +83,6 @@ class TimeDistancePlot:
         for i in range(number_of_frames):
             midline = self.__get_midline_of_frame_with_index(i)
             self.__plot.T[i] = midline
-        print(self.__plot)
 
     def __get_midline_of_frame_with_index(self, index_of_frame: int) -> npt.NDArray:
         y = int(self.__cubedata.y_size_of_frame / 2)
@@ -162,16 +161,18 @@ class MaskExporter:
         bottom_border = self.__bezier_mask.get_bottom_border(number_of_sections)
         for x in range(number_of_sections):
             top_point_in_view: QPoint = top_border[x]
+            #print(f"top_point in view (xy) = {top_point_in_view.x()}, {top_point_in_view.y()}")
             bottom_point_in_view: QPoint = bottom_border[x]
             top_point_in_image = (self.__viewport_transform
                                   .transform_from_viewport_pixel_to_image_pixel(top_point_in_view))
+            #print(f"top_point in image (xy) = {top_point_in_image.x()}, {top_point_in_image.y()}")
             bottom_point_in_image = (self.__viewport_transform
                                      .transform_from_viewport_pixel_to_image_pixel(bottom_point_in_view))
-
+            #print(f"bottom_point in image (xy) = {bottom_point_in_image.x()}, {bottom_point_in_image.y()}")
             pixels_in_image_of_current_section = get_pixels_of_line(top_point_in_image.x(),
-                                                   top_point_in_image.y(),
-                                                   bottom_point_in_image.x(),
-                                                   bottom_point_in_image.y())
+                                                                    top_point_in_image.y(),
+                                                                    bottom_point_in_image.x(),
+                                                                    bottom_point_in_image.y())
 
             for y in range(self.__mask_width):
                 self.__pixels_of_mask.append(pixels_in_image_of_current_section[y])
@@ -201,13 +202,22 @@ class SaverResults:
 
         # todo: для всех каналов
 
-    def create_time_distance_plot_for_saved_data_if_possible(self):
-        if self.__is_exist_saved_cubedata_for_channel(211):
-            cube_data_a211 = self.__load_cubedata_for_channel(211)
-            time_distance_plot = TimeDistancePlot(cube_data_a211, 211)
+    def create_time_distance_plot_for_saved_data_if_possible(self) -> None:
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(94)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(131)
+        self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(171)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(193)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(211)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(304)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(335)
+
+    def __create_time_distance_plot_for_saved_data_of_channel_if_possible(self, channel: int) -> None:
+        if self.__is_exist_saved_cubedata_for_channel(channel):
+            cube_data_of_channel = self.__load_cubedata_for_channel(channel)
+            time_distance_plot = TimeDistancePlot(cube_data_of_channel, channel)
             time_distance_plot.show()
         else:
-            print("Not found saved cube data for channel A94")
+            print(f"Not found saved cube data for channel A{channel}")
 
 
     def __save_cube_data_for_channel(self, mask_exporter: MaskExporter, channel: int) -> None:

@@ -20,13 +20,14 @@ class TimeLineWidget(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
         self.slider = QSlider(Qt.Horizontal)
-        self.slider.setRange(minValueOfTimeLineSlider,maxValueOfTimeLineSlider)
+        self.slider.setRange(minValueOfTimeLineSlider, maxValueOfTimeLineSlider)
         self.slider.valueChanged.connect(self.change_value_of_slider)
         layout.addWidget(self.slider)
         #self.set_number_images_in_channel(181)
 
     def set_number_images_in_channel(self, number_of_images_in_channel: int):
         self.number_of_images_in_channel = number_of_images_in_channel
+        self.slider.setRange(0, number_of_images_in_channel)
 
     def change_value_of_slider(self, value):
         step = (self.number_of_images_in_channel - 1) / maxValueOfTimeLineSlider
