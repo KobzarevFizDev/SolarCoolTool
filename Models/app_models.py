@@ -3,9 +3,14 @@ import os
 import sqlite3
 from typing import List
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure, SubplotParams
+
 import numpy as np
 from PyQt5.QtCore import QPoint, QRect
 import transformations
+import sunpy.map
+import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
 from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
@@ -26,6 +31,7 @@ class SolarFrame:
         self.__channel: int = channel
         self.__date: str = date
         self.__pixels_array: npt.NDArray = self.__get_pixels_array()
+        self.__map = self.__get_map()
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
 
@@ -62,25 +68,22 @@ class SolarFrame:
         return scaled_pixmap_of_frame
 
     def __get_pixels_array(self) -> npt.NDArray:
-        hdul = fits.open(self.__path_to_fits_file)
-        pixels_array = hdul[1].data
-        hdul.close()
-        return pixels_array
+        return sunpy.map.Map(self.__path_to_fits_file).data
+
+    def __get_map(self):
+        return sunpy.map.Map(self.__path_to_fits_file)
 
     def __get_qtimage(self) -> QImage:
-        img_w = self.__pixels_array.shape[0]
-        img_h = self.__pixels_array.shape[1]
-        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
-              131: sunpy.visualization.colormaps.cm.sdoaia131,
-              171: sunpy.visualization.colormaps.cm.sdoaia171,
-              193: sunpy.visualization.colormaps.cm.sdoaia193,
-              211: sunpy.visualization.colormaps.cm.sdoaia211,
-              304: sunpy.visualization.colormaps.cm.sdoaia304,
-              355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
-
-        a = np.array(255 * cm(self.__pixels_array), dtype=np.uint8)
-        qimage = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
-        return qimage
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        fig = Figure((40.96, 40.96), subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        ax = fig.add_subplot(projection=self.__map)
+        self.__map.plot(axes=ax)
+        ax.set_axis_off()
+        canvas.draw()
+        width, height = fig.figbbox.width, fig.figbbox.height
+        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        return im
 
 # todo: Валидацию на корректное значение channel
 class SolarFramesStorage:
@@ -515,7 +518,7 @@ class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):
         self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
-        self.__solar_frames_storage = SolarFramesStorage(94,
+        self.__solar_frames_storage = SolarFramesStorage(171,
                                                          path_to_files,
                                                          self.__viewport_transform,
                                                          self.__configaration)
