@@ -19,6 +19,8 @@ import numpy.typing as npt
 from result import SaverResults
 from configuration import ConfigurationApp
 
+from aiapy.calibrate import normalize_exposure, register, update_pointing
+
 
 class SolarFrame:
     def __init__(self,
@@ -30,8 +32,8 @@ class SolarFrame:
         self.__path_to_fits_file: str = path_to_fits_file
         self.__channel: int = channel
         self.__date: str = date
-        self.__pixels_array: npt.NDArray = self.__get_pixels_array()
         self.__map = self.__get_map()
+        self.__pixels_array: npt.NDArray = self.__get_pixels_array()
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
 
@@ -68,10 +70,15 @@ class SolarFrame:
         return scaled_pixmap_of_frame
 
     def __get_pixels_array(self) -> npt.NDArray:
-        return sunpy.map.Map(self.__path_to_fits_file).data
+        return self.__map.data
 
     def __get_map(self):
-        return sunpy.map.Map(self.__path_to_fits_file)
+        m = sunpy.map.Map(self.__path_to_fits_file)
+        return m
+        #m_updated_pointing = update_pointing(m)
+        #m_registered = register(m_updated_pointing)
+        #m_normalized = normalize_exposure(m_registered)
+        #return m_normalized
 
     def __get_qtimage(self) -> QImage:
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
@@ -124,9 +131,14 @@ class SolarFramesStorage:
         connection.close()
 
     def __get_files_in_directory(self) -> List[str]:
-        relative_file_paths = list(filter((lambda f: "image" in f), os.listdir(self.__path_to_directory)))
-        absolute_file_paths = [self.__path_to_directory + "\\" + rf for rf in relative_file_paths]
-        return absolute_file_paths
+        files_in_directory = []
+        for root, dirs, files in os.walk(self.__path_to_directory):
+            for file in files:
+                files_in_directory.append(os.path.join(root, file))
+        files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
+        print(files_in_directory)
+        return files_in_directory
+
 
     def __get_channels(self, files) -> List[int]:
         return [f.split('.')[3] for f in files]
@@ -516,14 +528,15 @@ class TimeLine:
 
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):
+        initial_channel = 171
         self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
-        self.__solar_frames_storage = SolarFramesStorage(171,
+        self.__solar_frames_storage = SolarFramesStorage(initial_channel,
                                                          path_to_files,
                                                          self.__viewport_transform,
                                                          self.__configaration)
         self.__time_line = TimeLine(self.__solar_frames_storage)
-        self.__current_channel = CurrentChannel(self.__solar_frames_storage)
+        self.__current_channel = CurrentChannel(self.__solar_frames_storage, initial_channel)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
         self.__saver_results = SaverResults(self, path_to_export_result)

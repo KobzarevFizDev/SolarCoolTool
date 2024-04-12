@@ -21,7 +21,9 @@ class CurveEditorWindow(QMainWindow):
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
+        #self.__app_model = AppModel("D:\\PreparatedSolarImages", "D:\\PreparatedSolarImages")
         self.__app_model = AppModel("D:\\SolarImages", "D:\\SolarImages")
+        #self.__app_model = AppModel("D:\\WangPreparated", "D:\\WangPreparated")
 
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
