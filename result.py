@@ -1,3 +1,4 @@
+import math
 from typing import List, TYPE_CHECKING
 
 import sunpy.visualization.colormaps.cm
@@ -43,14 +44,6 @@ class CubeData:
     def get_frame(self, index: int) -> npt.NDArray:
         return self.__data[index]
 
-    """
-    def create_time_distance_plot(self) -> None:
-        cm = sunpy.visualization.colormaps.cm.sdoaia211
-        plt.imshow(self.__data[0].astype(np.float32), cmap=cm)
-        plt.colorbar()
-        plt.show()
-    """
-
     def save_to(self, path: str):
         with open(path, 'wb') as f:
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -59,10 +52,10 @@ class TimeDistancePlot:
     def __init__(self, cubedata: CubeData, channel: int):
         self.__cubedata: CubeData = cubedata
         self.__channel = channel
-        Ny = self.__cubedata.y_size_of_frame
+        Ny = self.__cubedata.x_size_of_frame
         Nx = self.__cubedata.number_of_frames
         N = Nx * Ny
-        self.__plot: npt.NDArray = np.arange(N).reshape(Ny, Nx)
+        self.__plot: npt.NDArray = np.arange(N).reshape(Nx, Ny)
         self.__create_plot()
 
     def show(self) -> None:
@@ -74,21 +67,26 @@ class TimeDistancePlot:
               304: sunpy.visualization.colormaps.cm.sdoaia304,
               355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
 
+        self.__plot = self.__plot.T
         plt.imshow(self.__plot.astype(np.float32), cmap=cm)
-        plt.colorbar()
+        plt.title("Time-Distance-Plot ")
+        plt.xlabel("Time (min)")
+        plt.ylabel("Distance along loop (arcsec)")
+        #plt.xticks(range(0, 24, 5), [i for i in range(0, 24, 5)])
+        plt.gca().invert_yaxis()
+        #plt.colorbar()
         plt.show()
 
     def __create_plot(self) -> None:
         number_of_frames = self.__cubedata.number_of_frames
         for i in range(number_of_frames):
             midline = self.__get_midline_of_frame_with_index(i)
-            self.__plot.T[i] = midline
-        print(self.__plot)
+            self.__plot[i] = midline
 
     def __get_midline_of_frame_with_index(self, index_of_frame: int) -> npt.NDArray:
         y = int(self.__cubedata.y_size_of_frame / 2)
         frame = self.__cubedata.get_frame(index_of_frame)
-        return frame.T[y]
+        return frame[y]
 
 class MaskExporter:
     def __init__(self, solar_frames_storage: 'SolarFramesStorage',
@@ -113,7 +111,7 @@ class MaskExporter:
 
     def __get_value_of_mask_pixels_for_frame(self, channel: int, index: int) -> npt.NDArray:
         solar_frame = (self.__solar_frames_storage
-                       .get_solar_frame_by_index_from_channel(channel, index))
+                       .get_solar_frame_by_index_from_current_channel(index))
 
         value_of_mask_pixels_for_this_frame = self.__create_2darray(self.__mask_length, self.__mask_width)
 
@@ -122,12 +120,15 @@ class MaskExporter:
             for x in range(self.__mask_length):
                 pixel = self.__pixels_of_mask[i]
                 pixel_value = solar_frame.pixels_array[pixel.y()][pixel.x()]
+                if math.isnan(pixel_value):
+                    pixel_value = 0
                 value_of_mask_pixels_for_this_frame[y][x] = pixel_value
                 i += 1
         return value_of_mask_pixels_for_this_frame
 
     def __getcube_data_for_channel(self, channel: int) -> CubeData:
-        number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
+        self.__solar_frames_storage.cache_channel(channel)
+        number_of_solar_frames_for_this_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         cube_data = CubeData(self.__mask_length, self.__mask_width, number_of_solar_frames_for_this_channel)
         for index_of_frame in range(number_of_solar_frames_for_this_channel):
             pixels_values = self.__get_value_of_mask_pixels_for_frame(channel, index_of_frame)
@@ -167,11 +168,10 @@ class MaskExporter:
                                   .transform_from_viewport_pixel_to_image_pixel(top_point_in_view))
             bottom_point_in_image = (self.__viewport_transform
                                      .transform_from_viewport_pixel_to_image_pixel(bottom_point_in_view))
-
             pixels_in_image_of_current_section = get_pixels_of_line(top_point_in_image.x(),
-                                                   top_point_in_image.y(),
-                                                   bottom_point_in_image.x(),
-                                                   bottom_point_in_image.y())
+                                                                    top_point_in_image.y(),
+                                                                    bottom_point_in_image.x(),
+                                                                    bottom_point_in_image.y())
 
             for y in range(self.__mask_width):
                 self.__pixels_of_mask.append(pixels_in_image_of_current_section[y])
@@ -201,13 +201,22 @@ class SaverResults:
 
         # todo: для всех каналов
 
-    def create_time_distance_plot_for_saved_data_if_possible(self):
-        if self.__is_exist_saved_cubedata_for_channel(211):
-            cube_data_a211 = self.__load_cubedata_for_channel(211)
-            time_distance_plot = TimeDistancePlot(cube_data_a211, 211)
+    def create_time_distance_plot_for_saved_data_if_possible(self) -> None:
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(94)
+        self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(131)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(171)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(193)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(211)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(304)
+        #self.__create_time_distance_plot_for_saved_data_of_channel_if_possible(335)
+
+    def __create_time_distance_plot_for_saved_data_of_channel_if_possible(self, channel: int) -> None:
+        if self.__is_exist_saved_cubedata_for_channel(channel):
+            cube_data_of_channel = self.__load_cubedata_for_channel(channel)
+            time_distance_plot = TimeDistancePlot(cube_data_of_channel, channel)
             time_distance_plot.show()
         else:
-            print("Not found saved cube data for channel A94")
+            print(f"Not found saved cube data for channel A{channel}")
 
 
     def __save_cube_data_for_channel(self, mask_exporter: MaskExporter, channel: int) -> None:

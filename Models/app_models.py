@@ -3,15 +3,23 @@ import os
 import sqlite3
 from typing import List
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure, SubplotParams
+
 import numpy as np
 from PyQt5.QtCore import QPoint, QRect
 import transformations
+import sunpy.map
+import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
 from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
 
 from result import SaverResults
+from configuration import ConfigurationApp
+
+from aiapy.calibrate import normalize_exposure, register, update_pointing
 
 
 class SolarFrame:
@@ -24,6 +32,7 @@ class SolarFrame:
         self.__path_to_fits_file: str = path_to_fits_file
         self.__channel: int = channel
         self.__date: str = date
+        self.__map = self.__get_map()
         self.__pixels_array: npt.NDArray = self.__get_pixels_array()
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
@@ -61,33 +70,37 @@ class SolarFrame:
         return scaled_pixmap_of_frame
 
     def __get_pixels_array(self) -> npt.NDArray:
-        hdul = fits.open(self.__path_to_fits_file)
-        pixels_array = hdul[1].data
-        hdul.close()
-        return pixels_array
+        return self.__map.data
+
+    def __get_map(self):
+        m = sunpy.map.Map(self.__path_to_fits_file)
+        return m
+        #m_updated_pointing = update_pointing(m)
+        #m_registered = register(m_updated_pointing)
+        #m_normalized = normalize_exposure(m_registered)
+        #return m_normalized
 
     def __get_qtimage(self) -> QImage:
-        img_w = self.__pixels_array.shape[0]
-        img_h = self.__pixels_array.shape[1]
-        cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
-              131: sunpy.visualization.colormaps.cm.sdoaia131,
-              171: sunpy.visualization.colormaps.cm.sdoaia171,
-              193: sunpy.visualization.colormaps.cm.sdoaia193,
-              211: sunpy.visualization.colormaps.cm.sdoaia211,
-              304: sunpy.visualization.colormaps.cm.sdoaia304,
-              355: sunpy.visualization.colormaps.cm.sdoaia335}[self.__channel]
-
-        a = np.array(255 * cm(self.__pixels_array), dtype=np.uint8)
-        qimage = QImage(a, img_h, img_w, 4 * img_w, QImage.Format_RGBA8888)
-        return qimage
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        fig = Figure((40.96, 40.96), subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        ax = fig.add_subplot(projection=self.__map)
+        self.__map.plot(axes=ax)
+        ax.set_axis_off()
+        canvas.draw()
+        width, height = fig.figbbox.width, fig.figbbox.height
+        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        return im
 
 # todo: Валидацию на корректное значение channel
 class SolarFramesStorage:
     def __init__(self,
                  initial_channel: int,
                  path_to_directory: str,
-                 viewport_transform: 'ViewportTransform'):
+                 viewport_transform: 'ViewportTransform',
+                 configuration_app: 'ConfigurationApp'):
         self.__viewport_transform = viewport_transform
+        self.__configuration_app: 'ConfigurationApp' = configuration_app
         self.__current_channel: int = initial_channel
         self.__path_to_directory: str = path_to_directory
         self.__loaded_channel: List[SolarFrame] = list()
@@ -118,9 +131,14 @@ class SolarFramesStorage:
         connection.close()
 
     def __get_files_in_directory(self) -> List[str]:
-        relative_file_paths = list(filter((lambda f: "image" in f), os.listdir(self.__path_to_directory)))
-        absolute_file_paths = [self.__path_to_directory + "\\" + rf for rf in relative_file_paths]
-        return absolute_file_paths
+        files_in_directory = []
+        for root, dirs, files in os.walk(self.__path_to_directory):
+            for file in files:
+                files_in_directory.append(os.path.join(root, file))
+        files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
+        print(files_in_directory)
+        return files_in_directory
+
 
     def __get_channels(self, files) -> List[int]:
         return [f.split('.')[3] for f in files]
@@ -128,23 +146,13 @@ class SolarFramesStorage:
     def __get_dates_of_this_files(self, files) -> List[str]:
         return [f.split('.')[2][0:10] for f in files]
 
-    def __load_channel(self, channel: int) -> List[SolarFrame]:
-        files = self.__get_files_in_channel(channel)
-        ids = self.__get_ids_of_frames_in_channel(channel)
-        dates = self.__get_dates_of_files_in_channel(channel)
-
-        solar_frames_of_channel = list()
-        for i, path in enumerate(files):
-            id = ids[i]
-            date = dates[i]
-            solar_frame = SolarFrame(id, path, channel, date)
-            solar_frame.set_viewport_transform(self.__viewport_transform)
-            solar_frames_of_channel.append(solar_frame)
-
-        return solar_frames_of_channel
-
     # todo: Дублирование кода с методом __load_channel
     def cache_channel(self, channel: int) -> None:
+        step = self.__configuration_app.get_step_for_channel(channel)
+        limit = self.__configuration_app.get_limit_for_channel(channel)
+        need_to_skip = step - 1
+        cached_frames = 0
+
         self.__current_channel = channel
         self.__loaded_channel.clear()
 
@@ -153,33 +161,43 @@ class SolarFramesStorage:
         dates = self.__get_dates_of_files_in_channel(channel)
 
         for i, path in enumerate(files):
-            if i > 50:
+            if cached_frames > limit:
+                print("Acheve limit")
                 break
-            print(f"caching {i}/{len(files)}")
+            print(f"caching {cached_frames}/{len(files)}. i = {i}")
 
+            if need_to_skip > 0:
+                print(f"skip {i}")
+                need_to_skip -= 1
+                continue
+
+            cached_frames += 1
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
+
             self.__loaded_channel.append(solar_frame)
+
+            need_to_skip = step - 1
 
     # todo: Валидация параметров
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
         return self.__loaded_channel[index]
 
-    def get_solar_frame_by_index_from_channel(self, channel: int, index: int) -> SolarFrame:
-        return self.__load_channel(channel)[index]
+    def get_number_of_frames_in_current_channel(self) -> int:
+        return len(self.__loaded_channel)
+        #in_database = self.__get_number_of_frames_of_channel_in_database(self.__current_channel)
+        #max_limit = self.__configuration_app.get_limit_for_channel(self.__current_channel)
+        #return min(in_database, max_limit)
 
-    def get_number_of_frames_in_channel(self, channel: int) -> int:
+    def __get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
         cursor = connection.cursor()
         command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
         number_of_images = int(cursor.execute(command).fetchall()[0][0])
         connection.close()
         return number_of_images
-
-    def get_number_of_frames_in_current_channel(self) -> int:
-        return len(self.__loaded_channel)
     
     def is_exist_solar_frames_in_channel(self, channel: int) -> bool:
         connection = sqlite3.connect('my_database.db')
@@ -371,7 +389,7 @@ class CurrentChannel:
     @property
     def number_of_images_in_current_channel(self) -> int:
         channel = self.__current_channel
-        return self.__solar_frames_storage.get_number_of_frames_in_channel(channel)
+        return self.__solar_frames_storage.get_number_of_frames_in_current_channel()
 
     def __is_this_channel_valid(self, channel: int) -> bool:
         return channel in self.__total_channels_of_sdo
@@ -510,10 +528,15 @@ class TimeLine:
 
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):
+        initial_channel = 171
+        self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
-        self.__solar_frames_storage = SolarFramesStorage(94, path_to_files, self.__viewport_transform)
+        self.__solar_frames_storage = SolarFramesStorage(initial_channel,
+                                                         path_to_files,
+                                                         self.__viewport_transform,
+                                                         self.__configaration)
         self.__time_line = TimeLine(self.__solar_frames_storage)
-        self.__current_channel = CurrentChannel(self.__solar_frames_storage)
+        self.__current_channel = CurrentChannel(self.__solar_frames_storage, initial_channel)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
         self.__saver_results = SaverResults(self, path_to_export_result)
@@ -547,6 +570,10 @@ class AppModel:
     @property
     def interesting_solar_region(self) -> InterestingSolarRegion:
         return self.__interesting_solar_region
+
+    @property
+    def configuration(self) -> ConfigurationApp:
+        return self.__configaration
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

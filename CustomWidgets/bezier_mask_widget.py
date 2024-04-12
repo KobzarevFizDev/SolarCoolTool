@@ -114,6 +114,7 @@ class BezierMaskWidget(QWidget):
             new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
             self.__temps_objects_on_scene.append(new_line)
 
+
     def __draw_border_between_section(self, bezier_mask: BezierMask):
         points_of_top_border_mask: List[QPoint] = bezier_mask.get_top_border()
         points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
