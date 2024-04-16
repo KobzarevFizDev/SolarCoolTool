@@ -21,6 +21,66 @@ from configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
+class TestAnimationFrame:
+    def __init__(self,
+                 direction: str,
+                 width_line: int,
+                 size: int):
+        self.__direction = direction
+        self.__width_line = width_line
+        self.__size = size
+
+    def get_frame_by_t(self, t: float):
+        t = self.__validate_t_value(t)
+        frame = self.__create_frame()
+        self.__draw_line(t, frame)
+        return frame
+
+    def __validate_t_value(self, t: float) -> float:
+        if t < 0:
+            return 0
+        elif t > 1:
+            return 1
+        else:
+            return t
+
+    def __draw_line(self, t, frame):
+        if self.__direction == "horizontal":
+            self.__draw_horizontal_line(t, frame)
+        elif self.__direction == "vertical":
+            self.__draw_vertical_line(t, frame)
+
+    def __draw_horizontal_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+        for i in range(start_border, end_border):
+            frame[i] = 0
+
+    def __draw_vertical_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+        for i in range(start_border, end_border):
+            frame.T[i] = 0
+
+    def __create_frame(self):
+        return np.ones((self.__size, self.__size)) * 255
+
+    def __get_line_border_of_line(self, t: float) -> [int, int]:
+        line_position = self.__get_line_pixel_position(t)
+        start_border = int(line_position - self.__width_line / 2)
+        end_border = int(line_position + self.__width_line / 2)
+
+        if start_border < 0:
+            start_border = 0
+
+        if end_border > self.__size:
+            end_border = self.__size
+
+        return start_border, end_border
+
+    def __get_line_pixel_position(self, t: float) -> int:
+        return int(self.__lininterp(0, self.__size, t))
+
+    def __lininterp(self, p0: int, p1: int, t: float) -> int:
+        return (1 - t) * p0 + t * p1
 
 class SolarFrame:
     def __init__(self,
@@ -75,10 +135,7 @@ class SolarFrame:
     def __get_map(self):
         m = sunpy.map.Map(self.__path_to_fits_file)
         return m
-        #m_updated_pointing = update_pointing(m)
-        #m_registered = register(m_updated_pointing)
-        #m_normalized = normalize_exposure(m_registered)
-        #return m_normalized
+
 
     def __get_qtimage(self) -> QImage:
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
