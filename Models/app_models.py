@@ -21,67 +21,6 @@ from configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
-class TestAnimationFrame:
-    def __init__(self,
-                 direction: str,
-                 width_line: int,
-                 size: int):
-        self.__direction = direction
-        self.__width_line = width_line
-        self.__size = size
-
-    def get_frame_by_t(self, t: float):
-        t = self.__validate_t_value(t)
-        frame = self.__create_frame()
-        self.__draw_line(t, frame)
-        return frame
-
-    def __validate_t_value(self, t: float) -> float:
-        if t < 0:
-            return 0
-        elif t > 1:
-            return 1
-        else:
-            return t
-
-    def __draw_line(self, t, frame):
-        if self.__direction == "horizontal":
-            self.__draw_horizontal_line(t, frame)
-        elif self.__direction == "vertical":
-            self.__draw_vertical_line(t, frame)
-
-    def __draw_horizontal_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-        for i in range(start_border, end_border):
-            frame[i] = 0
-
-    def __draw_vertical_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-        for i in range(start_border, end_border):
-            frame.T[i] = 0
-
-    def __create_frame(self):
-        return np.ones((self.__size, self.__size)) * 255
-
-    def __get_line_border_of_line(self, t: float) -> [int, int]:
-        line_position = self.__get_line_pixel_position(t)
-        start_border = int(line_position - self.__width_line / 2)
-        end_border = int(line_position + self.__width_line / 2)
-
-        if start_border < 0:
-            start_border = 0
-
-        if end_border > self.__size:
-            end_border = self.__size
-
-        return start_border, end_border
-
-    def __get_line_pixel_position(self, t: float) -> int:
-        return int(self.__lininterp(0, self.__size, t))
-
-    def __lininterp(self, p0: int, p1: int, t: float) -> int:
-        return (1 - t) * p0 + t * p1
-
 class SolarFrame:
     def __init__(self,
                  id: int,
@@ -582,10 +521,80 @@ class TimeLine:
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
 
+class TestAnimatedFrame:
+    def __init__(self,
+                 direction: str,
+                 width_line: int,
+                 size: int):
+        self.__direction = direction
+        self.__width_line = width_line
+        self.__size = size
+        self.__t = 0
+
+    def animate_frame(self, delta_t: float):
+        self.__t += delta_t
+        self.__t = self.__validate_t_value(self.__t)
+        frame = self.__create_frame()
+        self.__draw_line(self.__t, frame)
+        return frame
+
+    def get_frame_by_t(self, t: float):
+        t = self.__validate_t_value(t)
+        frame = self.__create_frame()
+        self.__draw_line(t, frame)
+        return frame
+
+    def __validate_t_value(self, t: float) -> float:
+        if t < 0:
+            return 0
+        elif t > 1:
+            return 1
+        else:
+            return t
+
+    def __draw_line(self, t, frame):
+        if self.__direction == "horizontal":
+            self.__draw_horizontal_line(t, frame)
+        elif self.__direction == "vertical":
+            self.__draw_vertical_line(t, frame)
+
+    def __draw_horizontal_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+        for i in range(start_border, end_border):
+            frame[i] = 0
+
+    def __draw_vertical_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+        for i in range(start_border, end_border):
+            frame.T[i] = 0
+
+    def __create_frame(self):
+        return np.ones((self.__size, self.__size)) * 255
+
+    def __get_line_border_of_line(self, t: float) -> [int, int]:
+        line_position = self.__get_line_pixel_position(t)
+        start_border = int(line_position - self.__width_line / 2)
+        end_border = int(line_position + self.__width_line / 2)
+
+        if start_border < 0:
+            start_border = 0
+
+        if end_border > self.__size:
+            end_border = self.__size
+
+        return start_border, end_border
+
+    def __get_line_pixel_position(self, t: float) -> int:
+        return int(self.__lininterp(0, self.__size, t))
+
+    def __lininterp(self, p0: int, p1: int, t: float) -> int:
+        return (1 - t) * p0 + t * p1
+
 
 class AppModel:
-    def __init__(self, path_to_files: str, path_to_export_result):
+    def __init__(self, path_to_files: str, path_to_export_result, is_test_mode = False):
         initial_channel = 171
+        self.__is_test_mode = is_test_mode
         self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
         self.__solar_frames_storage = SolarFramesStorage(initial_channel,
@@ -597,8 +606,13 @@ class AppModel:
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
         self.__saver_results = SaverResults(self, path_to_export_result)
+        self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
 
         self.__observers = []
+
+    @property
+    def is_test_mode(self) -> bool:
+        return self.__is_test_mode
 
     @property
     def saver_results(self) -> SaverResults:
@@ -632,6 +646,10 @@ class AppModel:
     def configuration(self) -> ConfigurationApp:
         return self.__configaration
 
+    @property
+    def test_animated_frame(self) -> TestAnimatedFrame:
+        return self.__test_animated_frame
+
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)
 
@@ -644,3 +662,4 @@ class AppModel:
             self.__solar_frames_storage.cache_channel(channel_need_to_load)
         for x in self.__observers:
             x.model_is_changed()
+

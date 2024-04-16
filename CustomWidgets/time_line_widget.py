@@ -23,7 +23,6 @@ class TimeLineWidget(QWidget):
         self.slider.setRange(minValueOfTimeLineSlider, maxValueOfTimeLineSlider)
         self.slider.valueChanged.connect(self.change_value_of_slider)
         layout.addWidget(self.slider)
-        #self.set_number_images_in_channel(181)
 
     def set_number_images_in_channel(self, number_of_images_in_channel: int):
         self.number_of_images_in_channel = number_of_images_in_channel

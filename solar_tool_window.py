@@ -8,7 +8,7 @@ from Controllers.time_line_controller import TimeLineController
 from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
 
 from Controllers.solar_viewer_controller import SolarViewportController
-from Controllers.mask_spline_controller import BezierMaskController
+from Controllers.bezier_mask_controller import BezierMaskController
 
 from Models.app_models import AppModel
 
@@ -20,11 +20,11 @@ class CurveEditorWindow(QMainWindow):
         self.setWindowTitle("Solar cool tool")
         self.setGeometry(200, 200, 1200, 600)
 
-        self.layout = QGridLayout()
-        #self.__app_model = AppModel("D:\\PreparatedSolarImages", "D:\\PreparatedSolarImages")
-        self.__app_model = AppModel("D:\\SolarImages", "D:\\SolarImages")
-        #self.__app_model = AppModel("D:\\WangPreparated", "D:\\WangPreparated")
+        is_test_mode = True
 
+        self.layout = QGridLayout()
+
+        self.__app_model = AppModel("D:\\SolarImages", "D:\\SolarImages")
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
         self.__time_line_controller = TimeLineController(self.__app_model, self)

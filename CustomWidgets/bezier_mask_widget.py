@@ -1,5 +1,6 @@
 from typing import List
 
+from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
 from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
@@ -15,6 +16,7 @@ class BezierMaskWidget(QWidget):
     mouseReleaseSignal = pyqtSignal(int, int)
     mouseDoubleClickSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
+    mouseWheelSignal = pyqtSignal(int)
 
     def __init__(self, parent):
         super(BezierMaskWidget, self).__init__()
@@ -59,42 +61,29 @@ class BezierMaskWidget(QWidget):
     def mouseReleaseEvent(self, event):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
-    def draw_mask(self,
-                  spline: BezierMask,
-                  app_model: AppModel) -> None:
+    def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
+        self.mouseWheelSignal.emit(a0.y())
+
+    def create_bezier_mask_tool(self,
+                                spline: BezierMask,
+                                app_model: AppModel) -> None:
         self.__draw_points_widgets(spline.bezier_curve, app_model)
         self.__draw_bottom_line_of_mask(spline)
         self.__draw_top_line_of_mask(spline)
         self.__draw_border_between_section(spline)
-        self.__drawControlLines(spline.bezier_curve)
+        self.__draw_control_lines(spline.bezier_curve)
 
+    def update_background(self, background: QPixmap) -> None:
+        self.__currentPixmapOfPlot.setPixmap(background)
 
-    def update_solar_plot(self, plot: QPixmap) -> None:
-        self.__currentPixmapOfPlot.setPixmap(plot)
-
-    def update_spline(self, spline: BezierMask) -> None:
+    def update_bezier_mask(self, spline: BezierMask) -> None:
         self.__clear_current_mask()
         self.__updatePositionPointsWidgets(spline.bezier_curve)
         self.__draw_bottom_line_of_mask(spline)
         self.__draw_top_line_of_mask(spline)
         self.__draw_border_between_section(spline)
 
-        #for i in range(30):
-        #    self.__drawTestSlices(spline, i)
-
-        self.__drawControlLines(spline.bezier_curve)
-
-    """
-    def __draw_test_slices(self, bezier_mask: BezierMask, offset):
-        points: List[QPoint] = bezier_mask.getSliceOfMaskSpline(offset)
-
-        pen = QPen(Qt.blue, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(len(points) - 1):
-            p1: QPoint = points[i]
-            p2: QPoint = points[i + 1]
-            newLine = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__temps_objects_on_scene.append(newLine)
-            """
+        self.__draw_control_lines(spline.bezier_curve)
 
     def __draw_bottom_line_of_mask(self, bezier_mask: BezierMask):
         points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
@@ -168,7 +157,7 @@ class BezierMaskWidget(QWidget):
 
         self.__temps_objects_on_scene.clear()
 
-    def __drawControlLines(self, bezier_curve: BezierCurve) -> None:
+    def __draw_control_lines(self, bezier_curve: BezierCurve) -> None:
         p0: QPoint = bezier_curve.points[0]
         p1: QPoint = bezier_curve.points[1]
         p2: QPoint = bezier_curve.points[2]
