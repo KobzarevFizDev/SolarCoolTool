@@ -598,23 +598,26 @@ class TestAnimatedFrame:
         return (1 - t) * p0 + t * p1
 
 class PreviewModeEnum(Enum):
-    SolarPreview = 1
-    DistancePlotPreview = 2
+    SOLAR_PREVIEW = 1
+    DISTANCE_PLOT_PREVIEW = 2
+    TEST_MODE_DISTANCE_PLOT_PREVIEW = 3
 
 class SelectedPreviewMode:
     def __init__(self):
-        self.__mode: PreviewModeEnum = PreviewModeEnum.SolarPreview
+        self.__mode: PreviewModeEnum = PreviewModeEnum.SOLAR_PREVIEW
 
     def set_solar_preview_mode(self):
-        self.__mode = PreviewModeEnum.SolarPreview
+        self.__mode = PreviewModeEnum.SOLAR_PREVIEW
 
     def set_time_distance_preview_mode(self):
-        self.__mode = PreviewModeEnum.DistancePlotPreview
+        self.__mode = PreviewModeEnum.DISTANCE_PLOT_PREVIEW
+
+    def set_test_mode_distance_plot_preview(self):
+        self.__mode = PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
 
     @property
     def current_preview_mode(self) -> PreviewModeEnum:
         return self.__mode
-
 
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result, is_test_mode = False):
@@ -632,6 +635,7 @@ class AppModel:
         self.__interesting_solar_region = InterestingSolarRegion()
         self.__saver_results = SaverResults(self, path_to_export_result)
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
+        self.__selected_preview_mode = SelectedPreviewMode()
 
         self.__observers = []
 
@@ -674,6 +678,10 @@ class AppModel:
     @property
     def test_animated_frame(self) -> TestAnimatedFrame:
         return self.__test_animated_frame
+
+    @property
+    def selected_preview_mode(self) -> SelectedPreviewMode:
+        return self.__selected_preview_mode
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)
