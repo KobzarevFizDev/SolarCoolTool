@@ -19,7 +19,7 @@ class BezierMaskView:
         self.widget.mouseWheelSignal.connect(self.onWheel)
 
     def onWheel(self, delta):
-        self.model.test_animated_frame.animate_frame()
+        self.controller.onWheel(delta)
 
     def model_is_changed(self):
         if self.model.is_test_mode:
@@ -28,7 +28,9 @@ class BezierMaskView:
             self.__handle_as_normal()
 
     def __handle_as_test_mode(self):
-        pass
+        frame_as_qpixmap = self.model.test_animated_frame.current_frame_as_qpixmap
+        self.widget.update_background(frame_as_qpixmap)
+        self.widget.update_bezier_mask(self.model.bezier_mask)
 
     def __handle_as_normal(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame

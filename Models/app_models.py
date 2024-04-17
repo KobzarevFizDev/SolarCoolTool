@@ -530,13 +530,19 @@ class TestAnimatedFrame:
         self.__width_line = width_line
         self.__size = size
         self.__t = 0
+        self.__frame = self.get_frame_by_t(0)
+
+    @property
+    def current_frame_as_qpixmap(self) -> QPixmap:
+        data = self.__frame.astype(np.uint8)
+        qimage = QImage(data, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
+        return QPixmap.fromImage(qimage)
 
     def animate_frame(self, delta_t: float):
         self.__t += delta_t
         self.__t = self.__validate_t_value(self.__t)
-        frame = self.__create_frame()
-        self.__draw_line(self.__t, frame)
-        return frame
+        self.__frame = self.__create_frame()
+        self.__draw_line(self.__t, self.__frame)
 
     def get_frame_by_t(self, t: float):
         t = self.__validate_t_value(t)

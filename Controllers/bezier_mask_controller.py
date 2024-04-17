@@ -12,10 +12,7 @@ class BezierMaskController:
         self.view = BezierMaskView(self, model, mainAppWindow)
 
     def onWheel(self, delta):
-        if self.model.is_test_mode:
-            self.__handle_normal_mode(delta)
-        else:
-            self.__handle_test_mode(delta)
+        self.__handle_test_mode(delta)
 
     def __handle_normal_mode(self, delta):
         if delta > 0:
@@ -24,7 +21,9 @@ class BezierMaskController:
             self.__decrease_number_of_segments()
 
     def __handle_test_mode(self, delta):
-        pass
+        delta = -delta/8000
+        self.model.test_animated_frame.animate_frame(delta)
+        self.model.notify_observers()
 
     def __increase_number_of_segments(self):
         self.model.bezier_mask.increase_number_of_segments()

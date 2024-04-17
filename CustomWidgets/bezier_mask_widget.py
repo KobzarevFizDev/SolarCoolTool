@@ -32,7 +32,12 @@ class BezierMaskWidget(QWidget):
         self.scene = QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, 600, 600)
         self.view = QGraphicsView(self.scene, self)
-        self.view.setGeometry(0, 0, 600, 600)
+        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        view_rect = self.contentsRect()
+        self.view.setSceneRect(0, 0, view_rect.width(), view_rect.height())
+
         self.view.show()
 
         self.__anchor_widget1: BezierAnchorPointWidget = None
@@ -47,6 +52,8 @@ class BezierMaskWidget(QWidget):
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__temps_objects_on_scene = []
 
+    def a(self, e):
+        pass
 
 # TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
@@ -62,7 +69,7 @@ class BezierMaskWidget(QWidget):
         self.mouseReleaseSignal.emit(event.x(), event.y())
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
-        self.mouseWheelSignal.emit(a0.y())
+        self.mouseWheelSignal.emit(a0.angleDelta().y())
 
     def create_bezier_mask_tool(self,
                                 spline: BezierMask,
