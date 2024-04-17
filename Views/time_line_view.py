@@ -10,7 +10,7 @@ class TimeLineView:
         self.controller: TimeLineController = controller
         self.model: AppModel = model
         self.widget = TimeLineWidget(parentWindow)
-        parentWindow.layout.addWidget(self.widget, 1, 1, 1, 3)
+        parentWindow.layout.addWidget(self.widget, 2, 1, 1, 3)
         self.model.add_observer(self)
         self.widget.selected_image_in_channel.connect(self.selected_image)
 

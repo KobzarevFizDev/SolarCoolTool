@@ -2,6 +2,7 @@ import math
 import os
 import sqlite3
 from typing import List
+from enum import Enum
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
@@ -595,6 +596,24 @@ class TestAnimatedFrame:
 
     def __lininterp(self, p0: int, p1: int, t: float) -> int:
         return (1 - t) * p0 + t * p1
+
+class PreviewModeEnum(Enum):
+    SolarPreview = 1
+    DistancePlotPreview = 2
+
+class SelectedPreviewMode:
+    def __init__(self):
+        self.__mode: PreviewModeEnum = PreviewModeEnum.SolarPreview
+
+    def set_solar_preview_mode(self):
+        self.__mode = PreviewModeEnum.SolarPreview
+
+    def set_time_distance_preview_mode(self):
+        self.__mode = PreviewModeEnum.DistancePlotPreview
+
+    @property
+    def current_preview_mode(self) -> PreviewModeEnum:
+        return self.__mode
 
 
 class AppModel:

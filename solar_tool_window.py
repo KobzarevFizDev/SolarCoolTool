@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGr
 
 from Controllers.solar_viewer_controller import SolarViewportController
 from Controllers.bezier_mask_controller import BezierMaskController
+from  Controllers.progress_controller import ProgressController
 
 from Models.app_models import AppModel
 
@@ -25,6 +26,7 @@ class CurveEditorWindow(QMainWindow):
         self.__app_model = AppModel("D:\\SolarImages",
                                     "D:\\SolarImages",
                                     is_test_mode=True)
+        self.__progress_controller = ProgressController(self.__app_model, self)
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
         self.__time_line_controller = TimeLineController(self.__app_model, self)

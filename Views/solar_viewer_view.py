@@ -13,7 +13,7 @@ class SolarViewportView:
         self.controller: SolarViewportController = controller
         self.model: AppModel = model
         self.widget: SolarViewerWidget = SolarViewerWidget(parentWindow)
-        parentWindow.layout.addWidget(self.widget,0,2,1,1)
+        parentWindow.layout.addWidget(self.widget,1,2,1,1)
         self.model.add_observer(self)
         self.widget.wheelScrollSignal.connect(self.zoom)
         self.widget.mouseMoveSignal.connect(self.move)

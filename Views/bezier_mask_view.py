@@ -13,7 +13,7 @@ class BezierMaskView:
         self.controller: BezierMaskController = controller
         self.model: AppModel = model
         self.widget = BezierMaskWidget(parentWindow)
-        parentWindow.layout.addWidget(self.widget, 0, 0, 1, 2)
+        parentWindow.layout.addWidget(self.widget, 1, 0, 1, 2)
         self.model.add_observer(self)
         self.widget.create_bezier_mask_tool(self.model.bezier_mask, self.model)
         self.widget.mouseWheelSignal.connect(self.onWheel)
