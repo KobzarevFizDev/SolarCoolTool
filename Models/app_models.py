@@ -517,6 +517,10 @@ class TimeLine:
         self.__index_of_current_solar_frame = new_index
 
     @property
+    def total_solar_frames(self) -> int:
+        return self.__solar_frames_storage.get_number_of_frames_in_current_channel()
+
+    @property
     def current_solar_frame(self) -> SolarFrame:
         i = self.__index_of_current_solar_frame
         return (self.__solar_frames_storage
@@ -538,6 +542,14 @@ class TestAnimatedFrame:
         data = self.__frame.astype(np.uint8)
         qimage = QImage(data, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
+
+    @property
+    def current_t(self) -> float:
+        return self.__t
+
+    @current_t.setter
+    def current_t(self, value) -> None:
+        self.__t = self.__validate_t_value(value)
 
     def animate_frame(self, delta_t: float):
         self.__t += delta_t
