@@ -21,9 +21,10 @@ class BezierMaskController:
             self.__decrease_number_of_segments()
 
     def __handle_test_mode(self, delta):
-        delta = -delta/8000
-        self.model.test_animated_frame.animate_frame(delta)
-        self.model.notify_observers()
+        pass
+        #delta = -delta/8000
+        #self.model.test_animated_frame.animate_frame(delta)
+        #self.model.notify_observers()
 
     def __increase_number_of_segments(self):
         self.model.bezier_mask.increase_number_of_segments()

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QPoint
+from PyQt5.QtGui import QPixmap
 
 from CustomWidgets.bezier_mask_widget import BezierMaskWidget
 from Models.app_models import PreviewModeEnum
@@ -29,9 +30,11 @@ class BezierMaskView:
             self.__handle_as_test_mode()
 
     def __handle_as_test_mode(self):
-        frame_as_qpixmap = self.model.test_animated_frame.current_frame_as_qpixmap
+        t = self.model.test_animated_frame.current_t
+        frame_as_qpixmap: QPixmap = self.model.test_animated_frame.get_frame_by_t_as_qpixmap(t)
         self.widget.update_background(frame_as_qpixmap)
         self.widget.update_bezier_mask(self.model.bezier_mask)
+
 
     def __handle_as_normal(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame

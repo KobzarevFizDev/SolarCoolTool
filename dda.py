@@ -26,8 +26,9 @@ def show_raster(raster, size):
             line += str(raster[x][y])
         print(line)
 
-def get_pixels_of_line(x1, y1, x2, y2) -> List[QPoint]:
-    L = max(abs(round(x1) - round(x2)), abs(round(y1) - round(y2)))
+def get_pixels_of_line(x1, y1, x2, y2, L: int = None) -> List[QPoint]:
+    if L == None:
+        L = max(abs(round(x1) - round(x2)), abs(round(y1) - round(y2)))
     delta_x = (x2 - x1)/L
     delta_y = (y2 - y1)/L
     x = x1

@@ -3,6 +3,7 @@ import os
 import sqlite3
 from typing import List
 from enum import IntEnum, unique
+from dda import get_pixels_of_line
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
@@ -537,11 +538,6 @@ class TestAnimatedFrame:
         self.__t = 0
         self.__frame = self.get_frame_by_t(0)
 
-    @property
-    def current_frame_as_qpixmap(self) -> QPixmap:
-        data = self.__frame.astype(np.uint8)
-        qimage = QImage(data, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
-        return QPixmap.fromImage(qimage)
 
     @property
     def current_t(self) -> float:
@@ -562,6 +558,12 @@ class TestAnimatedFrame:
         frame = self.__create_frame()
         self.__draw_line(t, frame)
         return frame
+
+    def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
+        frame = self.get_frame_by_t(t)
+        data = frame.astype(np.uint8)
+        qimage = QImage(data, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
+        return QPixmap.fromImage(qimage)
 
     def __validate_t_value(self, t: float) -> float:
         if t < 0:
@@ -652,6 +654,11 @@ class Cubedata:
     def number_of_frames(self) -> int:
         return len(self.__frames)
 
+    def get_frame(self, index: int):
+        if index >= len(self.__frames):
+            raise Exception("CubeData::get_frame() index out")
+        return self.__frames[index]
+
     @classmethod
     def create_from_debug_data(cls):
         cubedata = cls(600, 600)
@@ -661,10 +668,72 @@ class Cubedata:
         for t in t_values:
             frame = animated_frame.get_frame_by_t(t)
             cubedata.add_frame(frame)
+        return cubedata
 
 class TimeDistancePlot:
-    def __init__(self, bezier_mask: BezierMask):
+    @classmethod
+    def createDebugDistancePlot(cls, bezier_mask: BezierMask):
+        cubedata: Cubedata = Cubedata.create_from_debug_data()
+        number_of_slices_along_loop = 100
+        coordinates = cls.__get_coordinates_of_pixels_from_bezier_mask(cls,
+                                                                       bezier_mask,
+                                                                       number_of_slices_along_loop)
+        width_size_of_array = bezier_mask.width_in_pixels
+        length_size_of_array = number_of_slices_along_loop
+        for i in range(cubedata.number_of_frames):
+            frame = cubedata.get_frame(i)
+            values = cls.__get_pixels_values_by_coordinates_as_2d_array(cls,
+                                                               width_size_of_array,
+                                                               length_size_of_array,
+                                                               coordinates,
+                                                               frame,
+                                                               False)
+            pass
+
+
+    @classmethod
+    def createDistancePlot(cls, **kwargs):
         pass
+
+    def __get_coordinates_of_pixels_from_bezier_mask(self,
+                                                     bezier_mask: BezierMask,
+                                                     number_of_slices_along_loop: int) -> List[List[QPoint]]:
+        coordinates: List[List[QPoint]] = list()
+        bottom_points: List[QPoint] = bezier_mask.get_bottom_border(number_of_slices_along_loop)
+        top_points: List[QPoint] = bezier_mask.get_top_border(number_of_slices_along_loop)
+        for i in range(number_of_slices_along_loop):
+            bottom_point: QPoint = bottom_points[i]
+            top_point: QPoint = top_points[i]
+            pixels_coordinates = get_pixels_of_line(bottom_point.x(),
+                                                    bottom_point.y(),
+                                                    top_point.x(),
+                                                    top_point.y(),
+                                                    bezier_mask.width_in_pixels)
+            coordinates.append(pixels_coordinates)
+        return coordinates
+
+    def __get_pixels_values_by_coordinates_as_2d_array(self,
+                                                       width_size_array,
+                                                       length_size_array,
+                                                       coordinates: List[List[QPoint]],
+                                                       frame: npt.NDArray,
+                                                       need_to_transform_from_view_to_image: bool) -> npt.NDArray:
+
+        pixels_values_array = np.zeros((width_size_array, length_size_array))
+
+        w = 0
+        l = 0
+
+        for coordinates_pixels_of_slice in coordinates:
+            for coordinate_of_pixel in coordinates_pixels_of_slice:
+                pixel_x_coordinate = coordinate_of_pixel.x()
+                pixel_y_coordinate = coordinate_of_pixel.y()
+                pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
+                pixels_values_array[w][l] = pixel_value
+                w += 1
+            l += 1
+            w = 0
+        return pixels_values_array
 
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):

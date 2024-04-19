@@ -45,10 +45,11 @@ class TimeDistancePlotDebugView:
         self.__title = QLabel("t = ")
         self.__t_slider = QSlider(Qt.Horizontal)
         self.__t_slider.setRange(0, 100)
-        self.__update_button = QPushButton("Update")
+        self.__create_timedistance_plot_button = QPushButton("Build")
+        self.__create_timedistance_plot_button.clicked.connect(self.__create_time_distance_plot)
         layout.addWidget(self.__title)
         layout.addWidget(self.__t_slider)
-        layout.addWidget(self.__update_button)
+        layout.addWidget(self.__create_timedistance_plot_button)
         self.layout.addLayout(layout)
 
     def model_is_changed(self):
@@ -71,3 +72,6 @@ class TimeDistancePlotDebugView:
     def __show_view(self):
         self.__time_distance_window.show()
         self.__t_slider.show()
+
+    def __create_time_distance_plot(self):
+        self.controller.create_debug_time_distance_plot()
