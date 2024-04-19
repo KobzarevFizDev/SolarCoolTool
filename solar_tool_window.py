@@ -5,16 +5,15 @@ from PyQt5 import QtCore
 from Controllers.channel_switch_controller import ChannelSwitchController
 from Controllers.time_line_controller import TimeLineController
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget, QGridLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
 
+from Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
 from Controllers.solar_viewer_controller import SolarViewportController
 from Controllers.bezier_mask_controller import BezierMaskController
 from Controllers.progress_controller import ProgressController
 from Controllers.selected_preview_mode_controller import SelectedPreviewModeController
 
 from Models.app_models import AppModel
-
-from configuration import ConfigurationApp
 
 class CurveEditorWindow(QMainWindow):
     def __init__(self):
@@ -25,9 +24,9 @@ class CurveEditorWindow(QMainWindow):
         self.layout = QGridLayout()
 
         self.__app_model = AppModel("D:\\SolarImages",
-                                    "D:\\SolarImages",
-                                    is_test_mode=True)
+                                    "D:\\SolarImages")
 
+        self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
         self.__progress_controller = ProgressController(self.__app_model, self)
         self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)

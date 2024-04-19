@@ -2,7 +2,7 @@ import math
 import os
 import sqlite3
 from typing import List
-from enum import Enum
+from enum import IntEnum, unique
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
@@ -597,10 +597,12 @@ class TestAnimatedFrame:
     def __lininterp(self, p0: int, p1: int, t: float) -> int:
         return (1 - t) * p0 + t * p1
 
-class PreviewModeEnum(Enum):
+@unique
+class PreviewModeEnum(IntEnum):
     SOLAR_PREVIEW = 1
     DISTANCE_PLOT_PREVIEW = 2
     TEST_MODE_DISTANCE_PLOT_PREVIEW = 3
+
 
 class SelectedPreviewMode:
     def __init__(self):
@@ -609,20 +611,52 @@ class SelectedPreviewMode:
     def set_solar_preview_mode(self):
         self.__mode = PreviewModeEnum.SOLAR_PREVIEW
 
-    def set_time_distance_preview_mode(self):
+    def set_time_distance_mode(self):
         self.__mode = PreviewModeEnum.DISTANCE_PLOT_PREVIEW
 
-    def set_test_mode_distance_plot_preview(self):
+    def set_distance_plot_debug_mode(self):
         self.__mode = PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
 
     @property
     def current_preview_mode(self) -> PreviewModeEnum:
         return self.__mode
 
+class Cubedata:
+    def __init__(self, x_size: int, y_size: int):
+        self.__x_size = x_size
+        self.__y_size = y_size
+        self.__frames: List = list()
+
+    def add_frame(self, frame: npt.NDArray):
+        if not frame.shape[1] == self.__y_size:
+            raise Exception(f"Dont match y size of cubedata and frame. [{frame.shape[1]}] [{self.__y_size}]")
+
+        if not frame.shape[0] == self.__x_size:
+            raise Exception(f"Dont match x size of cubedata and frame. [{frame.shape[0]}] [{self.__x_size}]")
+
+        self.__frames.append(frame)
+
+    @property
+    def number_of_frames(self) -> int:
+        return len(self.__frames)
+
+    @classmethod
+    def create_from_debug_data(cls):
+        cubedata = cls(600, 600)
+        animated_frame = TestAnimatedFrame("horizontal", 30, 600)
+        number_of_steps = 100
+        t_values = [i/number_of_steps for i in range(number_of_steps)]
+        for t in t_values:
+            frame = animated_frame.get_frame_by_t(t)
+            cubedata.add_frame(frame)
+
+class TimeDistancePlot:
+    def __init__(self, bezier_mask: BezierMask):
+        pass
+
 class AppModel:
-    def __init__(self, path_to_files: str, path_to_export_result, is_test_mode = False):
+    def __init__(self, path_to_files: str, path_to_export_result):
         initial_channel = 171
-        self.__is_test_mode = is_test_mode
         self.__configaration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
         self.__solar_frames_storage = SolarFramesStorage(initial_channel,
@@ -638,10 +672,6 @@ class AppModel:
         self.__selected_preview_mode = SelectedPreviewMode()
 
         self.__observers = []
-
-    @property
-    def is_test_mode(self) -> bool:
-        return self.__is_test_mode
 
     @property
     def saver_results(self) -> SaverResults:

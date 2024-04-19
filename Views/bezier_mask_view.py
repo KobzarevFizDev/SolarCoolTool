@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from PyQt5.QtCore import QPoint
 
 from CustomWidgets.bezier_mask_widget import BezierMaskWidget
+from Models.app_models import PreviewModeEnum
 
 if TYPE_CHECKING:
     from Models.app_models import AppModel, SolarFrame
@@ -22,10 +23,10 @@ class BezierMaskView:
         self.controller.onWheel(delta)
 
     def model_is_changed(self):
-        if self.model.is_test_mode:
-            self.__handle_as_test_mode()
-        else:
+        if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
             self.__handle_as_normal()
+        else:
+            self.__handle_as_test_mode()
 
     def __handle_as_test_mode(self):
         frame_as_qpixmap = self.model.test_animated_frame.current_frame_as_qpixmap

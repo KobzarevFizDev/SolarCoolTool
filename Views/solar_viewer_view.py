@@ -4,6 +4,8 @@ from PyQt5.QtCore import QPoint
 
 from CustomWidgets.solar_viewer_widget import SolarViewerWidget
 
+from Models.app_models import PreviewModeEnum
+
 if TYPE_CHECKING:
     from Models.app_models import AppModel
     from Controllers.solar_viewer_controller import SolarViewportController
@@ -30,10 +32,22 @@ class SolarViewportView:
         self.controller.move_solar_image(QPoint(x, y))
 
     def on_select_plot(self, top_right_point: QPoint, bottom_left_point: QPoint):
-        print(top_right_point, bottom_left_point)
         self.controller.select_plot_of_image(top_right_point, bottom_left_point)
 
     def model_is_changed(self):
+        if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
+            self.__show_view()
+            self.__handle_view()
+        else:
+            self.__hide_view()
+
+    def __hide_view(self):
+        self.widget.hide()
+
+    def __show_view(self):
+        self.widget.show()
+
+    def __handle_view(self):
         solar_frame = self.model.time_line.current_solar_frame
         pixmap_of_solar_to_show = self.model.viewport_transform.get_transformed_pixmap_for_viewport(solar_frame)
         offset = self.model.viewport_transform.offset
