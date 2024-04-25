@@ -26,6 +26,7 @@ class CurveEditorWindow(QMainWindow):
         self.__app_model = AppModel("D:\\SolarImages",
                                     "D:\\SolarImages")
 
+
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
         self.__progress_controller = ProgressController(self.__app_model, self)
         self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)

@@ -1,19 +1,20 @@
+import math
 import os
 
+import numpy as np
+import numpy.typing as npt
 import sunpy.map
 import matplotlib.pyplot as plt
 from astropy.io.fits import CompImageHDU
 from sunpy.data.sample import AIA_171_IMAGE  # Sample data
 from astropy import units as u
 from Models.app_models import TestAnimatedFrame
+from scipy.ndimage import zoom
 
-test_frame = TestAnimatedFrame("horizontal", 50, 600)
-frame = test_frame.get_frame_by_t(0.1)
-plt.imshow(frame, cmap='gray', vmin=0, vmax=255)
-plt.show()
-
-
-
+array = np.arange(12).reshape((3, 4))
+res = array.sum(axis=0)
+res2 = array.mean(axis=0)
+pass
 
 
 

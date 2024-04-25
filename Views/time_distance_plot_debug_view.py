@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+import numpy.typing as npt
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
@@ -60,6 +61,9 @@ class TimeDistancePlotDebugView:
 
         elif self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
             self.__hide_view()
+
+    def set_time_distance_plot(self, pixmap_of_time_distance_plot: QPixmap):
+        self.__time_distance_window.setPixmap(pixmap_of_time_distance_plot)
 
     def __on_change_t(self, value):
         value /= 100

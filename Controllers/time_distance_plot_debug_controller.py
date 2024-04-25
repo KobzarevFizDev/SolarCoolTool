@@ -3,7 +3,7 @@ from Views.time_distance_plot_debug_view import TimeDistancePlotDebugView
 class TimeDistancePlotDebugController:
     def __init__(self, model, mainAppWindow):
         self.model: AppModel = model
-        self.view = TimeDistancePlotDebugView(self, model, mainAppWindow)
+        self.view: TimeDistancePlotDebugView = TimeDistancePlotDebugView(self, model, mainAppWindow)
 
     def change_t(self, t: float):
         if t > 1 or t < 0:
@@ -14,4 +14,5 @@ class TimeDistancePlotDebugController:
 
     def create_debug_time_distance_plot(self):
         bezier_mask = self.model.bezier_mask
-        plot = TimeDistancePlot.createDebugDistancePlot(bezier_mask)
+        plot: TimeDistancePlot = TimeDistancePlot.createDebugDistancePlot(bezier_mask)
+        self.view.set_time_distance_plot(plot.get_time_distance_plot_as_qpixmap_in_grayscale())
