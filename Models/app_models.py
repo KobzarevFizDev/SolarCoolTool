@@ -579,14 +579,14 @@ class TestAnimatedFrame:
     def animate_frame(self, delta_t: float):
         self.__t += delta_t
         self.__t = self.__validate_t_value(self.__t)
-        self.__frame = self.__create_frame()
+        self.__frame = self.__create_content_frame()
         self.__draw_line(self.__t, self.__frame)
 
     def get_frame_by_t(self, t: float):
         t = self.__validate_t_value(t)
-        frame = self.__create_frame()
-        self.__draw_line(t, frame)
-        return frame
+        content_frame = self.__create_content_frame()
+        self.__draw_line(t, content_frame)
+        return content_frame
 
     def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
         frame = self.get_frame_by_t(t)
@@ -610,6 +610,7 @@ class TestAnimatedFrame:
 
     def __draw_horizontal_line(self, t, frame):
         start_border, end_border = self.__get_line_border_of_line(t)
+
         for i in range(start_border, end_border):
             frame[i] = 0
 
@@ -618,7 +619,7 @@ class TestAnimatedFrame:
         for i in range(start_border, end_border):
             frame.T[i] = 0
 
-    def __create_frame(self):
+    def __create_content_frame(self):
         return np.ones((self.__size, self.__size)) * 255
 
     def __get_line_border_of_line(self, t: float) -> [int, int]:
@@ -704,9 +705,9 @@ class TimeDistancePlot:
     @classmethod
     def createDebugDistancePlot(cls, bezier_mask: BezierMask):
         width_one_step_time_distance_plot = 3
-        width_time_distance_plot = 500
+        width_time_distance_plot = 300
         height_time_distance_plot = 500
-        time_distance_plot_array = np.zeros((width_time_distance_plot, height_time_distance_plot))
+        time_distance_plot_array = np.zeros((height_time_distance_plot, width_time_distance_plot))
 
         instance = TimeDistancePlot()
         cubedata: Cubedata = Cubedata.create_from_debug_data()
@@ -728,7 +729,7 @@ class TimeDistancePlot:
             start_index = i * width_one_step_time_distance_plot
             finish_index = (i + 1) * width_one_step_time_distance_plot
             print(f"{start_index} {finish_index}")
-            time_distance_plot_array[start_index:finish_index] = line
+            time_distance_plot_array.T[start_index:finish_index] = line
 
 
         setattr(instance, "__cubedata", cubedata)
@@ -744,7 +745,7 @@ class TimeDistancePlot:
         height = getattr(self, "__height_time_distance_plot")
 
         data = frame.astype(np.uint8)
-        qimage = QImage(data, width, width, height, QImage.Format_Grayscale8)
+        qimage = QImage(data, width, height, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
 
 
