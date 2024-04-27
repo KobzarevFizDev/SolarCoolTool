@@ -7,6 +7,7 @@ from Controllers.time_line_controller import TimeLineController
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
 
+from Controllers.time_distance_plot_controller import TimeDistancePlotController
 from Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
 from Controllers.solar_viewer_controller import SolarViewportController
 from Controllers.bezier_mask_controller import BezierMaskController
@@ -26,7 +27,7 @@ class CurveEditorWindow(QMainWindow):
         self.__app_model = AppModel("D:\\SolarImages",
                                     "D:\\SolarImages")
 
-
+        self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
         self.__progress_controller = ProgressController(self.__app_model, self)
         self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
