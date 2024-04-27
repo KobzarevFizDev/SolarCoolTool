@@ -70,21 +70,14 @@ class TimeDistancePlotDebugView:
     def __create_t_slider(self) -> QSlider:
         slider = QSlider(Qt.Horizontal)
         slider.setRange(0, 100)
-        slider.valueChanged.connect(self.__on_changed_t)
+        slider.valueChanged.connect(self.controller.change_t)
         return slider
 
     def __create_bake_button(self) -> QPushButton:
         bake_button = QPushButton("Bake")
-        bake_button.clicked.connect(self.__on_bake_button_clicked)
+        bake_button.clicked.connect(self.controller.update_debug_time_distance_plot)
         return bake_button
 
-
-    def __on_changed_t(self, t: int) -> None:
-        t /= 100
-        self.controller.change_t(t)
-
-    def __on_bake_button_clicked(self) -> None:
-        self.controller.update_debug_time_distance_plot()
 
     def __show_this_view(self):
         self.__label_of_t_slider.show()

@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from Controllers.time_distance_plot_controller import TimeDistancePlotController
 
 
-
 class TimeDistancePlotView:
     def __init__(self, controller, model, parent_window):
         self.controller: TimeDistancePlotController = controller

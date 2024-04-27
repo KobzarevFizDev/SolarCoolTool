@@ -24,6 +24,165 @@ from configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
+
+class CubedataFrame:
+    def __init__(self, content: npt.NDArray):
+        self.__frame_content: npt.NDArray = content
+        self.__start_border_of_line: int = -1
+        self.__finish_border_of_line: int = -1
+
+    def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
+        self.__start_border_of_line = start_border
+        self.__finish_border_of_line = finish_border
+
+
+    @property
+    def frame_content(self) -> npt.NDArray:
+        return self.__frame_content
+
+    @property
+    def width_of_frame(self) -> int:
+        return self.__frame_content.shape[1]
+
+    @property
+    def height_of_frame(self) -> int:
+        return self.__frame_content.shape[0]
+
+    @property
+    def start_border_of_line(self) -> int:
+        return self.__start_border_of_line
+
+    @property
+    def finish_border_of_line(self) -> int:
+        return self.__finish_border_of_line
+
+
+class Cubedata:
+    def __init__(self, x_size: int, y_size: int):
+        self.__x_size = x_size
+        self.__y_size = y_size
+        self.__frames: List[CubedataFrame] = list()
+
+    def add_frame(self, frame: CubedataFrame):
+        if not frame.width_of_frame == self.__y_size:
+            raise Exception(f"Dont match y size of cubedata and frame. [{frame.shape[1]}] [{self.__y_size}]")
+
+        if not frame.height_of_frame == self.__x_size:
+            raise Exception(f"Dont match x size of cubedata and frame. [{frame.shape[0]}] [{self.__x_size}]")
+
+        self.__frames.append(frame)
+
+    @property
+    def number_of_frames(self) -> int:
+        return len(self.__frames)
+
+    def get_frame(self, index: int) -> CubedataFrame:
+        if index >= len(self.__frames):
+            raise Exception("CubeData::get_frame() index out")
+        return self.__frames[index]
+
+    @classmethod
+    def create_from_debug_data(cls, number_of_frames: int):
+        cubedata = cls(600, 600)
+        animated_frame = TestAnimatedFrame("horizontal", 30, 600)
+        number_of_steps = 100
+        t_values = [i/number_of_steps for i in range(number_of_frames)]
+        for t in t_values:
+            frame = animated_frame.get_frame_by_t(t)
+            cubedata.add_frame(frame)
+        return cubedata
+
+
+class TestAnimatedFrame:
+    def __init__(self,
+                 direction: str,
+                 width_line: int,
+                 size: int):
+        self.__direction = direction
+        self.__width_line = width_line
+        self.__size = size
+        self.__t = 0
+        self.__frame = self.get_frame_by_t(0)
+
+
+    @property
+    def current_t(self) -> float:
+        return self.__t
+
+    @current_t.setter
+    def current_t(self, value) -> None:
+        self.__t = self.__validate_t_value(value)
+
+    def animate_frame(self, delta_t: float):
+        self.__t += delta_t
+        self.__t = self.__validate_t_value(self.__t)
+        self.__frame = self.__create_content_frame()
+        self.__draw_line(self.__t, self.__frame)
+
+    def get_frame_by_t(self, t: float) -> CubedataFrame:
+        t = self.__validate_t_value(t)
+        content_frame = self.__create_content_frame()
+        start_border, finish_border = self.__draw_line(t, content_frame)
+        frame = CubedataFrame(content_frame)
+        frame.set_border_of_time_distance_plot_line(start_border, finish_border)
+        return frame
+
+    def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
+        frame_content = self.get_frame_by_t(t).frame_content
+        frame_content = frame_content.astype(np.uint8)
+        qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
+        return QPixmap.fromImage(qimage)
+
+    def __validate_t_value(self, t: float) -> float:
+        if t < 0:
+            return 0
+        elif t > 1:
+            return 1
+        else:
+            return t
+
+    def __draw_line(self, t, frame):
+        if self.__direction == "horizontal":
+            return self.__draw_horizontal_line(t, frame)
+        elif self.__direction == "vertical":
+            return self.__draw_vertical_line(t, frame)
+
+    def __draw_horizontal_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+
+        for i in range(start_border, end_border):
+            frame[i] = 0
+
+        return start_border, end_border
+
+    def __draw_vertical_line(self, t, frame):
+        start_border, end_border = self.__get_line_border_of_line(t)
+        for i in range(start_border, end_border):
+            frame.T[i] = 0
+
+    def __create_content_frame(self):
+        return np.ones((self.__size, self.__size)) * 255
+
+    def __get_line_border_of_line(self, t: float) -> [int, int]:
+        line_position = self.__get_line_pixel_position(t)
+        start_border = int(line_position - self.__width_line / 2)
+        end_border = int(line_position + self.__width_line / 2)
+
+        if start_border < 0:
+            start_border = 0
+
+        if end_border > self.__size:
+            end_border = self.__size
+
+        return start_border, end_border
+
+    def __get_line_pixel_position(self, t: float) -> int:
+        return int(self.__lininterp(0, self.__size, t))
+
+    def __lininterp(self, p0: int, p1: int, t: float) -> float:
+        return (1 - t) * p0 + t * p1
+
+
 class SolarFrame:
     def __init__(self,
                  id: int,
@@ -186,9 +345,6 @@ class SolarFramesStorage:
 
     def get_number_of_frames_in_current_channel(self) -> int:
         return len(self.__loaded_channel)
-        #in_database = self.__get_number_of_frames_of_channel_in_database(self.__current_channel)
-        #max_limit = self.__configuration_app.get_limit_for_channel(self.__current_channel)
-        #return min(in_database, max_limit)
 
     def __get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
@@ -241,6 +397,18 @@ class SolarFramesStorage:
         connection.close()
         return dates
 
+    # t = 0 <-> 1
+    def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
+        first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
+        x_size = first_frame.pixels_array.shape[1]
+        y_size = first_frame.pixels_array.shape[0]
+        cubedata = Cubedata(x_size, y_size)
+        for index in range(start_index, finish_index):
+            solar_frame: SolarFrame = self.get_solar_frame_by_index_from_current_channel(index)
+            content = solar_frame.pixels_array
+            frame = CubedataFrame(content)
+            cubedata.add_frame(frame)
+        return cubedata
 
 
 class BezierCurve:
@@ -501,10 +669,13 @@ class ViewportTransform:
         pixmap_for_draw = QPixmap.fromImage(scaled_solar_frame)
         return pixmap_for_draw
 
+
 class TimeLine:
     def __init__(self, solar_frames_storage: SolarFramesStorage):
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__index_of_current_solar_frame: int = 0
+        self.__start_interval_border_of_time_distance_plot: int = 0
+        self.__finish_interval_border_of_time_distance_plot: int = 3
 
     @property
     def index_of_current_solar_frame(self) -> int:
@@ -514,9 +685,33 @@ class TimeLine:
     def index_of_current_solar_frame(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         if new_index >= number_of_solar_frames_in_current_channel:
-            raise Exception("Index of current solar frame cannot be >= number of solar frames in current channel")
+            raise Exception(f"Index of current solar frame cannot be >= number of solar frames in current channel. Index = {new_index}")
 
         self.__index_of_current_solar_frame = new_index
+
+    @property
+    def start_interval_of_time_distance_plot(self) -> int:
+        return self.__start_interval_border_of_time_distance_plot
+
+    @start_interval_of_time_distance_plot.setter
+    def start_interval_of_time_distance_plot(self, new_index) -> None:
+        number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
+        if new_index >= number_of_solar_frames_in_current_channel:
+            raise Exception(f"Index of start interval time distance plot cannot be >= number of solar frames in current channel. Index = {new_index}")
+
+        self.__start_interval_border_of_time_distance_plot = new_index
+
+    @property
+    def finish_interval_of_time_distance_plot(self) -> int:
+        return self.__finish_interval_border_of_time_distance_plot
+
+    @finish_interval_of_time_distance_plot.setter
+    def finish_interval_of_time_distance_plot(self, new_index) -> None:
+        number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
+        if new_index >= number_of_solar_frames_in_current_channel:
+            raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
+
+        self.__finish_interval_border_of_time_distance_plot = new_index
 
     @property
     def total_solar_frames(self) -> int:
@@ -528,126 +723,7 @@ class TimeLine:
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
 
-class CubedataFrame:
-    def __init__(self, content: npt.NDArray):
-        self.__frame_content: npt.NDArray = content
-        self.__start_border_of_line: int = 0
-        self.__finish_border_of_line: int = 0
 
-    def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
-        self.__start_border_of_line = start_border
-        self.__finish_border_of_line = finish_border
-
-
-    @property
-    def frame_content(self) -> npt.NDArray:
-        return self.__frame_content
-
-    @property
-    def width_of_frame(self) -> int:
-        return self.__frame_content.shape[1]
-
-    @property
-    def height_of_frame(self) -> int:
-        return self.__frame_content.shape[0]
-
-    @property
-    def start_border_of_line(self) -> int:
-        return self.__start_border_of_line
-
-    @property
-    def finish_border_of_line(self) -> int:
-        return self.__finish_border_of_line
-
-
-class TestAnimatedFrame:
-    def __init__(self,
-                 direction: str,
-                 width_line: int,
-                 size: int):
-        self.__direction = direction
-        self.__width_line = width_line
-        self.__size = size
-        self.__t = 0
-        self.__frame = self.get_frame_by_t(0)
-
-
-    @property
-    def current_t(self) -> float:
-        return self.__t
-
-    @current_t.setter
-    def current_t(self, value) -> None:
-        self.__t = self.__validate_t_value(value)
-
-    def animate_frame(self, delta_t: float):
-        self.__t += delta_t
-        self.__t = self.__validate_t_value(self.__t)
-        self.__frame = self.__create_content_frame()
-        self.__draw_line(self.__t, self.__frame)
-
-    def get_frame_by_t(self, t: float) -> CubedataFrame:
-        t = self.__validate_t_value(t)
-        content_frame = self.__create_content_frame()
-        start_border, finish_border = self.__draw_line(t, content_frame)
-        frame = CubedataFrame(content_frame)
-        frame.set_border_of_time_distance_plot_line(start_border, finish_border)
-        return frame
-
-    def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
-        frame_content = self.get_frame_by_t(t).frame_content
-        frame_content = frame_content.astype(np.uint8)
-        qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
-        return QPixmap.fromImage(qimage)
-
-    def __validate_t_value(self, t: float) -> float:
-        if t < 0:
-            return 0
-        elif t > 1:
-            return 1
-        else:
-            return t
-
-    def __draw_line(self, t, frame):
-        if self.__direction == "horizontal":
-            return self.__draw_horizontal_line(t, frame)
-        elif self.__direction == "vertical":
-            return self.__draw_vertical_line(t, frame)
-
-    def __draw_horizontal_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-
-        for i in range(start_border, end_border):
-            frame[i] = 0
-
-        return start_border, end_border
-
-    def __draw_vertical_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-        for i in range(start_border, end_border):
-            frame.T[i] = 0
-
-    def __create_content_frame(self):
-        return np.ones((self.__size, self.__size)) * 255
-
-    def __get_line_border_of_line(self, t: float) -> [int, int]:
-        line_position = self.__get_line_pixel_position(t)
-        start_border = int(line_position - self.__width_line / 2)
-        end_border = int(line_position + self.__width_line / 2)
-
-        if start_border < 0:
-            start_border = 0
-
-        if end_border > self.__size:
-            end_border = self.__size
-
-        return start_border, end_border
-
-    def __get_line_pixel_position(self, t: float) -> int:
-        return int(self.__lininterp(0, self.__size, t))
-
-    def __lininterp(self, p0: int, p1: int, t: float) -> int:
-        return (1 - t) * p0 + t * p1
 
 @unique
 class PreviewModeEnum(IntEnum):
@@ -673,45 +749,18 @@ class SelectedPreviewMode:
     def current_preview_mode(self) -> PreviewModeEnum:
         return self.__mode
 
-class Cubedata:
-    def __init__(self, x_size: int, y_size: int):
-        self.__x_size = x_size
-        self.__y_size = y_size
-        self.__frames: List[CubedataFrame] = list()
-
-    def add_frame(self, frame: CubedataFrame):
-        if not frame.width_of_frame == self.__y_size:
-            raise Exception(f"Dont match y size of cubedata and frame. [{frame.shape[1]}] [{self.__y_size}]")
-
-        if not frame.height_of_frame == self.__x_size:
-            raise Exception(f"Dont match x size of cubedata and frame. [{frame.shape[0]}] [{self.__x_size}]")
-
-        self.__frames.append(frame)
-
-    @property
-    def number_of_frames(self) -> int:
-        return len(self.__frames)
-
-    def get_frame(self, index: int) -> CubedataFrame:
-        if index >= len(self.__frames):
-            raise Exception("CubeData::get_frame() index out")
-        return self.__frames[index]
-
-    @classmethod
-    def create_from_debug_data(cls, number_of_frames: int):
-        cubedata = cls(600, 600)
-        animated_frame = TestAnimatedFrame("horizontal", 30, 600)
-        number_of_steps = 100
-        t_values = [i/number_of_steps for i in range(number_of_frames)]
-        for t in t_values:
-            frame = animated_frame.get_frame_by_t(t)
-            cubedata.add_frame(frame)
-        return cubedata
-
 
 class TimeDistancePlot:
+
     @classmethod
-    def create_debug_distance_plot(cls, bezier_mask: BezierMask,
+    def create_distance_plot_from_real_data(cls, cubedata: Cubedata):
+        width_one_step_time_distance_plot = 3
+        width_time_distance_plot = 300
+        height_time_distance_plot = 560
+
+    @classmethod
+    def create_debug_distance_plot(cls,
+                                   bezier_mask: BezierMask,
                                    number_of_frames_need_to_use_for_create_time_distance_plot: int = 100):
         width_one_step_time_distance_plot = 3
         width_time_distance_plot = 300
@@ -757,6 +806,9 @@ class TimeDistancePlot:
         qimage = QImage(data, width, height, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
 
+    def get_time_distance_plot_as_qpixmap_using_cmap_of_channel(self, channel: str):
+        pass
+
     def get_border_of_time_distance_slice(self, t: float) -> [int, int]:
         width_one_step = getattr(self, "__width_one_step_time_distance_plot")
         cubedata: Cubedata = getattr(self, "__cubedata")
@@ -764,10 +816,6 @@ class TimeDistancePlot:
         start_index = i * width_one_step
         finish_index = (i + 1) * width_one_step
         return start_index, finish_index
-
-    @classmethod
-    def create_distance_plot(cls, **kwargs):
-        pass
 
     def __get_coordinates_of_pixels_from_bezier_mask(self,
                                                      bezier_mask: BezierMask,
@@ -823,7 +871,6 @@ class TimeDistancePlot:
         res[:] = mean_values
         res = res.astype('uint8')
         return res
-
 
 
 class AppModel:
