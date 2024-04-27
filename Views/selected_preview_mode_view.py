@@ -27,7 +27,6 @@ class SelectedPreviewModeView:
         self.__show_current_selected_mode(current_mode)
 
     def __show_current_selected_mode(self, current_mode: PreviewModeEnum):
-        print(f"SelectedPreviewMode::current_mode = {current_mode}")
         buttons = {PreviewModeEnum.SOLAR_PREVIEW : self.__solar_preview_button,
                   PreviewModeEnum.DISTANCE_PLOT_PREVIEW : self.__distance_plot_button,
                   PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW : self.__distance_plot_debug_button}

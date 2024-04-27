@@ -528,24 +528,28 @@ class TimeLine:
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
 
-class TestAnimationFrame:
-    def __init__(self):
-        self.__frame: npt.NDArray = None
-        self.__direction: str = None
+class CubedataFrame:
+    def __init__(self, content: npt.NDArray):
+        self.__frame_content: npt.NDArray = content
         self.__start_border_of_line: int = 0
         self.__finish_border_of_line: int = 0
 
+    def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
+        self.__start_border_of_line = start_border
+        self.__finish_border_of_line = finish_border
+
+
     @property
-    def frame(self) -> npt.NDArray:
-        return self.__frame
+    def frame_content(self) -> npt.NDArray:
+        return self.__frame_content
 
     @property
     def width_of_frame(self) -> int:
-        return self.__frame.shape[1]
+        return self.__frame_content.shape[1]
 
     @property
     def height_of_frame(self) -> int:
-        return self.__frame.shape[0]
+        return self.__frame_content.shape[0]
 
     @property
     def start_border_of_line(self) -> int:
@@ -582,16 +586,18 @@ class TestAnimatedFrame:
         self.__frame = self.__create_content_frame()
         self.__draw_line(self.__t, self.__frame)
 
-    def get_frame_by_t(self, t: float):
+    def get_frame_by_t(self, t: float) -> CubedataFrame:
         t = self.__validate_t_value(t)
         content_frame = self.__create_content_frame()
-        self.__draw_line(t, content_frame)
-        return content_frame
+        start_border, finish_border = self.__draw_line(t, content_frame)
+        frame = CubedataFrame(content_frame)
+        frame.set_border_of_time_distance_plot_line(start_border, finish_border)
+        return frame
 
     def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
-        frame = self.get_frame_by_t(t)
-        data = frame.astype(np.uint8)
-        qimage = QImage(data, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
+        frame_content = self.get_frame_by_t(t).frame_content
+        frame_content = frame_content.astype(np.uint8)
+        qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
 
     def __validate_t_value(self, t: float) -> float:
@@ -604,15 +610,17 @@ class TestAnimatedFrame:
 
     def __draw_line(self, t, frame):
         if self.__direction == "horizontal":
-            self.__draw_horizontal_line(t, frame)
+            return self.__draw_horizontal_line(t, frame)
         elif self.__direction == "vertical":
-            self.__draw_vertical_line(t, frame)
+            return self.__draw_vertical_line(t, frame)
 
     def __draw_horizontal_line(self, t, frame):
         start_border, end_border = self.__get_line_border_of_line(t)
 
         for i in range(start_border, end_border):
             frame[i] = 0
+
+        return start_border, end_border
 
     def __draw_vertical_line(self, t, frame):
         start_border, end_border = self.__get_line_border_of_line(t)
@@ -669,13 +677,13 @@ class Cubedata:
     def __init__(self, x_size: int, y_size: int):
         self.__x_size = x_size
         self.__y_size = y_size
-        self.__frames: List = list()
+        self.__frames: List[CubedataFrame] = list()
 
-    def add_frame(self, frame: npt.NDArray):
-        if not frame.shape[1] == self.__y_size:
+    def add_frame(self, frame: CubedataFrame):
+        if not frame.width_of_frame == self.__y_size:
             raise Exception(f"Dont match y size of cubedata and frame. [{frame.shape[1]}] [{self.__y_size}]")
 
-        if not frame.shape[0] == self.__x_size:
+        if not frame.height_of_frame == self.__x_size:
             raise Exception(f"Dont match x size of cubedata and frame. [{frame.shape[0]}] [{self.__x_size}]")
 
         self.__frames.append(frame)
@@ -684,17 +692,17 @@ class Cubedata:
     def number_of_frames(self) -> int:
         return len(self.__frames)
 
-    def get_frame(self, index: int):
+    def get_frame(self, index: int) -> CubedataFrame:
         if index >= len(self.__frames):
             raise Exception("CubeData::get_frame() index out")
         return self.__frames[index]
 
     @classmethod
-    def create_from_debug_data(cls):
+    def create_from_debug_data(cls, number_of_frames: int):
         cubedata = cls(600, 600)
         animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         number_of_steps = 100
-        t_values = [i/number_of_steps for i in range(number_of_steps)]
+        t_values = [i/number_of_steps for i in range(number_of_frames)]
         for t in t_values:
             frame = animated_frame.get_frame_by_t(t)
             cubedata.add_frame(frame)
@@ -703,25 +711,26 @@ class Cubedata:
 
 class TimeDistancePlot:
     @classmethod
-    def createDebugDistancePlot(cls, bezier_mask: BezierMask):
+    def create_debug_distance_plot(cls, bezier_mask: BezierMask,
+                                   number_of_frames_need_to_use_for_create_time_distance_plot: int = 100):
         width_one_step_time_distance_plot = 3
         width_time_distance_plot = 300
-        height_time_distance_plot = 500
+        height_time_distance_plot = 560
         time_distance_plot_array = np.zeros((height_time_distance_plot, width_time_distance_plot))
 
         instance = TimeDistancePlot()
-        cubedata: Cubedata = Cubedata.create_from_debug_data()
+        cubedata: Cubedata = Cubedata.create_from_debug_data(number_of_frames_need_to_use_for_create_time_distance_plot)
         number_of_slices_along_loop = 100
         coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
                                                                             number_of_slices_along_loop)
         width_size_of_array = bezier_mask.width_in_pixels
         length_size_of_array = number_of_slices_along_loop
         for i in range(cubedata.number_of_frames):
-            frame = cubedata.get_frame(i)
+            frame_content = cubedata.get_frame(i).frame_content
             values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_size_of_array,
                                                                                length_size_of_array,
                                                                                coordinates,
-                                                                               frame,
+                                                                               frame_content,
                                               False)
             line = instance.__create_line_for_time_distance_plot(values,
                                                                  height_time_distance_plot,
@@ -748,9 +757,16 @@ class TimeDistancePlot:
         qimage = QImage(data, width, height, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
 
+    def get_border_of_time_distance_slice(self, t: float) -> [int, int]:
+        width_one_step = getattr(self, "__width_one_step_time_distance_plot")
+        cubedata: Cubedata = getattr(self, "__cubedata")
+        i = int(t * cubedata.number_of_frames)
+        start_index = i * width_one_step
+        finish_index = (i + 1) * width_one_step
+        return start_index, finish_index
 
     @classmethod
-    def createDistancePlot(cls, **kwargs):
+    def create_distance_plot(cls, **kwargs):
         pass
 
     def __get_coordinates_of_pixels_from_bezier_mask(self,

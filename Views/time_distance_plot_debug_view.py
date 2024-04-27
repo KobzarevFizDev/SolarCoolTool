@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QPushButton, QHBoxLayout
 
+from CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
 from Models.app_models import PreviewModeEnum
 
 if TYPE_CHECKING:
@@ -17,29 +18,21 @@ class TimeDistancePlotDebugView:
         self.controller: TimeDistancePlotDebugController = controller
         self.model: AppModel = model
         self.model.add_observer(self)
+        self.parentWindow = parentWindow
 
         self.layout = QVBoxLayout()
-
-        self.__time_distance_window: QSlider = None
         self.__t_slider: QSlider = None
-
         self.__create_time_distance_window()
         self.__create_time_slider()
-
         self.__t_slider.valueChanged.connect(self.__on_change_t)
 
-        parentWindow.layout.addLayout(self.layout,1,2,1,1)
+        parentWindow.layout.addLayout(self.layout, 1, 2, 1, 1)
 
         self.model_is_changed()
 
     def __create_time_distance_window(self):
-        self.__time_distance_window = QLabel()
-        self.__time_distance_window.setMinimumSize(600, 500)
-        self.__time_distance_window.setMaximumSize(600, 500)
+        self.__time_distance_window = TimeDistancePlotWidget(None)
         self.layout.addWidget(self.__time_distance_window)
-        pixmap = QPixmap(600, 500)
-        pixmap.fill(Qt.blue)
-        self.__time_distance_window.setPixmap(pixmap)
 
     def __create_time_slider(self):
         layout = QHBoxLayout()
@@ -62,12 +55,20 @@ class TimeDistancePlotDebugView:
         elif self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
             self.__hide_view()
 
-    def set_time_distance_plot(self, pixmap_of_time_distance_plot: QPixmap):
-        self.__time_distance_window.setPixmap(pixmap_of_time_distance_plot)
+    def update_time_distance_plot(self,
+                                  pixmap_of_time_distance_plot: QPixmap):
+        pixmap = pixmap_of_time_distance_plot
+        self.__time_distance_window.draw_time_distance_plot(pixmap)
+        self.__time_distance_window.update()
+
+    def update_border(self, start_border: int, finish_border: int):
+        self.__time_distance_window.draw_borders(start_border, finish_border)
+        self.__time_distance_window.update()
 
     def __on_change_t(self, value):
         value /= 100
         self.controller.change_t(value)
+        self.controller.update_borders()
 
     def __hide_view(self):
         self.__time_distance_window.hide()

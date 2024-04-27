@@ -52,8 +52,6 @@ class BezierMaskWidget(QWidget):
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__temps_objects_on_scene = []
 
-    def a(self, e):
-        pass
 
 # TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
