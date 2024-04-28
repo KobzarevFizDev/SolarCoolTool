@@ -3,6 +3,9 @@ import os
 import sqlite3
 from typing import List
 from enum import IntEnum, unique
+
+from matplotlib import pyplot as plt
+
 from dda import get_pixels_of_line
 from scipy.ndimage import zoom
 
@@ -752,11 +755,46 @@ class SelectedPreviewMode:
 
 class TimeDistancePlot:
 
+    # TODO: Вынести дополнетельные параметры
     @classmethod
-    def create_distance_plot_from_real_data(cls, cubedata: Cubedata):
+    def create_distance_plot_from_real_data(cls,
+                                            bezier_mask: BezierMask,
+                                            viewport_transform: ViewportTransform,
+                                            cubedata: Cubedata):
         width_one_step_time_distance_plot = 3
         width_time_distance_plot = 300
         height_time_distance_plot = 560
+        number_of_slices_along_loop = 100
+        time_distance_plot_array = np.zeros((height_time_distance_plot, width_time_distance_plot))
+
+        instance = TimeDistancePlot()
+        setattr(instance, "__viewport_transform", viewport_transform)
+        setattr(instance, "__cubedata", cubedata)
+        setattr(instance, "__width_one_step_time_distance_plot", width_one_step_time_distance_plot)
+        setattr(instance, "__width_time_distance_plot", width_time_distance_plot)
+        setattr(instance, "__height_time_distance_plot", height_time_distance_plot)
+        setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
+
+        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
+                                                                            number_of_slices_along_loop,
+                                                                            True)
+        width_size_of_array = bezier_mask.width_in_pixels
+        length_size_of_array = number_of_slices_along_loop
+        for i in range(cubedata.number_of_frames):
+            frame_content = cubedata.get_frame(i).frame_content
+            values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_size_of_array,
+                                                                             length_size_of_array,
+                                                                             coordinates,
+                                                                             frame_content)
+            line = instance.__create_line_for_time_distance_plot(values,
+                                                                 height_time_distance_plot,
+                                                                 width_one_step_time_distance_plot)
+            start_index = i * width_one_step_time_distance_plot
+            finish_index = (i + 1) * width_one_step_time_distance_plot
+            print(f"{start_index} {finish_index}")
+            time_distance_plot_array.T[start_index:finish_index] = line
+
+        return instance
 
     @classmethod
     def create_debug_distance_plot(cls,
@@ -771,16 +809,16 @@ class TimeDistancePlot:
         cubedata: Cubedata = Cubedata.create_from_debug_data(number_of_frames_need_to_use_for_create_time_distance_plot)
         number_of_slices_along_loop = 100
         coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
-                                                                            number_of_slices_along_loop)
+                                                                            number_of_slices_along_loop,
+                                                                            False)
         width_size_of_array = bezier_mask.width_in_pixels
         length_size_of_array = number_of_slices_along_loop
         for i in range(cubedata.number_of_frames):
             frame_content = cubedata.get_frame(i).frame_content
             values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_size_of_array,
-                                                                               length_size_of_array,
-                                                                               coordinates,
-                                                                               frame_content,
-                                              False)
+                                                                             length_size_of_array,
+                                                                             coordinates,
+                                                                             frame_content)
             line = instance.__create_line_for_time_distance_plot(values,
                                                                  height_time_distance_plot,
                                                                  width_one_step_time_distance_plot)
@@ -807,7 +845,35 @@ class TimeDistancePlot:
         return QPixmap.fromImage(qimage)
 
     def get_time_distance_plot_as_qpixmap_using_cmap_of_channel(self, channel: str):
-        pass
+
+        if channel not in ["A94", "A131", "A171", "A193", "A211", "A304", "A335"]:
+            raise Exception(f"TimeDistancePlot::get_time_distance_plot_as_qpixmap_using_cmap_of_channel({channel}). Not correct channel")
+
+        cm = { "A94" : sunpy.visualization.colormaps.cm.sdoaia94,
+          "A131" : sunpy.visualization.colormaps.cm.sdoaia131,
+          "A171" : sunpy.visualization.colormaps.cm.sdoaia171,
+          "A193" : sunpy.visualization.colormaps.cm.sdoaia193,
+          "A211" : sunpy.visualization.colormaps.cm.sdoaia211,
+          "A304" : sunpy.visualization.colormaps.cm.sdoaia304,
+          "A335" : sunpy.visualization.colormaps.cm.sdoaia335
+        }[channel]
+
+
+        frame = getattr(self, "__time_distance_plot_array")
+        width = getattr(self, "__width_time_distance_plot")
+        height = getattr(self, "__height_time_distance_plot")
+
+
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        fig = Figure(figsize=(3, 5.6), dpi=100, subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        axes = fig.add_subplot()
+        axes.set_axis_off()
+        axes.imshow(frame.astype(np.float32), cmap=cm)
+        canvas.draw()
+        width, height = fig.figbbox.width, fig.figbbox.height
+        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        return QPixmap.fromImage(im)
 
     def get_border_of_time_distance_slice(self, t: float) -> [int, int]:
         width_one_step = getattr(self, "__width_one_step_time_distance_plot")
@@ -819,13 +885,20 @@ class TimeDistancePlot:
 
     def __get_coordinates_of_pixels_from_bezier_mask(self,
                                                      bezier_mask: BezierMask,
-                                                     number_of_slices_along_loop: int) -> List[List[QPoint]]:
+                                                     number_of_slices_along_loop: int,
+                                                     need_to_tronsform_for_viewport_to_image: bool) -> List[List[QPoint]]:
         coordinates: List[List[QPoint]] = list()
         bottom_points: List[QPoint] = bezier_mask.get_bottom_border(number_of_slices_along_loop)
         top_points: List[QPoint] = bezier_mask.get_top_border(number_of_slices_along_loop)
         for i in range(number_of_slices_along_loop):
             bottom_point: QPoint = bottom_points[i]
             top_point: QPoint = top_points[i]
+
+            if need_to_tronsform_for_viewport_to_image:
+                viewport_transform: ViewportTransform = getattr(self, "__viewport_transform")
+                bottom_point = viewport_transform.transform_from_viewport_pixel_to_image_pixel(bottom_point)
+                top_point = viewport_transform.transform_from_viewport_pixel_to_image_pixel(top_point)
+
             pixels_coordinates = get_pixels_of_line(bottom_point.x(),
                                                     bottom_point.y(),
                                                     top_point.x(),
@@ -838,8 +911,7 @@ class TimeDistancePlot:
                                                        width_size_array,
                                                        length_size_array,
                                                        coordinates: List[List[QPoint]],
-                                                       frame: npt.NDArray,
-                                                       need_to_transform_from_view_to_image: bool) -> npt.NDArray:
+                                                       frame: npt.NDArray) -> npt.NDArray:
 
         pixels_values_array = np.zeros((width_size_array, length_size_array))
 

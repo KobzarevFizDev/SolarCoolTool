@@ -34,12 +34,22 @@ class TimeDistancePlotView:
         else:
             self.__hide_this_view()
 
+        self.__update_t_value()
+
+    def update_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
+        self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
+        self.__time_distance_plot_widget.update()
+
+    def update_time_distance_plot_current_segment(self, start_border: int, finish_border: int) -> None:
+        self.__time_distance_plot_widget.draw_borders(start_border, finish_border)
+        self.__time_distance_plot_widget.update()
+
     def __is_need_to_show_this_view(self) -> bool:
         return self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.DISTANCE_PLOT_PREVIEW
 
     def __create_time_distance_plot_widget(self) -> None:
-        time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)
-        self.__layout.addWidget(time_distance_plot_widget)
+        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)
+        self.__layout.addWidget(self.__time_distance_plot_widget)
 
     def __create_additional_widgets(self) -> None:
         l = QHBoxLayout()
@@ -60,12 +70,12 @@ class TimeDistancePlotView:
     def __create_t_slider(self) -> QSlider:
         slider = QSlider(Qt.Horizontal)
         slider.setRange(0, 100)
-        slider.valueChanged.connect(self.__on_change_t)
+        slider.valueChanged.connect(self.controller.change_t)
         return slider
 
     def __create_bake_button(self) -> QPushButton:
         bake_button = QPushButton("Bake")
-        bake_button.clicked.connect(self.__on_bake_button_clicked)
+        bake_button.clicked.connect(self.controller.update_time_distance_plot)
         return bake_button
 
     def __create_export_button(self) -> QPushButton:
@@ -73,14 +83,14 @@ class TimeDistancePlotView:
         export_button.clicked.connect(self.__on_export_button_clicked)
         return export_button
 
-    def __on_bake_button_clicked(self) -> None:
-        print("TimeDistancePlotView::on_bake_button_clicked")
+    def __update_t_value(self) -> None:
+        t = self.model.test_animated_frame.current_t
+        self.__label_of_t_slider.setText(f"t = {t}")
+
 
     def __on_export_button_clicked(self) -> None:
         print("TimeDistancePlotView::on_export_button_clicked")
 
-    def __on_change_t(self, t: int):
-        print(f"TimeDistancePlotView::on_change_t = {t}")
 
     def __show_this_view(self):
         self.__label_of_t_slider.show()
