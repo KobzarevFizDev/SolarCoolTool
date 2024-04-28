@@ -761,25 +761,27 @@ class TimeDistancePlot:
                                             bezier_mask: BezierMask,
                                             viewport_transform: ViewportTransform,
                                             cubedata: Cubedata):
-        width_one_step_time_distance_plot = 3
-        width_time_distance_plot = 300
+        width_of_one_step_on_result_time_distance_plot = 3 #
+        width_of_slice_from_data = 4 # px
+        length_time_distance_plot = 300
         height_time_distance_plot = 560
-        number_of_slices_along_loop = 100
-        time_distance_plot_array = np.zeros((height_time_distance_plot, width_time_distance_plot))
+        number_of_cross_section_along_loop = 100
+        time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
 
         instance = TimeDistancePlot()
         setattr(instance, "__viewport_transform", viewport_transform)
         setattr(instance, "__cubedata", cubedata)
-        setattr(instance, "__width_one_step_time_distance_plot", width_one_step_time_distance_plot)
-        setattr(instance, "__width_time_distance_plot", width_time_distance_plot)
+        setattr(instance, "__width_one_step_time_distance_plot", width_of_one_step_on_result_time_distance_plot)
+        setattr(instance, "__width_time_distance_plot", length_time_distance_plot)
         setattr(instance, "__height_time_distance_plot", height_time_distance_plot)
         setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
 
-        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
-                                                                            number_of_slices_along_loop,
+        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(width_of_slice_from_data,
+                                                                            bezier_mask,
+                                                                            number_of_cross_section_along_loop,
                                                                             True)
         width_size_of_array = bezier_mask.width_in_pixels
-        length_size_of_array = number_of_slices_along_loop
+        length_size_of_array = number_of_cross_section_along_loop
         for i in range(cubedata.number_of_frames):
             frame_content = cubedata.get_frame(i).frame_content
             values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_size_of_array,
@@ -788,9 +790,9 @@ class TimeDistancePlot:
                                                                              frame_content)
             line = instance.__create_line_for_time_distance_plot(values,
                                                                  height_time_distance_plot,
-                                                                 width_one_step_time_distance_plot)
-            start_index = i * width_one_step_time_distance_plot
-            finish_index = (i + 1) * width_one_step_time_distance_plot
+                                                                 width_of_one_step_on_result_time_distance_plot)
+            start_index = i * width_of_one_step_on_result_time_distance_plot
+            finish_index = (i + 1) * width_of_one_step_on_result_time_distance_plot
             print(f"{start_index} {finish_index}")
             time_distance_plot_array.T[start_index:finish_index] = line
 
@@ -800,37 +802,39 @@ class TimeDistancePlot:
     def create_debug_distance_plot(cls,
                                    bezier_mask: BezierMask,
                                    number_of_frames_need_to_use_for_create_time_distance_plot: int = 100):
-        width_one_step_time_distance_plot = 3
-        width_time_distance_plot = 300
+        width_of_one_step_on_result_time_distance_plot = 3
+        width_of_slice_from_data = 4 # px
+        length_time_distance_plot = 300
         height_time_distance_plot = 560
-        time_distance_plot_array = np.zeros((height_time_distance_plot, width_time_distance_plot))
+        time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
 
         instance = TimeDistancePlot()
         cubedata: Cubedata = Cubedata.create_from_debug_data(number_of_frames_need_to_use_for_create_time_distance_plot)
         number_of_slices_along_loop = 100
-        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
+
+        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(width_of_slice_from_data,
+                                                                            bezier_mask,
                                                                             number_of_slices_along_loop,
                                                                             False)
-        width_size_of_array = bezier_mask.width_in_pixels
-        length_size_of_array = number_of_slices_along_loop
+
         for i in range(cubedata.number_of_frames):
             frame_content = cubedata.get_frame(i).frame_content
-            values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_size_of_array,
-                                                                             length_size_of_array,
+            values = instance.__get_pixels_values_by_coordinates_as_2d_array(width_of_slice_from_data,
+                                                                             number_of_slices_along_loop,
                                                                              coordinates,
                                                                              frame_content)
             line = instance.__create_line_for_time_distance_plot(values,
                                                                  height_time_distance_plot,
-                                                                 width_one_step_time_distance_plot)
-            start_index = i * width_one_step_time_distance_plot
-            finish_index = (i + 1) * width_one_step_time_distance_plot
+                                                                 width_of_one_step_on_result_time_distance_plot)
+            start_index = i * width_of_one_step_on_result_time_distance_plot
+            finish_index = (i + 1) * width_of_one_step_on_result_time_distance_plot
             print(f"{start_index} {finish_index}")
             time_distance_plot_array.T[start_index:finish_index] = line
 
 
         setattr(instance, "__cubedata", cubedata)
-        setattr(instance, "__width_one_step_time_distance_plot", width_one_step_time_distance_plot)
-        setattr(instance, "__width_time_distance_plot", width_time_distance_plot)
+        setattr(instance, "__width_one_step_time_distance_plot", width_of_one_step_on_result_time_distance_plot)
+        setattr(instance, "__width_time_distance_plot", length_time_distance_plot)
         setattr(instance, "__height_time_distance_plot", height_time_distance_plot)
         setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
         return instance
@@ -884,6 +888,7 @@ class TimeDistancePlot:
         return start_index, finish_index
 
     def __get_coordinates_of_pixels_from_bezier_mask(self,
+                                                     width_of_slice: int,
                                                      bezier_mask: BezierMask,
                                                      number_of_slices_along_loop: int,
                                                      need_to_tronsform_for_viewport_to_image: bool) -> List[List[QPoint]]:
@@ -902,8 +907,11 @@ class TimeDistancePlot:
             pixels_coordinates = get_pixels_of_line(bottom_point.x(),
                                                     bottom_point.y(),
                                                     top_point.x(),
-                                                    top_point.y(),
-                                                    bezier_mask.width_in_pixels)
+                                                    top_point.y())
+            mid_pixel = int(len(pixels_coordinates)/2)
+            left_border = mid_pixel - int(width_of_slice/2)
+            right_border = mid_pixel + int(width_of_slice/2)
+            pixels_coordinates = pixels_coordinates[left_border:right_border]
             coordinates.append(pixels_coordinates)
         return coordinates
 
@@ -933,7 +941,6 @@ class TimeDistancePlot:
                                              pixels_value_as_2d_array: npt.NDArray,
                                              height_time_distance_plot,
                                              width_time_distance_plot=1):
-        #pixels_value_as_2d_array = pixels_value_as_2d_array.astype('uint8')
         length = pixels_value_as_2d_array.shape[1]
         y_size_koeff = int(height_time_distance_plot / length) + 1
         scaled_array = zoom(pixels_value_as_2d_array, (1, y_size_koeff), mode="constant")
@@ -948,12 +955,12 @@ class TimeDistancePlot:
 class AppModel:
     def __init__(self, path_to_files: str, path_to_export_result):
         initial_channel = 171
-        self.__configaration = ConfigurationApp()
+        self.__configuration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
         self.__solar_frames_storage = SolarFramesStorage(initial_channel,
                                                          path_to_files,
                                                          self.__viewport_transform,
-                                                         self.__configaration)
+                                                         self.__configuration)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, initial_channel)
         self.__bezier_mask = BezierMask()
@@ -994,7 +1001,7 @@ class AppModel:
 
     @property
     def configuration(self) -> ConfigurationApp:
-        return self.__configaration
+        return self.__configuration
 
     @property
     def test_animated_frame(self) -> TestAnimatedFrame:

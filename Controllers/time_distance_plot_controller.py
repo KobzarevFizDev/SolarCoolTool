@@ -30,7 +30,7 @@ class TimeDistancePlotController:
         pixmap = time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel("A171")
         self.view.update_time_distance_plot_pixmap(pixmap)
 
-    def __create_time_distance_plot(self) -> TimeDistancePlot:
+    def __create_time_distance_plot(self) -> None:
         start_index: int = self.model.time_line.start_interval_of_time_distance_plot
         finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
         bezier_mask = self.model.bezier_mask
