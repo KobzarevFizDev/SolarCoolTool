@@ -24,10 +24,15 @@ class BezierMaskView:
         self.controller.onWheel(delta)
 
     def model_is_changed(self):
-        if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
+        #if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
+        if self.__is_need_to_show_solar_as_background():
             self.__handle_as_normal()
         else:
             self.__handle_as_test_mode()
+
+    def __is_need_to_show_solar_as_background(self) -> bool:
+        #print(self.model.selected_preview_mode.current_preview_mode)
+        return not self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
 
     def __handle_as_test_mode(self):
         t = self.model.test_animated_frame.current_t

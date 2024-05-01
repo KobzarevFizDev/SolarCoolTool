@@ -24,8 +24,11 @@ class CurveEditorWindow(QMainWindow):
 
         self.layout = QGridLayout()
 
-        self.__app_model = AppModel("D:\\SolarImages",
-                                    "D:\\SolarImages")
+        #self.__app_model = AppModel("D:\\SolarImages",
+        #                            "D:\\SolarImages")
+
+        self.__app_model = AppModel("D:\\WangPreparated",
+                                    "D:\\WangPreparated")
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
