@@ -2,7 +2,7 @@ from typing import List
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
-from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap
+from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
 from CustomWidgets.bezier_points_widget import BezierAnchorPointWidget, BezierControlPointWidget
@@ -45,6 +45,7 @@ class BezierMaskWidget(QWidget):
         self.__control_widget1: BezierControlPointWidget = None
         self.__control_widget2: BezierControlPointWidget = None
 
+
         default_plot = QPixmap(600, 600)
         default_plot.fill(Qt.green)
         self.__currentPixmapOfPlot = self.scene.addPixmap(default_plot)
@@ -78,6 +79,7 @@ class BezierMaskWidget(QWidget):
         self.__draw_border_between_section(spline)
         self.__draw_control_lines(spline.bezier_curve)
 
+
     def update_background(self, background: QPixmap) -> None:
         self.__currentPixmapOfPlot.setPixmap(background)
 
@@ -87,8 +89,8 @@ class BezierMaskWidget(QWidget):
         self.__draw_bottom_line_of_mask(spline)
         self.__draw_top_line_of_mask(spline)
         self.__draw_border_between_section(spline)
-
         self.__draw_control_lines(spline.bezier_curve)
+
 
     def __draw_bottom_line_of_mask(self, bezier_mask: BezierMask):
         points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()

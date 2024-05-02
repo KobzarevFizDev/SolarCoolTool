@@ -97,9 +97,11 @@ class TimeDistancePlotView:
         self.__t_slider.show()
         self.__export_button.show()
         self.__bake_button.show()
+        self.__time_distance_plot_widget.show()
 
     def __hide_this_view(self):
         self.__label_of_t_slider.hide()
         self.__t_slider.hide()
         self.__export_button.hide()
         self.__bake_button.hide()
+        self.__time_distance_plot_widget.hide()
