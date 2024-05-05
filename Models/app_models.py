@@ -4,6 +4,7 @@ import sqlite3
 from typing import List
 from enum import IntEnum, unique
 
+import numpy
 from matplotlib import pyplot as plt
 
 from dda import get_pixels_of_line, get_pixels_of_cicle
@@ -26,6 +27,22 @@ from result import SaverResults
 from configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
+
+
+def get_cmap_by_channel(channel: int):
+    if channel not in [94, 131, 171, 193, 211, 304, 335]:
+        raise Exception(
+            f"TimeDistancePlot::get_time_distance_plot_as_qpixmap_using_cmap_of_channel({channel}). Not correct channel")
+
+    cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
+          131: sunpy.visualization.colormaps.cm.sdoaia131,
+          171: sunpy.visualization.colormaps.cm.sdoaia171,
+          193: sunpy.visualization.colormaps.cm.sdoaia193,
+          211: sunpy.visualization.colormaps.cm.sdoaia211,
+          304: sunpy.visualization.colormaps.cm.sdoaia304,
+          335: sunpy.visualization.colormaps.cm.sdoaia335
+          }[channel]
+    return cm
 
 
 class CubedataFrame:
@@ -297,7 +314,6 @@ class SolarFramesStorage:
             for file in files:
                 files_in_directory.append(os.path.join(root, file))
         files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
-        print(files_in_directory)
         return files_in_directory
 
 
@@ -794,7 +810,6 @@ class TimeDistancePlot:
 
         # todo: надо ли ?
         time_distance_plot_array = gaussian_filter(time_distance_plot_array, sigma=3)
-        #time_distance_plot_array = time_distance_plot_array.astype("uint8")
         setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
 
         return instance
@@ -870,7 +885,6 @@ class TimeDistancePlot:
                 pixel_value = frame[4095 - pixel_y_coordinate][pixel_x_coordinate]
             accumulator += pixel_value
 
-        print(accumulator)
         return int(accumulator / len(coordinates_of_pixels_of_one_slice))
 
     def get_time_distance_plot_as_qpixmap_in_grayscale(self) -> QPixmap:
@@ -882,20 +896,8 @@ class TimeDistancePlot:
         qimage = QImage(data, width, height, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
 
-    def get_time_distance_plot_as_qpixmap_using_cmap_of_channel(self, channel: str):
-
-        if channel not in ["A94", "A131", "A171", "A193", "A211", "A304", "A335"]:
-            raise Exception(f"TimeDistancePlot::get_time_distance_plot_as_qpixmap_using_cmap_of_channel({channel}). Not correct channel")
-
-        cm = { "A94" : sunpy.visualization.colormaps.cm.sdoaia94,
-          "A131" : sunpy.visualization.colormaps.cm.sdoaia131,
-          "A171" : sunpy.visualization.colormaps.cm.sdoaia171,
-          "A193" : sunpy.visualization.colormaps.cm.sdoaia193,
-          "A211" : sunpy.visualization.colormaps.cm.sdoaia211,
-          "A304" : sunpy.visualization.colormaps.cm.sdoaia304,
-          "A335" : sunpy.visualization.colormaps.cm.sdoaia335
-        }[channel]
-
+    def get_time_distance_plot_as_qpixmap_using_cmap_of_channel(self, channel: int):
+        cm = get_cmap_by_channel(channel)
 
         frame = getattr(self, "__time_distance_plot_array")
 
@@ -941,39 +943,54 @@ class TimeDistancePlot:
                                                     bottom_point.y(),
                                                     top_point.x(),
                                                     top_point.y())
-            """
-            x_c = int((bottom_point.x() + top_point.x())/2)
-            y_c = int((bottom_point.y() + top_point.y()) / 2)
-            pixels_coordinates = get_pixels_of_cicle(x_c, y_c, 10)
-            """
-
-            #print(pixels_coordinates)
             coordinates.append(pixels_coordinates)
         return coordinates
 
+    def save_as_png(self, path_to_save: str, current_channel: int):
+        cm = get_cmap_by_channel(current_channel)
+        frame = getattr(self, "__time_distance_plot_array")
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        l = frame.shape[1] / 100
+        h = frame.shape[0] / 100
+        fig = Figure(figsize=(l, h), dpi=100, subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        axes = fig.add_subplot()
+        axes.set_axis_off()
+        axes.imshow(frame, cmap=cm)
+        axes.imshow(frame.astype(np.float32), cmap=cm)
+        canvas.draw()
+        fig.savefig(path_to_save)
+
+    def save_numpy_array(self, path_to_save: str):
+        frame: npt.NDArray = getattr(self, "__time_distance_plot_array")
+        np.save(path_to_save, frame)
 
 class AppModel:
-    def __init__(self, path_to_files: str, path_to_export_result):
-        initial_channel = 131
+    def __init__(self,
+                 path_to_solar_images: str,
+                 path_to_export_result: str,
+                 initial_channel: int):
+        self.__path_to_solar_images = path_to_solar_images
+        self.__path_to_export_result = path_to_export_result
+        self.__initial_channel = initial_channel
         self.__configuration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()
         self.__solar_frames_storage = SolarFramesStorage(initial_channel,
-                                                         path_to_files,
+                                                         path_to_solar_images,
                                                          self.__viewport_transform,
                                                          self.__configuration)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, initial_channel)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
-        self.__saver_results = SaverResults(self, path_to_export_result)
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__selected_preview_mode = SelectedPreviewMode()
 
         self.__observers = []
 
     @property
-    def saver_results(self) -> SaverResults:
-        return self.__saver_results
+    def path_to_export_result(self) -> str:
+        return self.__path_to_export_result
 
     @property
     def solar_frames_storage(self) -> SolarFramesStorage:
