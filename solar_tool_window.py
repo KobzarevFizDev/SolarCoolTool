@@ -25,10 +25,12 @@ class CurveEditorWindow(QMainWindow):
         self.layout = QGridLayout()
 
         #self.__app_model = AppModel("D:\\SolarImages",
-        #                            "D:\\SolarImages")
+        #                            "D:\\SolarImages",
+        #                            131)
 
         self.__app_model = AppModel("D:\\WangPreparated",
-                                    "D:\\WangPreparated")
+                                    "D:\\WangPreparated",
+                                    193)
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
@@ -44,11 +46,6 @@ class CurveEditorWindow(QMainWindow):
         self.setCentralWidget(centralWidget)
 
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_E:
-            self.__app_model.saver_results.save_result()
-        elif event.key() == QtCore.Qt.Key_C:
-            self.__app_model.saver_results.create_time_distance_plot_for_saved_data_if_possible()
-
         event.accept()
 
 if __name__ == "__main__":

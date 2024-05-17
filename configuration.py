@@ -22,6 +22,7 @@ class ConfigurationApp:
         return {94:self.__step_for_a94,
                 131:self.__step_for_a131,
                 171:self.__step_for_a171,
+                193:self.__step_for_a193,
                 211:self.__step_for_a211,
                 304:self.__step_for_a304,
                 335:self.__step_for_a335}[channel]
@@ -30,6 +31,7 @@ class ConfigurationApp:
         return {94:self.__max_number_of_frames_in_a94,
                 131:self.__max_number_of_frames_in_a131,
                 171:self.__max_number_of_frames_in_a171,
+                193:self.__max_number_of_frames_in_a193,
                 211:self.__max_number_of_frames_in_a211,
                 304:self.__max_number_of_frames_in_a304,
                 335:self.__max_number_of_frames_in_a335}[channel]
@@ -69,6 +71,8 @@ class ConfigurationApp:
             self.__max_number_of_frames_in_a131 = int(value)
         elif key == "MAX_NUMBER_OF_FRAMES_A171":
             self.__max_number_of_frames_in_a171 = int(value)
+        elif key == "MAX_NUMBER_OF_FRAMES_A193":
+            self.__max_number_of_frames_in_a193 = int(value)
         elif key == "MAX_NUMBER_OF_FRAMES_A211":
             self.__max_number_of_frames_in_a211 = int(value)
         elif key == "MAX_NUMBER_OF_FRAMES_A304":

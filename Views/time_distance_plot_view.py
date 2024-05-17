@@ -80,16 +80,12 @@ class TimeDistancePlotView:
 
     def __create_export_button(self) -> QPushButton:
         export_button = QPushButton("Export")
-        export_button.clicked.connect(self.__on_export_button_clicked)
+        export_button.clicked.connect(self.controller.export_time_distance_plot)
         return export_button
 
     def __update_t_value(self) -> None:
         t = self.model.test_animated_frame.current_t
         self.__label_of_t_slider.setText(f"t = {t}")
-
-
-    def __on_export_button_clicked(self) -> None:
-        print("TimeDistancePlotView::on_export_button_clicked")
 
 
     def __show_this_view(self):
