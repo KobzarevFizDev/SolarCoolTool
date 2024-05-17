@@ -7,21 +7,21 @@ from astropy.io.fits import CompImageHDU
 from sunpy.map import Map
 from sunpy.coordinates import propagate_with_solar_surface
 
-PATH_TO_NOT_PREPARATED_A94 = ""
+PATH_TO_NOT_PREPARATED_A94 = "D:\\WangNotPreparated\\A94"
 PATH_TO_NOT_PREPARATED_A131 = "D:\\WangNotPreparated\\A131"
 PATH_TO_NOT_PREPARATED_A171 = "D:\\WangNotPreparated\\A171"
 PATH_TO_NOT_PREPARATED_A193 = "D:\\WangNotPreparated\\A193"
-PATH_TO_NOT_PREPARATED_A211 = ""
-PATH_TO_NOT_PREPARATED_A304 = ""
-PATH_TO_NOT_PREPARATED_A335 = ""
+PATH_TO_NOT_PREPARATED_A211 = "D:\\WangNotPreparated\\A211"
+PATH_TO_NOT_PREPARATED_A304 = "D:\\WangNotPreparated\\A304"
+PATH_TO_NOT_PREPARATED_A335 = "D:\\WangNotPreparated\\A335"
 
-PATH_TO_PREPARATED_A94 = ""
+PATH_TO_PREPARATED_A94 = "D:\\WangPreparated\\A94"
 PATH_TO_PREPARATED_A131 = "D:\\WangPreparated\\A131"
 PATH_TO_PREPARATED_A171 = "D:\\WangPreparated\\A171"
 PATH_TO_PREPARATED_A193 = "D:\\WangPreparated\\A193"
-PATH_TO_PREPARATED_A211 = ""
-PATH_TO_PREPARATED_A304 = ""
-PATH_TO_PREPARATED_A335 = ""
+PATH_TO_PREPARATED_A211 = "D:\\WangPreparated\\A211"
+PATH_TO_PREPARATED_A304 = "D:\\WangPreparated\\A304"
+PATH_TO_PREPARATED_A335 = "D:\\WangPreparated\\A335"
 
 def get_paths_to_maps_of_directory(directory: str) -> List[str]:
     filelist = []
@@ -147,4 +147,4 @@ def preparate_maps_of_channel_A335(number_of_map = -1):
     preparate_files(PATH_TO_NOT_PREPARATED_A335, PATH_TO_PREPARATED_A335, number_of_map)
 
 if __name__ == "__main__":
-    preparate_maps_of_channel_A131(600)
+    preparate_maps_of_channel_A335(300)

@@ -30,7 +30,7 @@ class CurveEditorWindow(QMainWindow):
 
         self.__app_model = AppModel("D:\\WangPreparated",
                                     "D:\\WangPreparated",
-                                    131)
+                                    193)
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
