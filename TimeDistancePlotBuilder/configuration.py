@@ -37,7 +37,7 @@ class ConfigurationApp:
                 335:self.__max_number_of_frames_in_a335}[channel]
 
     def __read_configuration_file(self) -> None:
-        with open(".\\configuration.txt") as f:
+        with open("./configuration.txt") as f:
             for line in f.readlines():
                 if len(line) > 3:
                     splited = line.split('=')

@@ -267,7 +267,7 @@ class SolarFrame:
         ax.set_axis_off()
         canvas.draw()
         width, height = fig.figbbox.width, fig.figbbox.height
-        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
         return im
 
 # todo: Валидацию на корректное значение channel
@@ -505,8 +505,8 @@ class BezierMask:
             normal_at_t: QPoint = self.__bezier_curve.normal_at_t(t)
             point_at_t: QPoint = self.__bezier_curve.point_at_t(t)
             magnitude_of_normal = math.sqrt(normal_at_t.x() ** 2 + normal_at_t.y() ** 2)
-            border_point = point_at_t + QPoint(self.__width_in_pixels * normal_at_t.x() / magnitude_of_normal,
-                                               self.__width_in_pixels * normal_at_t.y() / magnitude_of_normal)
+            border_point = point_at_t + QPoint(int(self.__width_in_pixels * normal_at_t.x() / magnitude_of_normal),
+                                               int(self.__width_in_pixels * normal_at_t.y() / magnitude_of_normal))
             border_points.append(border_point)
         return border_points
 
