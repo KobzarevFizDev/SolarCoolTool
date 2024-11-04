@@ -44,9 +44,12 @@ class CurveEditorWindow(QMainWindow):
     def keyPressEvent(self, event):
         event.accept()
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     ex = CurveEditorWindow()
     ex.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
     
