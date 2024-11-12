@@ -4,10 +4,9 @@ import sqlite3
 from typing import List
 from enum import IntEnum, unique
 
-import numpy
 from matplotlib import pyplot as plt
 
-from dda import get_pixels_of_line, get_pixels_of_cicle
+from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -15,7 +14,6 @@ from matplotlib.figure import Figure, SubplotParams
 
 import numpy as np
 from PyQt5.QtCore import QPoint, QRect
-import transformations
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -23,8 +21,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
 
-from result import SaverResults
-from configuration import ConfigurationApp
+from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
@@ -966,12 +963,9 @@ class TimeDistancePlot:
         np.save(path_to_save, frame)
 
 class AppModel:
-    def __init__(self,
-                 path_to_solar_images: str,
-                 path_to_export_result: str,
-                 initial_channel: int):
-        self.__path_to_solar_images = path_to_solar_images
-        self.__path_to_export_result = path_to_export_result
+    def __init__(self, configuration_app: 'ConfigurationApp'):
+        self.__path_to_solar_images = configuration_app.path_to_solar_images # path_to_solar_images
+        self.__path_to_export_result = configuration_app.#path_to_export_result
         self.__initial_channel = initial_channel
         self.__configuration = ConfigurationApp()
         self.__viewport_transform = ViewportTransform()

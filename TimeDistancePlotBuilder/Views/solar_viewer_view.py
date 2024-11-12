@@ -2,13 +2,13 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtCore import QPoint
 
-from CustomWidgets.solar_viewer_widget import SolarViewerWidget
+from TimeDistancePlotBuilder.CustomWidgets.solar_viewer_widget import SolarViewerWidget
 
-from Models.app_models import PreviewModeEnum
+from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
-    from Controllers.solar_viewer_controller import SolarViewportController
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Controllers.solar_viewer_controller import SolarViewportController
 
 class SolarViewportView:
     def __init__(self, controller, model, parentWindow):

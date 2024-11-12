@@ -5,8 +5,8 @@ from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
 from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
-from CustomWidgets.bezier_points_widget import BezierAnchorPointWidget, BezierControlPointWidget
-from Models.app_models import (BezierMask,
+from TimeDistancePlotBuilder.CustomWidgets.bezier_points_widget import BezierAnchorPointWidget, BezierControlPointWidget
+from TimeDistancePlotBuilder.Models.app_models import (BezierMask,
                                BezierCurve,
                                AppModel)
 

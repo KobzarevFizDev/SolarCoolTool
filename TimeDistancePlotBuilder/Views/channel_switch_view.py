@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
-from CustomWidgets.channel_switch_widget import ChannelSwitchWidget
+from TimeDistancePlotBuilder.CustomWidgets.channel_switch_widget import ChannelSwitchWidget
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class ChannelSwitchView:
     def __init__(self, controller, model, parentWindow):

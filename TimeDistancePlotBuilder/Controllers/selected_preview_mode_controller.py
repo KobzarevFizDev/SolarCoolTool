@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QPoint
 
-from Views.selected_preview_mode_view import SelectedPreviewModeView
-from Models.app_models import AppModel
+from TimeDistancePlotBuilder.Views.selected_preview_mode_view import SelectedPreviewModeView
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class SelectedPreviewModeController:
     def __init__(self, model, mainAppWindow):

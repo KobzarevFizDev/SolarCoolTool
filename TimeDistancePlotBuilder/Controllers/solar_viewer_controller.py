@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QPoint
 
-from Views.solar_viewer_view import SolarViewportView
-from Models.app_models import AppModel
+from TimeDistancePlotBuilder.Views.solar_viewer_view import SolarViewportView
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class SolarViewportController:
     def __init__(self, model, mainAppWindow):

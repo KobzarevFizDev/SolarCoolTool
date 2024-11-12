@@ -1,5 +1,5 @@
-from Views.channel_switch_view import ChannelSwitchView
-from Models.app_models import AppModel
+from TimeDistancePlotBuilder.Views.channel_switch_view import ChannelSwitchView
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class ChannelSwitchController:
     def __init__(self, model, mainAppWindow):

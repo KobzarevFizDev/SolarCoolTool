@@ -1,5 +1,28 @@
+from TimeDistancePlotBuilder.Exceptions.Exceptions import NotFoundConfigurationPropertyWithName
+
+
+STEP_FOR_A94_PROPERTY_NAME = "STEP_FOR_A94"
+STEP_FOR_A131_PROPERTY_NAME = "STEP_FOR_A131"
+STEP_FOR_A171_PROPERTY_NAME = "STEP_FOR_A171"
+STEP_FOR_A193_PROPERTY_NAME = "STEP_FOR_A193"
+STEP_FOR_A211_PROPERTY_NAME = "STEP_FOR_A211"
+STEP_FOR_A304_PROPERTY_NAME = "STEP_FOR_A304"
+STEP_FOR_A335_PROPERTY_NAME = "STEP_FOR_A335"
+
+MAX_NUMBER_OF_FRAMES_A94_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A94"
+MAX_NUMBER_OF_FRAMES_A131_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A131"
+MAX_NUMBER_OF_FRAMES_A171_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A171"
+MAX_NUMBER_OF_FRAMES_A193_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A193"
+MAX_NUMBER_OF_FRAMES_A211_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A211"
+MAX_NUMBER_OF_FRAMES_A304_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A304"
+MAX_NUMBER_OF_FRAMES_A335_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A335"
+
+PATH_TO_SOLAR_IMAGES_PROPERTY_NAME = "PATH_TO_SOLAR_IMAGES"
+PATH_TO_EXPORT_PROPERTY_NAME = "PATH_TO_EXPORT"
+
 class ConfigurationApp:
-    def __init__(self):
+    def __init__(self, path_to_configuration: str):
+        self.__path_to_configuration: str = path_to_configuration
         self.__step_for_a94: int = 1
         self.__step_for_a131: int = 1
         self.__step_for_a171: int = 1
@@ -16,7 +39,144 @@ class ConfigurationApp:
         self.__max_number_of_frames_in_a304: int = 50
         self.__max_number_of_frames_in_a355: int = 50
 
-        self.__read_configuration_file()
+        #self.__read_configuration_file()
+
+    @property
+    def max_number_of_frames_in_a94(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A94_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a131(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A131_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a171(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A171_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a193(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A193_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a211(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A211_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a304(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A304_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def max_number_of_frames_in_a335(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A335_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+
+
+    @property
+    def step_for_channel_a94(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A94_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+
+
+    @property
+    def step_for_channel_a94(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A94_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+
+
+    @property
+    def step_for_channel_a131(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A131_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def step_for_channel_a171(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A171_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def step_for_channel_a193(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A193_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def step_for_channel_a211(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A211_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def step_for_channel_a304(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A304_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+    
+
+    @property
+    def step_for_channel_a335(self) -> int:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A335_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return int(property_value)
+
+    @property
+    def path_to_solar_images(self) -> str:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(PATH_TO_SOLAR_IMAGES_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return property_value
+
+
+    @property
+    def path_to_export_results(self) -> str:
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(PATH_TO_EXPORT_PROPERTY_NAME)
+        property_value: str = self.__get_property_value_from_line(line_with_property)
+        return property_value
+    
+    def __get_property_value_from_line(self, line_with_property: str) -> str:
+        start_index: int = line_with_property.index('[') + 1
+        finish_index: int = line_with_property.index(']')
+        value: str = line_with_property[start_index : finish_index]
+        return value
+
+
+    def __get_line_with_property_from_configuration_file_by_property_name(self, property_name: str) -> str:
+        with open(self.__path_to_configuration) as f:
+            line_with_path: str = None
+            for line in f.readlines():
+                if property_name in line:
+                    line_with_path = line
+            
+            if line_with_path == None:
+                raise NotFoundConfigurationPropertyWithName(property_name)
+            else:
+                return line_with_path
+    """
 
     def get_step_for_channel(self, channel: int) -> int:
         return {94:self.__step_for_a94,
@@ -37,7 +197,7 @@ class ConfigurationApp:
                 335:self.__max_number_of_frames_in_a335}[channel]
 
     def __read_configuration_file(self) -> None:
-        with open("./configuration.txt") as f:
+        with open(self.__path_to_configuration) as f:
             for line in f.readlines():
                 if len(line) > 3:
                     splited = line.split('=')
@@ -118,3 +278,4 @@ class ConfigurationApp:
                 f"max_number_of_frames_a211 = {self.__max_number_of_frames_in_a211}, "
                 f"max_number_of_frames_a304 = {self.__max_number_of_frames_in_a304}, "
                 f"max_number_of_frames_a335 = {self.__max_number_of_frames_in_a335}")
+            """

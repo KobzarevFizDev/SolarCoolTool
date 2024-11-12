@@ -5,12 +5,12 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QPushButton, QHBoxLayout
 
-from CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
-from Models.app_models import PreviewModeEnum, TimeDistancePlot
+from TimeDistancePlotBuilder.CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
+from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum, TimeDistancePlot
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
-    from Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
 
 class TimeDistancePlotDebugView:
     def __init__(self, controller, model, parent_window):

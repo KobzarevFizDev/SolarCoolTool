@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING
 from PyQt5.QtWidgets import QProgressBar
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel, SolarFrame
-    from Controllers.bezier_mask_controller import BezierMaskController
+    from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFrame
+    from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMaskController
 
 class ProgressView:
     def __init__(self, controller, model, parentWindow):

@@ -1,5 +1,5 @@
-from Views.time_line_view import TimeLineView
-from Models.app_models import AppModel
+from TimeDistancePlotBuilder.Views.time_line_view import TimeLineView
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class TimeLineController:
     def __init__(self, model, mainAppWindow):

@@ -4,7 +4,7 @@ from typing import List, TYPE_CHECKING
 import sunpy.visualization.colormaps.cm
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel, BezierMask, ViewportTransform, SolarFramesStorage
+    from TimeDistancePlotBuilder.Models.app_models import AppModel, BezierMask, ViewportTransform, SolarFramesStorage
 
 from PyQt5.QtCore import QPoint
 from dda import get_pixels_of_line

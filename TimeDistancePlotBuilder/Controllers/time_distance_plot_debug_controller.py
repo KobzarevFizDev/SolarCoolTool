@@ -1,5 +1,5 @@
-from Models.app_models import AppModel, TimeDistancePlot
-from Views.time_distance_plot_debug_view import TimeDistancePlotDebugView
+from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot
+from TimeDistancePlotBuilder.Views.time_distance_plot_debug_view import TimeDistancePlotDebugView
 
 
 class TimeDistancePlotDebugController:

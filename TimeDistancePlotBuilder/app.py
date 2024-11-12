@@ -1,32 +1,36 @@
 import sys
 
-from PyQt5 import QtCore
-
-from Controllers.channel_switch_controller import ChannelSwitchController
-from Controllers.time_line_controller import TimeLineController
+from TimeDistancePlotBuilder.Controllers.channel_switch_controller import ChannelSwitchController
+from TimeDistancePlotBuilder.Controllers.time_line_controller import TimeLineController
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
 
-from Controllers.time_distance_plot_controller import TimeDistancePlotController
-from Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
-from Controllers.solar_viewer_controller import SolarViewportController
-from Controllers.bezier_mask_controller import BezierMaskController
-from Controllers.progress_controller import ProgressController
-from Controllers.selected_preview_mode_controller import SelectedPreviewModeController
+from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import TimeDistancePlotController
+from TimeDistancePlotBuilder.Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
+from TimeDistancePlotBuilder.Controllers.solar_viewer_controller import SolarViewportController
+from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMaskController
+from TimeDistancePlotBuilder.Controllers.progress_controller import ProgressController
+from TimeDistancePlotBuilder.Controllers.selected_preview_mode_controller import SelectedPreviewModeController
 
-from Models.app_models import AppModel
+from TimeDistancePlotBuilder.Models.app_models import AppModel
+
+from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 class CurveEditorWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, path_to_configuration: str):
         super().__init__()
         self.setWindowTitle("Solar cool tool")
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
 
-        self.__app_model = AppModel("/home/changame/WangPreparated/A193/",
-                                    "/home/changame/WangPreparated/A193/",
-                                    193)
+        configuration: ConfigurationApp = ConfigurationApp(path_to_configuration)
+
+        #self.__app_model = AppModel("/home/changame/WangPreparated/A193/",
+        #                            "/home/changame/WangPreparated/A193/",
+        #                            193)
+
+        self.__app_model = AppModel(configuration)
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
@@ -45,10 +49,12 @@ class CurveEditorWindow(QMainWindow):
         event.accept()
 
 def main():
-    app = QApplication(sys.argv)
-    ex = CurveEditorWindow()
-    ex.show()
-    sys.exit(app.exec_())
+    path_to_configuration: str = sys.argv[1]
+    print(path_to_configuration)
+    #app = QApplication(sys.argv)
+    #ex = CurveEditorWindow()
+    #ex.show()
+    #sys.exit(app.exec_())
 
 if __name__ == "__main__":
     main()

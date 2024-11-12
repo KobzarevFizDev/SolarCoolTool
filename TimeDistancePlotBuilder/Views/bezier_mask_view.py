@@ -3,12 +3,12 @@ from typing import TYPE_CHECKING
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap
 
-from CustomWidgets.bezier_mask_widget import BezierMaskWidget
-from Models.app_models import PreviewModeEnum, TimeDistancePlot, Cubedata
+from TimeDistancePlotBuilder.CustomWidgets.bezier_mask_widget import BezierMaskWidget
+from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum, TimeDistancePlot, Cubedata
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel, SolarFrame
-    from Controllers.bezier_mask_controller import BezierMaskController
+    from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFrame
+    from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMaskController
 
 class BezierMaskView:
     def __init__(self, controller, model, parentWindow):

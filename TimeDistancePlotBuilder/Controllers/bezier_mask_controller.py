@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from Views.bezier_mask_view import BezierMaskView
+from TimeDistancePlotBuilder.Views.bezier_mask_view import BezierMaskView
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 
 class BezierMaskController:

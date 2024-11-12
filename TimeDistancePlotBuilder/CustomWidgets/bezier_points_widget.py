@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QPoint
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 
 # TODO: Стоит вынести общий класс

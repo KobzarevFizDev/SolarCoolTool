@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING
 
 from PyQt5.QtWidgets import QPushButton, QHBoxLayout
 
-from Models.app_models import PreviewModeEnum
+from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 class SelectedPreviewModeView:
     def __init__(self, controller, model, parentWindow):

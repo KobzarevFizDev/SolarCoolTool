@@ -2,11 +2,11 @@ from typing import TYPE_CHECKING
 
 import os
 
-from Models.app_models import AppModel, TimeDistancePlot
-from Views.time_distance_plot_view import TimeDistancePlotView
+from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot
+from TimeDistancePlotBuilder.Views.time_distance_plot_view import TimeDistancePlotView
 
 if TYPE_CHECKING:
-    from Models.app_models import Cubedata
+    from TimeDistancePlotBuilder.Models.app_models import Cubedata
 
 class TimeDistancePlotController:
     def __init__(self, model, mainAppWindow):

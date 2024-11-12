@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from qtrangeslider import QRangeSlider
 
 if TYPE_CHECKING:
-    from Models.app_models import AppModel
-    from Controllers.time_line_controller import TimeLineController
+    from TimeDistancePlotBuilder.Models.app_models import AppModel
+    from TimeDistancePlotBuilder.Controllers.time_line_controller import TimeLineController
 
 class TimeLineView:
     def __init__(self, controller, model, parentWindow):
