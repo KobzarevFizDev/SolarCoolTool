@@ -52,8 +52,8 @@ class BezierControlPointWidget(QGraphicsEllipseItem):
             delta_position_x = current_cursor_position.x() - last_cursor_position.x()
             delta_position_y = current_cursor_position.y() - last_cursor_position.y()
 
-            current_point_position_x = delta_position_x + orig_position.x()
-            current_point_position_y = delta_position_y + orig_position.y()
+            current_point_position_x = int( delta_position_x + orig_position.x() )
+            current_point_position_y = int( delta_position_y + orig_position.y() )
 
             self.__point_model.setX(current_point_position_x)
             self.__point_model.setY(current_point_position_y)
@@ -102,8 +102,8 @@ class BezierAnchorPointWidget(QGraphicsEllipseItem):
             delta_position_x = current_cursor_position.x() - last_cursor_position.x()
             delta_position_y = current_cursor_position.y() - last_cursor_position.y()
 
-            current_point_position_x = delta_position_x + orig_position.x()
-            current_point_position_y = delta_position_y + orig_position.y()
+            current_point_position_x = int(delta_position_x + orig_position.x())
+            current_point_position_y = int(delta_position_y + orig_position.y())
 
             self.__point_model.setX(current_point_position_x)
             self.__point_model.setY(current_point_position_y)

@@ -16,3 +16,5 @@ MAX_NUMBER_OF_FRAMES_A335 = [80]
 
 PATH_TO_SOLAR_IMAGES = [/home/changame/WangPreparated/A193/]
 PATH_TO_EXPORT = [/home/changame/WangPreparated/A193/]
+
+INITIAL_CHANEL = [193]

@@ -16,6 +16,7 @@ from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
+
 class CurveEditorWindow(QMainWindow):
     def __init__(self, path_to_configuration: str):
         super().__init__()
@@ -25,10 +26,6 @@ class CurveEditorWindow(QMainWindow):
         self.layout = QGridLayout()
 
         configuration: ConfigurationApp = ConfigurationApp(path_to_configuration)
-
-        #self.__app_model = AppModel("/home/changame/WangPreparated/A193/",
-        #                            "/home/changame/WangPreparated/A193/",
-        #                            193)
 
         self.__app_model = AppModel(configuration)
 
@@ -49,12 +46,15 @@ class CurveEditorWindow(QMainWindow):
         event.accept()
 
 def main():
-    path_to_configuration: str = sys.argv[1]
-    print(path_to_configuration)
-    #app = QApplication(sys.argv)
-    #ex = CurveEditorWindow()
-    #ex.show()
-    #sys.exit(app.exec_())
+    if len(sys.argv) < 2:
+        print("You need to give me path to file configuration.txt")
+        exit()
+    else:  
+        path_to_configuration: str = sys.argv[1]
+        app = QApplication(sys.argv)
+        ex = CurveEditorWindow(path_to_configuration)
+        ex.show()
+        sys.exit(app.exec_())
 
 if __name__ == "__main__":
     main()

@@ -21,6 +21,8 @@ from PyQt5.QtGui import QImage, QPixmap
 from astropy.io import fits
 import numpy.typing as npt
 
+from TimeDistancePlotBuilder import transformations
+
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
@@ -269,18 +271,14 @@ class SolarFrame:
 
 # todo: Валидацию на корректное значение channel
 class SolarFramesStorage:
-    def __init__(self,
-                 initial_channel: int,
-                 path_to_directory: str,
-                 viewport_transform: 'ViewportTransform',
-                 configuration_app: 'ConfigurationApp'):
+    def __init__(self, viewport_transform: 'ViewportTransform', configuration_app: 'ConfigurationApp'):
         self.__viewport_transform = viewport_transform
         self.__configuration_app: 'ConfigurationApp' = configuration_app
-        self.__current_channel: int = initial_channel
-        self.__path_to_directory: str = path_to_directory
+        self.__current_channel: int = configuration_app.initial_channel
+        self.__path_to_directory: str = configuration_app.path_to_solar_images
         self.__loaded_channel: List[SolarFrame] = list()
         self.__initialize_database()
-        self.cache_channel(initial_channel)
+        self.cache_channel(configuration_app.initial_channel)
 
     def __initialize_database(self) -> None:
         files = self.__get_files_in_directory()
@@ -681,7 +679,7 @@ class ViewportTransform:
         return viewport_pixel
 
     def get_transformed_pixmap_for_viewport(self, solar_frame: SolarFrame) -> QPixmap:
-        scale = self.__zoom * self.__origin_size_image
+        scale: int = int(self.__zoom * self.__origin_size_image)
         scaled_solar_frame = solar_frame.qtimage.scaled(scale, scale)
         pixmap_for_draw = QPixmap.fromImage(scaled_solar_frame)
         return pixmap_for_draw
@@ -908,7 +906,7 @@ class TimeDistancePlot:
         axes.imshow(frame, cmap=cm)
         axes.imshow(frame.astype(np.float32), cmap=cm)
         canvas.draw()
-        width, height = fig.figbbox.width, fig.figbbox.height
+        width, height = int(fig.figbbox.width), int(fig.figbbox.height)
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(im)
 
@@ -964,17 +962,11 @@ class TimeDistancePlot:
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
-        self.__path_to_solar_images = configuration_app.path_to_solar_images # path_to_solar_images
-        self.__path_to_export_result = configuration_app.#path_to_export_result
-        self.__initial_channel = initial_channel
-        self.__configuration = ConfigurationApp()
+        self.__path_to_export_result = configuration_app.path_to_export_results #path_to_export_result
         self.__viewport_transform = ViewportTransform()
-        self.__solar_frames_storage = SolarFramesStorage(initial_channel,
-                                                         path_to_solar_images,
-                                                         self.__viewport_transform,
-                                                         self.__configuration)
+        self.__solar_frames_storage = SolarFramesStorage(self.__viewport_transform, configuration_app)
         self.__time_line = TimeLine(self.__solar_frames_storage)
-        self.__current_channel = CurrentChannel(self.__solar_frames_storage, initial_channel)
+        self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
         self.__interesting_solar_region = InterestingSolarRegion()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
