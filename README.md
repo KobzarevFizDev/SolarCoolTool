@@ -19,7 +19,7 @@
 (ПВДИ) – это разновидность двумерного графика, который показывает распределение интенсивности излучения вдоль петли в течении промежутка времени. 
 
 
-![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/Interface.png)
+![Interface](https://disk.yandex.ru/i/fT9oyFR0mgIdGA)
 
 
 ## Предназначение и использование программы
@@ -38,11 +38,11 @@
 
 ## Примеры полученных результатов
 
-![A94](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A94.png)
-![A131](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A131.png)
-![A171](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A171.png)
-![A193](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A193.png)
-![A211](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A211.png)
-![A304](https://github.com/KobzarevFizDev/SolarCoolTool/blob/main/A304.png)
+![A94](https://disk.yandex.ru/i/6JdJxOuXy6vwpA)
+![A131](https://disk.yandex.ru/i/cbd0sJrt9KkOKA)
+![A171](https://disk.yandex.ru/i/jCW8K_JiwOv_GQ)
+![A193](https://disk.yandex.ru/i/NADbOiyahlujHw)
+![A211](https://disk.yandex.ru/i/_06pNgFhC8_D7Q)
+![A304](https://disk.yandex.ru/i/c0SiID3Bx7y3EA)
 
 
