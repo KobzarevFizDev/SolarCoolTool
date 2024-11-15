@@ -19,7 +19,7 @@
 (ПВДИ) – это разновидность двумерного графика, который показывает распределение интенсивности излучения вдоль петли в течении промежутка времени. 
 
 
-![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/Interface.png)
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface.png)
 
 
 ## Предназначение и использование программы
@@ -38,10 +38,10 @@
 
 ## Примеры полученных результатов
 
-![A94](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A94.png)
-![A131](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A131.png)
-![A171](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A171.png)
-![A193](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A193.png)
-![A211](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A211.png)
-![A304](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/A304.png)
+![A94](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A94.png)
+![A131](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A131.png)
+![A171](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A171.png)
+![A193](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A193.png)
+![A211](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A211.png)
+![A304](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A304.png)
 
