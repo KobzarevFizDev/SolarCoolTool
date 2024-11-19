@@ -2,13 +2,15 @@ from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
-
+from TimeDistancePlotBuilder.Models.app_models import AppModel, ZoneInteresting
+from TimeDistancePlotBuilder.CustomWidgets.zone_interesting_control_point_widget import ZoneInterestingPositionControlPointWidget, ZoneInterestingSizeControlPointWidget
 
 class SolarViewerWidget(QWidget):
     wheelScrollSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
-    plotWasAllocatedSignal = pyqtSignal(QPoint, QPoint)
-    def __init__(self, parent):
+    def __init__(self, solar_viewer_controller, app_model: AppModel):
+        self.__zone_interesting_model: ZoneInteresting = app_model.zone_interesting
+        self.__controller = solar_viewer_controller
         super(SolarViewerWidget, self).__init__()
         self.setMinimumSize(600, 600)
         self.setMaximumSize(600, 600)
@@ -21,21 +23,13 @@ class SolarViewerWidget(QWidget):
 
         self.__pixmap: QPixmap = QPixmap()
         self.__offset: QPoint = QPoint(0, 0)
-        self.__top_right_of_interesting_area: QPoint = QPoint(-1, -1)
-        self.__bottom_left_of_interesting_area = QPoint(-1, -1)
-        self.__top_right_of_interesting_area_was_selected: bool = False
         self.__is_moved: bool = False
 
-        self.__previous_x: int = -1
-        self.__previous_y: int = -1
 
-    def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
-        self.__pixmap = pixmap
-        self.__offset = offset
 
-    def set_selected_zone_interesting(self, top_left: QPoint, bottom_right: QPoint) -> None:
-        self.__top_right_of_interesting_area = top_left
-        self.__bottom_left_of_interesting_area = bottom_right
+        self.__position_anchor_widget: ZoneInterestingPositionControlPointWidget = ZoneInterestingPositionControlPointWidget(self.__zone_interesting_model.top_right_in_view, app_model)
+        self.__size_anchor_widget: ZoneInterestingSizeControlPointWidget = ZoneInterestingSizeControlPointWidget(self.__zone_interesting_model.bottom_left_in_view, app_model)
+
 
     def update_widget(self):
         self.update()
@@ -45,39 +39,39 @@ class SolarViewerWidget(QWidget):
         painter.begin(self)
         self.__draw_solar_frame(painter)
         self.__draw_border_of_zone_interesting(painter)
-        painter.end()
+        painter.end()    
+
+
+    def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
+        self.__pixmap = pixmap
+        self.__offset = offset
 
 
     def __draw_solar_frame(self, painter: QPainter) -> None:
         painter.drawPixmap(self.__offset, self.__pixmap)
 
+
     def __draw_border_of_zone_interesting(self, painter: QPainter) -> None:
-        painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        tl = self.__top_right_of_interesting_area
-        br = self.__bottom_left_of_interesting_area
+        
+        #painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
 
-        if tl.x() == -1 or br.x() == -1:
-            return
+        borderPen = QPen(Qt.red, 2.0, Qt.DotLine)
+        diagonalPen = QPen(Qt.blue, 3.0, Qt.DotLine)
+        painter.setPen(borderPen)
+        
+        tr: QPoint = self.__zone_interesting_model.top_right_in_view
+        tl: QPoint = self.__zone_interesting_model.top_left_in_view
+        br: QPoint = self.__zone_interesting_model.bottom_right_in_view
+        bl: QPoint = self.__zone_interesting_model.bottom_left_in_view
 
-        p1 = QPoint(tl.x(), tl.y())
-        p2 = QPoint(tl.x(), br.y())
-        p3 = QPoint(br.x(), br.y())
-        p4 = QPoint(br.x(), tl.y())
+        painter.drawLine(tl, tr)
+        painter.drawLine(tr, br)
+        painter.drawLine(br, bl)
+        painter.drawLine(bl, tl)
 
-        painter.drawLine(p1, p2)
-        painter.drawLine(p2, p3)
-        painter.drawLine(p3, p4)
-        painter.drawLine(p4, p1)
+        painter.setPen(diagonalPen)
+        painter.drawLine(br, tl)
 
-    # TODO: Пользователь может выбрать точки не в том порядке, модель должна уметь с этим работать
-    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
-        if not self.__top_right_of_interesting_area_was_selected:
-            self.__top_right_of_interesting_area = QPoint(a0.x(), a0.y())
-            self.__top_right_of_interesting_area_was_selected = True
-        else:
-            self.__bottom_left_of_interesting_area = QPoint(a0.x(), a0.y())
-            self.__top_right_of_interesting_area_was_selected = False
-            self.plotWasAllocatedSignal.emit(self.__top_right_of_interesting_area, self.__bottom_left_of_interesting_area)
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.__is_moved = True
@@ -88,7 +82,7 @@ class SolarViewerWidget(QWidget):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         current_x = event.x()
         current_y = event.y()
-        if self.__is_moved and not self.__previous_x == -1 and not self.__previous_y == -1:
+        if self.__is_moved:
             delta_x = current_x - self.__previous_x
             delta_y = current_y - self.__previous_y
             self.mouseMoveSignal.emit(delta_x, delta_y)
@@ -97,4 +91,3 @@ class SolarViewerWidget(QWidget):
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())
-

@@ -85,7 +85,7 @@ class BezierMaskWidget(QWidget):
 
     def update_bezier_mask(self, spline: BezierMask) -> None:
         self.__clear_current_mask()
-        self.__updatePositionPointsWidgets(spline.bezier_curve)
+        self.__update_position_points_widgets(spline.bezier_curve)
         self.__draw_bottom_line_of_mask(spline)
         self.__draw_top_line_of_mask(spline)
         self.__draw_border_between_section(spline)
@@ -178,7 +178,7 @@ class BezierMaskWidget(QWidget):
         self.__temps_objects_on_scene.append(control_line1)
         self.__temps_objects_on_scene.append(control_line2)
 
-    def __updatePositionPointsWidgets(self, bezier_curve: BezierCurve) -> None:
+    def __update_position_points_widgets(self, bezier_curve: BezierCurve) -> None:
         p0: QPoint = bezier_curve.points[0]
         p1: QPoint = bezier_curve.points[1]
         p2: QPoint = bezier_curve.points[2]

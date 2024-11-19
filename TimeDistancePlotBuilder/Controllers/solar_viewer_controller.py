@@ -20,10 +20,4 @@ class SolarViewportController:
         self.model.viewport_transform.offset += delta
         self.model.notify_observers()
 
-    def select_plot_of_image(self,
-                             top_right_point_in_view: QPoint,
-                             bottom_left_point_in_view: QPoint) -> None:
-        self.model.interesting_solar_region.set_top_right_in_view(top_right_point_in_view)
-        self.model.interesting_solar_region.set_bottom_left_in_view(bottom_left_point_in_view)
-        self.model.notify_observers()
 

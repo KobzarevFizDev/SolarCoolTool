@@ -25,6 +25,8 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
+from TimeDistancePlotBuilder.Exceptions.Exceptions import IncorrectZoneInterestingSize
+
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
 
@@ -577,62 +579,59 @@ class CurrentChannel:
         return channel in self.__total_channels_of_sdo
 
 
-class InterestingSolarRegion:
+class ZoneInteresting:
     def __init__(self):
-        self.__top_right_in_view: QPoint = QPoint(600, 0)
-        self.__bottom_left_in_view: QPoint = QPoint(0, 600)
+        self.__size: int = 300 
+        self.__position: QPoint = QPoint(300, 300)
 
-        self.__top_right_point_was_selected: bool = False
-        self.__bottom_left_point_was_selected: bool = False
+    def set_position_of_position_anchor(self, anchor_pos: QPoint) -> None:
+        anchor_pos_x: int = anchor_pos.x()
+        anchor_pos_y: int = anchor_pos.y()
+        pos_x: int = int(anchor_pos_x - self.__size / 2)
+        pos_y: int = int(anchor_pos_y - self.__size / 2) 
+        self.__position = QPoint(pos_x, pos_y)
+
+
+    def set_position_of_size_anchor(self, anchor_pos: QPoint) -> None:
+        pass
+
 
     @property
     def top_right_in_view(self) -> QPoint:
-        if self.__top_right_point_was_selected:
-            #self.__top_right_point_was_selected = False
-            return self.__top_right_in_view
-        else:
-            raise Exception("Top right point was not selected")
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x + half_size), int(pos_y + half_size))
 
     @property
     def top_left_in_view(self) -> QPoint:
-        return QPoint(self.__bottom_left_in_view.x(), self.__top_right_in_view.y())
-
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x - half_size), int(pos_y + half_size))
+        
     @property
     def bottom_left_in_view(self) -> QPoint:
-        if self.__bottom_left_point_was_selected:
-            #self.__bottom_left_point_was_selected = False
-            return self.__bottom_left_in_view
-        else:
-            raise Exception("Bottom left point was not selected")
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x - half_size), int(pos_y - half_size))
 
     @property
     def bottom_right_in_view(self) -> QPoint:
-        return QPoint(self.__top_right_in_view.x(), self.__bottom_left_in_view.y())
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x + half_size), int(pos_y - half_size))
+    
+    def set_viewport_position(self, x: int, y: int) -> None:
+        self.__position: QPoint = QPoint(x, y)
+        pass
 
-    def set_top_right_in_view(self, point: QPoint) -> None:
-        self.__top_right_point_was_selected = True
-        self.__top_right_in_view = point
-        if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
-            self.__align_to_square_if_necessary()
-
-    def set_bottom_left_in_view(self, point: QPoint) -> None:
-        self.__bottom_left_point_was_selected = True
-        self.__bottom_left_in_view = point
-        if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
-            self.__align_to_square_if_necessary()
-
-    def __align_to_square_if_necessary(self) -> None:
-        x_side_size = self.__bottom_left_in_view.x() - self.__top_right_in_view.x()
-        y_side_size = self.__top_right_in_view.y() - self.__bottom_left_in_view.y()
-        side_size = (x_side_size + y_side_size)/2
-        half_side_size = side_size/2
-        center_of_square = QPoint(int((self.__top_right_in_view.x() + self.__bottom_left_in_view.x()) / 2),
-                                  int((self.__top_right_in_view.y() + self.__bottom_left_in_view.y()) / 2))
-
-        self.__top_right_in_view = QPoint(int(center_of_square.x() + half_side_size),
-                                          int(center_of_square.y() + half_side_size))
-        self.__bottom_left_in_view = QPoint(int(center_of_square.x() - half_side_size),
-                                            int(center_of_square.y() - half_side_size))
+    def set_viewport_size(self, size: int) -> None:
+        if size <= 0:
+            raise IncorrectZoneInterestingSize(size)
+        self.__size = size
 
 
 
@@ -968,7 +967,7 @@ class AppModel:
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
-        self.__interesting_solar_region = InterestingSolarRegion()
+        self.__zone_interesting = ZoneInteresting()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__selected_preview_mode = SelectedPreviewMode()
 
@@ -999,8 +998,8 @@ class AppModel:
         return self.__bezier_mask
 
     @property
-    def interesting_solar_region(self) -> InterestingSolarRegion:
-        return self.__interesting_solar_region
+    def zone_interesting(self) -> ZoneInteresting:
+        return self.__zone_interesting
 
     @property
     def configuration(self) -> ConfigurationApp:
