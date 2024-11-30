@@ -587,8 +587,8 @@ class ZoneInteresting:
     def set_position_of_position_anchor(self, anchor_pos: QPoint) -> None:
         anchor_pos_x: int = anchor_pos.x()
         anchor_pos_y: int = anchor_pos.y()
-        pos_x: int = int(anchor_pos_x - self.__size / 2)
-        pos_y: int = int(anchor_pos_y - self.__size / 2) 
+        pos_x: int = int(self.__size / 2 - anchor_pos_x)
+        pos_y: int = int(self.__size / 2 - anchor_pos_y) 
         self.__position = QPoint(pos_x, pos_y)
 
 

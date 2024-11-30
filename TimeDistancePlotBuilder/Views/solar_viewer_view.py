@@ -17,8 +17,11 @@ class SolarViewportView:
         self.widget: SolarViewerWidget = SolarViewerWidget(parentWindow, model)
         parentWindow.layout.addWidget(self.widget, 1, 2, 1, 1)
         self.model.add_observer(self)
-        self.widget.wheelScrollSignal.connect(self.zoom)
-        self.widget.mouseMoveSignal.connect(self.move)
+        self.widget.zoom_image_signal.connect(self.zoom)
+        self.widget.move_image_signal.connect(self.move)
+        self.widget.on_changed_position_of_zone_interesting_position_anchor_signal.connect(self.on_changed_position_of_zone_interesting_position_anchor)
+        self.widget.on_changed_position_of_zone_interesting_size_anchor.connect(self.on_changed_size_of_zone_interesting_size_anchor)
+
 
     def zoom(self, x, y):
         if y > 0:
@@ -28,6 +31,12 @@ class SolarViewportView:
 
     def move(self, x, y):
         self.controller.move_solar_image(QPoint(x, y))
+
+    def on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
+        pass
+
+    def on_changed_size_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
+        pass
 
 
     def model_is_changed(self):
