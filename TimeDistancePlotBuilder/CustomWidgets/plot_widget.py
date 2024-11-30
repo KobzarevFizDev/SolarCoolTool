@@ -19,4 +19,5 @@ class PlotWidget(QLabel):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.drawPixmap(self.__offset.x(), self.__offset.y(), self.__pixmap)
+        #painter.drawPixmap(0, 0, self.__pixmap)
         super().paintEvent(event)

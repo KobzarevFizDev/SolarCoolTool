@@ -28,9 +28,9 @@ class SolarViewerWidget(QWidget):
         self.__view.show()
         
         self.__pixmap: QPixmap = QPixmap(600, 600)
-        self.__pixmap.fill(Qt.green)
         self.__offset: QPoint = QPoint(0, 0)
-        self.__label: PlotWidget = PlotWidget(self.__pixmap, self.__offset) #QLabel()
+
+        self.__label: PlotWidget = None
         self.__is_moved: bool = False
 
 
@@ -41,13 +41,10 @@ class SolarViewerWidget(QWidget):
 
 
     def __create_pixmap(self) -> QGraphicsProxyWidget:
-        default_plot = QPixmap(600, 600)
-        default_plot.fill(Qt.green)
-        #self.__label.setPixmap(default_plot)
+        self.__pixmap.fill(Qt.green)
+        self.__label = PlotWidget(self.__pixmap, self.__offset)
         proxy = self.__scene.addWidget(self.__label)
         return proxy
-
-
 
     def update_widget(self):
         self.update()
@@ -62,7 +59,6 @@ class SolarViewerWidget(QWidget):
 
     def __draw_solar_frame(self) -> None:
         self.__label.update_plot(self.__pixmap, self.__offset)
-        self.__label_position_manipulator.setPos(self.__offset)
 
     def __draw_border_of_zone_interesting(self) -> None:
         painter = QPainter()
