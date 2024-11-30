@@ -4,13 +4,16 @@ from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 from TimeDistancePlotBuilder.Models.app_models import AppModel, ZoneInteresting
 from TimeDistancePlotBuilder.CustomWidgets.zone_interesting_control_point_widget import ZoneInterestingPositionControlPointWidget, ZoneInterestingSizeControlPointWidget
+from TimeDistancePlotBuilder.CustomWidgets.plot_widget import PlotWidget
 
 class SolarViewerWidget(QWidget):
     wheelScrollSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
     
+  
     def __init__(self, solar_viewer_controller, app_model: AppModel):
         super(SolarViewerWidget, self).__init__()
+        self.__zone_interesting_model: ZoneInteresting = app_model.zone_interesting
         self.setMinimumSize(600, 600)
         self.setMaximumSize(600, 600)
         self.setMouseTracking(True)
@@ -24,46 +27,65 @@ class SolarViewerWidget(QWidget):
         self.__view.setSceneRect(0, 0, view_rect.width(), view_rect.height())
         self.__view.show()
         
-        self.__label: QLabel = QLabel()
-        self.__pixmap = QPixmap(600, 600)
+        self.__pixmap: QPixmap = QPixmap(600, 600)
+        self.__pixmap.fill(Qt.green)
         self.__offset: QPoint = QPoint(0, 0)
+        self.__label: PlotWidget = PlotWidget(self.__pixmap, self.__offset) #QLabel()
         self.__is_moved: bool = False
 
 
         self.__previous_x: int = 0
         self.__previous_y: int = 0
 
-        self.__create_pixmap()
+        self.__label_position_manipulator: QGraphicsProxyWidget = self.__create_pixmap()
 
 
     def __create_pixmap(self) -> QGraphicsProxyWidget:
         default_plot = QPixmap(600, 600)
         default_plot.fill(Qt.green)
-        self.__label.setPixmap(default_plot)
-        return self.__scene.addWidget(self.__label)
+        #self.__label.setPixmap(default_plot)
+        proxy = self.__scene.addWidget(self.__label)
+        return proxy
+
+
 
     def update_widget(self):
         self.update()
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-        painter = QPainter()
-        painter.begin(self)
-        self.__draw_solar_frame(painter)
-        self.__draw_border_of_zone_interesting(painter)
-        painter.end()    
+        self.__draw_solar_frame()
+        self.__draw_border_of_zone_interesting()    
 
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap
         self.__offset = offset
 
+    def __draw_solar_frame(self) -> None:
+        self.__label.update_plot(self.__pixmap, self.__offset)
+        self.__label_position_manipulator.setPos(self.__offset)
 
-    def __draw_solar_frame(self, painter: QPainter) -> None:
-        pass
-        #self.__label.setPixmap(self.__pixmap)
-        #self.__label.pos = self.__offset
+    def __draw_border_of_zone_interesting(self) -> None:
+        painter = QPainter()
+        painter.begin(self)
 
-    def __draw_border_of_zone_interesting(self, painter: QPainter) -> None:
-        pass
+        borderPen = QPen(Qt.red, 2.0, Qt.DotLine)
+        diagonalPen = QPen(Qt.blue, 3.0, Qt.DotLine)
+        painter.setPen(borderPen)
+        
+        tr: QPoint = self.__zone_interesting_model.top_right_in_view
+        tl: QPoint = self.__zone_interesting_model.top_left_in_view
+        br: QPoint = self.__zone_interesting_model.bottom_right_in_view
+        bl: QPoint = self.__zone_interesting_model.bottom_left_in_view
+
+        painter.drawLine(tl, tr)
+        painter.drawLine(tr, br)
+        painter.drawLine(br, bl)
+        painter.drawLine(bl, tl)
+
+        painter.setPen(diagonalPen)
+        painter.drawLine(br, tl)
+
+        painter.end()
 
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
@@ -83,7 +105,9 @@ class SolarViewerWidget(QWidget):
         self.__previous_y = current_y
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
-        pass
+        self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())
+    
+
     '''
     def __init__(self, solar_viewer_controller, app_model: AppModel):
         self.__zone_interesting_model: ZoneInteresting = app_model.zone_interesting
@@ -167,5 +191,4 @@ class SolarViewerWidget(QWidget):
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
         self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())
-    
-    '''
+'''
