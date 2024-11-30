@@ -14,6 +14,9 @@ class BaseZoneInterestingControlPointWidget(QWidget):
         self._app_model: AppModel = app_model
         self._zone_interesting_model: ZoneInteresting = app_model.zone_interesting
         self._is_selected: bool = False
+
+    def set_pos(self, new_pos: QPoint) -> None:
+        self.move(new_pos)
     
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self._is_selected = True

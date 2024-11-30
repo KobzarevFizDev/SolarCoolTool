@@ -60,7 +60,14 @@ class SolarViewerWidget(QWidget):
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         self.__draw_solar_frame()
-        self.__draw_border_of_zone_interesting()    
+        self.__draw_border_of_zone_interesting()  
+
+    def update_position_of_zone_interesting_position_anchor(self, pos: QPoint) -> None:
+        self.__zone_interesting_position_anchor.set_pos(pos)
+
+    def update_position_of_zone_interesting_size_anchor(self, pos: QPoint) -> None:
+        pass
+
 
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap
@@ -103,7 +110,7 @@ class SolarViewerWidget(QWidget):
 
     def __on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
         self.on_changed_position_of_zone_interesting_size_anchor.emit(pos_x, pos_y)
-        
+
         #new_pos = QPoint(pos_x, pos_y)
         #self.__zone_interesting_model.set_position_of_position_anchor(new_pos)
         #self.__app_model.notify_observers()
