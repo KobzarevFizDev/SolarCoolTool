@@ -33,12 +33,10 @@ class SolarViewportView:
         self.controller.move_solar_image(QPoint(x, y))
 
     def on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
-        anchor_pos = QPoint(pos_x, pos_y)
-        self.model.zone_interesting.set_position_of_position_anchor(anchor_pos)
+        self.controller.set_position_of_zone_interesting_position_anchor(pos_x, pos_y)
 
     def on_changed_size_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
-        anchor_pos = QPoint(pos_x, pos_y)
-        self.model.zone_interesting.set_position_of_size_anchor(anchor_pos)
+        self.controller.set_position_of_zone_interesting_size_anchor(pos_x, pos_y)
 
     def model_is_changed(self):
         if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
@@ -57,7 +55,8 @@ class SolarViewportView:
         solar_frame = self.model.time_line.current_solar_frame
         pixmap_of_solar_to_show = self.model.viewport_transform.get_transformed_pixmap_for_viewport(solar_frame)
         offset = self.model.viewport_transform.offset
-        a = QPoint(500 ,500) #self.model.zone_interesting.top_left_in_view
+        a = self.model.zone_interesting.bottom_right_in_view
+
         self.widget.update_position_of_zone_interesting_position_anchor(a)
         self.widget.set_solar_frame_to_draw(pixmap_of_solar_to_show, offset)
         self.widget.update_widget()

@@ -10,13 +10,17 @@ class BaseZoneInterestingControlPointWidget(QWidget):
 
     def __init__(self, app_model: AppModel):
         super().__init__()
-        self.setFixedSize(20, 20)
+        self.__size = 20
+        self.setFixedSize(self.__size, self.__size)
         self._app_model: AppModel = app_model
         self._zone_interesting_model: ZoneInteresting = app_model.zone_interesting
         self._is_selected: bool = False
 
     def set_pos(self, new_pos: QPoint) -> None:
-        self.move(new_pos)
+        pos_x: int = new_pos.x() - self.__size // 2
+        pos_y: int = new_pos.y() - self.__size // 2
+
+        self.move(QPoint(pos_x, pos_y))
     
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
         self._is_selected = True
@@ -27,7 +31,7 @@ class BaseZoneInterestingControlPointWidget(QWidget):
     def mouseMoveEvent(self, event) -> None:
         if self._is_selected == False:
             return
-        
+
         self.change_position_signal.emit(event.x(), event.y())
         
 
@@ -72,3 +76,4 @@ class ZoneInterestingSizeControlPointWidget(BaseZoneInterestingControlPointWidge
         painter.drawLine(a, b)
         painter.drawLine(c, d)
         painter.end()
+

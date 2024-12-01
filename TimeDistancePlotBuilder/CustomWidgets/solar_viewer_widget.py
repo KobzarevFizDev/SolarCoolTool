@@ -1,7 +1,7 @@
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
-from PyQt5.QtCore import Qt, pyqtSignal, QPoint
+from PyQt5.QtCore import Qt, pyqtSignal, QPoint, QPointF
 from TimeDistancePlotBuilder.Models.app_models import AppModel, ZoneInteresting
 from TimeDistancePlotBuilder.CustomWidgets.zone_interesting_control_point_widget import ZoneInterestingPositionControlPointWidget, ZoneInterestingSizeControlPointWidget
 from TimeDistancePlotBuilder.CustomWidgets.plot_widget import PlotWidget
@@ -36,7 +36,9 @@ class SolarViewerWidget(QWidget):
         self.__zone_interesting_position_anchor: ZoneInterestingPositionControlPointWidget = None
 
         self.__create_solar_plot()
-        self.__manipulator_zone_interesting_position_anchor = self.__create_zone_interesting_position_anchor()
+        self.__proxy_zone_interesting_position_anchor: QGraphicsProxyWidget = self.__create_zone_interesting_position_anchor()
+
+        self.__temps_objects_on_scene = []
 
 
     def __create_solar_plot(self) -> QGraphicsProxyWidget:
@@ -59,6 +61,7 @@ class SolarViewerWidget(QWidget):
         self.update()
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
+        self.__clear_temps_objects()
         self.__draw_solar_frame()
         self.__draw_border_of_zone_interesting()  
 
@@ -68,7 +71,6 @@ class SolarViewerWidget(QWidget):
     def update_position_of_zone_interesting_size_anchor(self, pos: QPoint) -> None:
         pass
 
-
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap
         self.__offset = offset
@@ -77,27 +79,28 @@ class SolarViewerWidget(QWidget):
         self.__solar_plot.update_plot(self.__pixmap, self.__offset)
 
     def __draw_border_of_zone_interesting(self) -> None:
-        painter = QPainter()
-        painter.begin(self)
+        self.__draw_borders_lines()
 
-        borderPen = QPen(Qt.red, 2.0, Qt.DotLine)
-        diagonalPen = QPen(Qt.blue, 3.0, Qt.DotLine)
-        painter.setPen(borderPen)
+    def __draw_borders_lines(self) -> None:
+        pen = QPen(Qt.red, 3.0, Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
         
-        tr: QPoint = self.__zone_interesting_model.top_right_in_view
-        tl: QPoint = self.__zone_interesting_model.top_left_in_view
-        br: QPoint = self.__zone_interesting_model.bottom_right_in_view
-        bl: QPoint = self.__zone_interesting_model.bottom_left_in_view
+        br = self.__zone_interesting_model.bottom_right_in_view
+        tr = self.__zone_interesting_model.top_right_in_view
+        bl = self.__zone_interesting_model.bottom_left_in_view
+        tl = self.__zone_interesting_model.top_left_in_view
+        
+        br2tr_line = self.__scene.addLine(br.x(), br.y(), tr.x(), tr.y(), pen)
 
-        painter.drawLine(tl, tr)
-        painter.drawLine(tr, br)
-        painter.drawLine(br, bl)
-        painter.drawLine(bl, tl)
+        self.__temps_objects_on_scene.append(br2tr_line)
 
-        painter.setPen(diagonalPen)
-        painter.drawLine(br, tl)
+    def __draw_borders_points(self) -> None:
+        pass
 
-        painter.end()
+    def __clear_temps_objects(self) -> None:
+        for item in self.__temps_objects_on_scene:
+            self.__scene.removeItem(item)
+
+        self.__temps_objects_on_scene.clear()
 
     def __on_move_image(self, pos_x: int, pos_y: int) -> None:
         self.move_image_signal.emit(pos_x, pos_y)
@@ -106,9 +109,12 @@ class SolarViewerWidget(QWidget):
         self.zoom_image_signal.emit(zoom, tmp)
 
     def __on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
-        self.on_changed_position_of_zone_interesting_position_anchor_signal.emit(pos_x, pos_y)
+        relative_pos: QPointF = self.__proxy_zone_interesting_position_anchor.mapToScene(pos_x, pos_y)
+        relative_pos_x: int = int(relative_pos.x())
+        relative_pos_y: int = int(relative_pos.y())
+        self.on_changed_position_of_zone_interesting_position_anchor_signal.emit(relative_pos_x, relative_pos_y)
 
-    def __on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
+    def __on_changed_position_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
         self.on_changed_position_of_zone_interesting_size_anchor.emit(pos_x, pos_y)
 
         #new_pos = QPoint(pos_x, pos_y)
