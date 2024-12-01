@@ -10,15 +10,15 @@ class BaseZoneInterestingControlPointWidget(QWidget):
 
     def __init__(self, app_model: AppModel):
         super().__init__()
-        self.__size = 20
-        self.setFixedSize(self.__size, self.__size)
+        self._size = 20
+        self.setFixedSize(self._size, self._size)
         self._app_model: AppModel = app_model
         self._zone_interesting_model: ZoneInteresting = app_model.zone_interesting
         self._is_selected: bool = False
 
     def set_pos(self, new_pos: QPoint) -> None:
-        pos_x: int = new_pos.x() - self.__size // 2
-        pos_y: int = new_pos.y() - self.__size // 2
+        pos_x: int = new_pos.x() - self._size // 2
+        pos_y: int = new_pos.y() - self._size // 2
 
         self.move(QPoint(pos_x, pos_y))
     
@@ -41,39 +41,17 @@ class ZoneInterestingPositionControlPointWidget(BaseZoneInterestingControlPointW
         super().__init__(app_model)
 
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
-        painter = QPainter()
-        painter.begin(self)
-        painter.setPen(QPen(Qt.black, 2.0, Qt.DotLine))
-
-        a: QPoint = QPoint(10, 20)
-        b: QPoint = QPoint(10, 0)
-        c: QPoint = QPoint(20, 10)
-        d: QPoint = QPoint(0, 10)
-
-        painter.drawLine(a, b)
-        painter.drawLine(c, d)
-        painter.end()
-        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setBrush(Qt.green)
+        painter.drawRect(0, 0, self._size, self._size)
 
 
 class ZoneInterestingSizeControlPointWidget(BaseZoneInterestingControlPointWidget):
-    def __init__(self, point_model: QPoint, app_model):
-        super().__init__(point_model, app_model)
+    def __init__(self, app_model):
+        super().__init__(app_model)
 
-    def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-        painter = QPainter()
-        painter.begin()
-        painter.setPen(QPen(Qt.green, 2.0, Qt.DotLine))
-
-        pos_x: int = self.__point_model.x()
-        pos_y: int = self.__point_model.y() 
-
-        a: QPoint = QPoint(pos_x, pos_y + 10)
-        b: QPoint = QPoint(pos_x, pos_y - 10)
-        c: QPoint = QPoint(pos_x - 10, pos_y)
-        d: QPoint = QPoint(pos_x + 10, pos_y)
-
-        painter.drawLine(a, b)
-        painter.drawLine(c, d)
-        painter.end()
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:
+        painter = QPainter(self)
+        painter.setBrush(Qt.blue)
+        painter.drawRect(0, 0, self._size, self._size)
 

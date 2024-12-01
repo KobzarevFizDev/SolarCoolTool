@@ -37,6 +37,7 @@ class SolarViewerWidget(QWidget):
 
         self.__create_solar_plot()
         self.__proxy_zone_interesting_position_anchor: QGraphicsProxyWidget = self.__create_zone_interesting_position_anchor()
+        self.__proxy_zone_interesting_size_anchor: QGraphicsScene = self.__create_zone_interesting_size_anchor()
 
         self.__temps_objects_on_scene = []
 
@@ -55,6 +56,12 @@ class SolarViewerWidget(QWidget):
         self.__zone_interesting_position_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_position_anchor)
         proxy = self.__scene.addWidget(self.__zone_interesting_position_anchor)
         return proxy
+    
+    def __create_zone_interesting_size_anchor(self) -> QGraphicsProxyWidget:
+        self.__zone_interesting_size_anchor = ZoneInterestingPositionControlPointWidget(self.__app_model)
+        self.__zone_interesting_size_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_size_anchor)
+        proxy = self.__scene.addWidget(self.__zone_interesting_size_anchor)
+        return proxy
 
 
     def update_widget(self):
@@ -69,7 +76,7 @@ class SolarViewerWidget(QWidget):
         self.__zone_interesting_position_anchor.set_pos(pos)
 
     def update_position_of_zone_interesting_size_anchor(self, pos: QPoint) -> None:
-        pass
+        self.__zone_interesting_size_anchor.set_pos(pos)
 
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap
@@ -90,11 +97,15 @@ class SolarViewerWidget(QWidget):
         tl = self.__zone_interesting_model.top_left_in_view
         
         br2tr_line = self.__scene.addLine(br.x(), br.y(), tr.x(), tr.y(), pen)
+        tr2tl_line = self.__scene.addLine(tr.x(), tr.y(), tl.x(), tl.y(), pen)
+        tl2bl_line = self.__scene.addLine(tl.x(), tl.y(), bl.x(), bl.y(), pen)
+        bl2br_line = self.__scene.addLine(bl.x(), bl.y(), br.x(), br.y(), pen)
 
         self.__temps_objects_on_scene.append(br2tr_line)
+        self.__temps_objects_on_scene.append(tr2tl_line)
+        self.__temps_objects_on_scene.append(tl2bl_line)
+        self.__temps_objects_on_scene.append(bl2br_line)
 
-    def __draw_borders_points(self) -> None:
-        pass
 
     def __clear_temps_objects(self) -> None:
         for item in self.__temps_objects_on_scene:
@@ -116,8 +127,4 @@ class SolarViewerWidget(QWidget):
 
     def __on_changed_position_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
         self.on_changed_position_of_zone_interesting_size_anchor.emit(pos_x, pos_y)
-
-        #new_pos = QPoint(pos_x, pos_y)
-        #self.__zone_interesting_model.set_position_of_position_anchor(new_pos)
-        #self.__app_model.notify_observers()
     

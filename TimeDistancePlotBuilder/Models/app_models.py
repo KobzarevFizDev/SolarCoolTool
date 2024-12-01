@@ -581,7 +581,7 @@ class CurrentChannel:
 
 class ZoneInteresting:
     def __init__(self):
-        self.__size: int = 600 
+        self.__size: int = 300 
         self.__position: QPoint = QPoint(300, 300)
 
     def set_position_of_position_anchor(self, anchor_pos: QPoint) -> None:

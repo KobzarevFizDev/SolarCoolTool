@@ -55,8 +55,7 @@ class SolarViewportView:
         solar_frame = self.model.time_line.current_solar_frame
         pixmap_of_solar_to_show = self.model.viewport_transform.get_transformed_pixmap_for_viewport(solar_frame)
         offset = self.model.viewport_transform.offset
-        a = self.model.zone_interesting.bottom_right_in_view
-
-        self.widget.update_position_of_zone_interesting_position_anchor(a)
+        self.widget.update_position_of_zone_interesting_position_anchor(self.model.zone_interesting.bottom_right_in_view)
+        self.widget.update_position_of_zone_interesting_size_anchor(self.model.zone_interesting.top_left_in_view)
         self.widget.set_solar_frame_to_draw(pixmap_of_solar_to_show, offset)
         self.widget.update_widget()
