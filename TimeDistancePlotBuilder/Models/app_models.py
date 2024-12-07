@@ -592,16 +592,17 @@ class ZoneInteresting:
         pos_x: int = anchor_pos_x - self.__size // 2
         pos_y: int = anchor_pos_y + self.__size // 2
         self.__position = QPoint(pos_x, pos_y)
+        self.__previous_position_of_size_anchor = self.top_left_in_view
 
 
     def set_position_of_size_anchor(self, anchor_pos: QPoint) -> None:
         if self.__previous_position_of_size_anchor == QPoint(-1, -1):
             self.__previous_position_of_size_anchor = anchor_pos
             return
-        
+ 
         dir_to_zoom_x, dir_to_zoom_y = self.__get_direction_to_zoom()
         len_of_zoom_direction = self.__get_len_of_direction(dir_to_zoom_x, dir_to_zoom_y)
-        anchor_direction_x, anchor_direction_y = self.__get_size_anchor_direction(anchor_pos)
+        anchor_direction_x, anchor_direction_y = self.__get_size_anchor_move_delta(anchor_pos)
         normalized_dir_to_zoom_x, normalized_dir_to_zoom_y = self.__get_normalized_direction(dir_to_zoom_x, dir_to_zoom_y)
         projection = (anchor_direction_x * normalized_dir_to_zoom_x + anchor_direction_y * normalized_dir_to_zoom_y) / len_of_zoom_direction
 
@@ -616,13 +617,12 @@ class ZoneInteresting:
         self.__previous_position_of_size_anchor = anchor_pos
 
 
-
     def __get_direction_to_zoom(self): 
         direction_to_zoom_x: int = self.bottom_right_in_view.x() - self.top_left_in_view.x()
         direction_to_zoom_y: int = self.bottom_right_in_view.y() - self.top_left_in_view.y()
         return direction_to_zoom_x, direction_to_zoom_y
     
-    def __get_size_anchor_direction(self, anchor_pos: QPoint):
+    def __get_size_anchor_move_delta(self, anchor_pos: QPoint):
         previous_x: int = self.__previous_position_of_size_anchor.x()
         previous_y: int = self.__previous_position_of_size_anchor.y()
 
