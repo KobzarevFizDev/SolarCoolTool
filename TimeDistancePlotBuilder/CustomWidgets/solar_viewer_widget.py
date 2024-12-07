@@ -10,7 +10,7 @@ class SolarViewerWidget(QWidget):
     zoom_image_signal = pyqtSignal(int, int)
     move_image_signal = pyqtSignal(int, int)
     on_changed_position_of_zone_interesting_position_anchor_signal = pyqtSignal(int ,int)
-    on_changed_position_of_zone_interesting_size_anchor = pyqtSignal(int, int)
+    on_changed_position_of_zone_interesting_size_anchor_signal = pyqtSignal(int, int)
 
     def __init__(self, solar_viewer_controller, app_model: AppModel):
         super(SolarViewerWidget, self).__init__()
@@ -58,7 +58,7 @@ class SolarViewerWidget(QWidget):
         return proxy
     
     def __create_zone_interesting_size_anchor(self) -> QGraphicsProxyWidget:
-        self.__zone_interesting_size_anchor = ZoneInterestingPositionControlPointWidget(self.__app_model)
+        self.__zone_interesting_size_anchor = ZoneInterestingSizeControlPointWidget(self.__app_model)
         self.__zone_interesting_size_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_size_anchor)
         proxy = self.__scene.addWidget(self.__zone_interesting_size_anchor)
         return proxy
@@ -126,5 +126,7 @@ class SolarViewerWidget(QWidget):
         self.on_changed_position_of_zone_interesting_position_anchor_signal.emit(relative_pos_x, relative_pos_y)
 
     def __on_changed_position_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
-        self.on_changed_position_of_zone_interesting_size_anchor.emit(pos_x, pos_y)
-    
+        relative_pos: QPointF = self.__proxy_zone_interesting_size_anchor.mapToScene(pos_x, pos_y)
+        relative_pos_x: int = int(relative_pos.x())
+        relative_pos_y: int = int(relative_pos.y())
+        self.on_changed_position_of_zone_interesting_size_anchor_signal.emit(relative_pos_x, relative_pos_y)

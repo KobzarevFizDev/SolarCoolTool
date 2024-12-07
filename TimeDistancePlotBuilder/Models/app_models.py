@@ -583,6 +583,8 @@ class ZoneInteresting:
     def __init__(self):
         self.__size: int = 300 
         self.__position: QPoint = QPoint(300, 300)
+        self.__previous_position_of_size_anchor: QPoint = QPoint(-1, -1)
+        self.__delta_move_of_size_anchor: float = 0
 
     def set_position_of_position_anchor(self, anchor_pos: QPoint) -> None:
         anchor_pos_x: int = anchor_pos.x()
@@ -593,8 +595,89 @@ class ZoneInteresting:
 
 
     def set_position_of_size_anchor(self, anchor_pos: QPoint) -> None:
-        pass
+        if self.__previous_position_of_size_anchor == QPoint(-1, -1):
+            self.__previous_position_of_size_anchor = anchor_pos
+            return
+        
+        dir_to_zoom_x, dir_to_zoom_y = self.__get_direction_to_zoom()
+        len_of_zoom_direction = self.__get_len_of_direction(dir_to_zoom_x, dir_to_zoom_y)
+        anchor_direction_x, anchor_direction_y = self.__get_size_anchor_direction(anchor_pos)
+        normalized_dir_to_zoom_x, normalized_dir_to_zoom_y = self.__get_normalized_direction(dir_to_zoom_x, dir_to_zoom_y)
+        projection = (anchor_direction_x * normalized_dir_to_zoom_x + anchor_direction_y * normalized_dir_to_zoom_y) / len_of_zoom_direction
 
+        diagonal_delta = projection * len_of_zoom_direction / math.sqrt(2)
+        self.__delta_move_of_size_anchor += diagonal_delta * 2
+
+        integer_part_of_delta_move, fractional_part_of_delta_move = divmod(self.__delta_move_of_size_anchor, 1)
+        self.__delta_move_of_size_anchor -= integer_part_of_delta_move
+
+        self.__size -= int(integer_part_of_delta_move)
+
+        self.__previous_position_of_size_anchor = anchor_pos
+
+
+
+    def __get_direction_to_zoom(self): 
+        direction_to_zoom_x: int = self.bottom_right_in_view.x() - self.top_left_in_view.x()
+        direction_to_zoom_y: int = self.bottom_right_in_view.y() - self.top_left_in_view.y()
+        return direction_to_zoom_x, direction_to_zoom_y
+    
+    def __get_size_anchor_direction(self, anchor_pos: QPoint):
+        previous_x: int = self.__previous_position_of_size_anchor.x()
+        previous_y: int = self.__previous_position_of_size_anchor.y()
+
+        new_x: int = anchor_pos.x()
+        new_y: int = anchor_pos.y()
+
+        anchor_direction_x = new_x - previous_x
+        anchor_direction_y = new_y - previous_y
+
+        return anchor_direction_x, anchor_direction_y
+    
+    def __get_len_of_direction(self, dir_x, dir_y) -> float:
+        return math.sqrt(dir_x**2 + dir_y**2)
+    
+    
+    def __get_normalized_direction(self, dir_x, dir_y):
+        len_of_dir: float = math.sqrt(dir_x**2 + dir_y**2)
+        return (dir_x / len_of_dir), (dir_y / len_of_dir)
+
+        '''
+        previous_x: int = self.__previous_position_of_size_anchor.x()
+        previous_y: int = self.__previous_position_of_size_anchor.y()
+
+        new_x: int = anchor_pos.x()
+        new_y: int = anchor_pos.y()
+
+        delta_x: int = new_x - previous_x
+        delta_y: int = new_y - previous_y
+
+        sqr_magnitude = delta_x**2 + delta_y**2
+
+        if sqr_magnitude <= 10:
+            return
+
+        sign = 1 if delta_x < 0 else -1
+
+        delta = sign * math.sqrt(delta_x ** 2 + delta_y ** 2) / math.sqrt(2)
+
+        integer_part_of_delta, fractional_part_of_delta = divmod(delta, 1)
+        integer_part_of_delta = int(integer_part_of_delta)
+
+        self.__error_of_move_size_anchor += fractional_part_of_delta
+
+        integer_part_of_error, fractial_part_or_error = divmod(self.__error_of_move_size_anchor, 1)
+        integer_part_of_error = int(integer_part_of_error)
+
+        if integer_part_of_error > 0:
+            self.__error_of_move_size_anchor -= integer_part_of_error
+
+        self.__size += integer_part_of_delta + integer_part_of_error
+        self.__previous_position_of_size_anchor = anchor_pos
+
+        print('anchor_pos = {0}, size = {1}'.format(anchor_pos, self.__size))
+
+        '''
 
     @property
     def top_right_in_view(self) -> QPoint:

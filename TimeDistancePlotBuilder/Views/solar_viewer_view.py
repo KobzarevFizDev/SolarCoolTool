@@ -20,7 +20,7 @@ class SolarViewportView:
         self.widget.zoom_image_signal.connect(self.zoom)
         self.widget.move_image_signal.connect(self.move)
         self.widget.on_changed_position_of_zone_interesting_position_anchor_signal.connect(self.on_changed_position_of_zone_interesting_position_anchor)
-        self.widget.on_changed_position_of_zone_interesting_size_anchor.connect(self.on_changed_size_of_zone_interesting_size_anchor)
+        self.widget.on_changed_position_of_zone_interesting_size_anchor_signal.connect(self.on_changed_size_of_zone_interesting_size_anchor)
 
 
     def zoom(self, x, y):
