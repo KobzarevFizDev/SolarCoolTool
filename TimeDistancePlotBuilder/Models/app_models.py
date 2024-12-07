@@ -25,6 +25,8 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
+from TimeDistancePlotBuilder.Exceptions.Exceptions import IncorrectZoneInterestingSize
+
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
 
@@ -577,62 +579,142 @@ class CurrentChannel:
         return channel in self.__total_channels_of_sdo
 
 
-class InterestingSolarRegion:
+class ZoneInteresting:
     def __init__(self):
-        self.__top_right_in_view: QPoint = QPoint(600, 0)
-        self.__bottom_left_in_view: QPoint = QPoint(0, 600)
+        self.__size: int = 300 
+        self.__position: QPoint = QPoint(300, 300)
+        self.__previous_position_of_size_anchor: QPoint = QPoint(-1, -1)
+        self.__delta_move_of_size_anchor: float = 0
 
-        self.__top_right_point_was_selected: bool = False
-        self.__bottom_left_point_was_selected: bool = False
+    def set_position_of_position_anchor(self, anchor_pos: QPoint) -> None:
+        anchor_pos_x: int = anchor_pos.x()
+        anchor_pos_y: int = anchor_pos.y()
+        pos_x: int = anchor_pos_x - self.__size // 2
+        pos_y: int = anchor_pos_y + self.__size // 2
+        self.__position = QPoint(pos_x, pos_y)
+        self.__previous_position_of_size_anchor = self.top_left_in_view
+
+
+    def set_position_of_size_anchor(self, anchor_pos: QPoint) -> None:
+        if self.__previous_position_of_size_anchor == QPoint(-1, -1):
+            self.__previous_position_of_size_anchor = anchor_pos
+            return
+ 
+        dir_to_zoom_x, dir_to_zoom_y = self.__get_direction_to_zoom()
+        len_of_zoom_direction = self.__get_len_of_direction(dir_to_zoom_x, dir_to_zoom_y)
+        anchor_direction_x, anchor_direction_y = self.__get_size_anchor_move_delta(anchor_pos)
+        normalized_dir_to_zoom_x, normalized_dir_to_zoom_y = self.__get_normalized_direction(dir_to_zoom_x, dir_to_zoom_y)
+        projection = (anchor_direction_x * normalized_dir_to_zoom_x + anchor_direction_y * normalized_dir_to_zoom_y) / len_of_zoom_direction
+
+        diagonal_delta = projection * len_of_zoom_direction / math.sqrt(2)
+        self.__delta_move_of_size_anchor += diagonal_delta * 2
+
+        integer_part_of_delta_move, fractional_part_of_delta_move = divmod(self.__delta_move_of_size_anchor, 1)
+        self.__delta_move_of_size_anchor -= integer_part_of_delta_move
+
+        self.__size -= int(integer_part_of_delta_move)
+
+        self.__previous_position_of_size_anchor = anchor_pos
+
+
+    def __get_direction_to_zoom(self): 
+        direction_to_zoom_x: int = self.bottom_right_in_view.x() - self.top_left_in_view.x()
+        direction_to_zoom_y: int = self.bottom_right_in_view.y() - self.top_left_in_view.y()
+        return direction_to_zoom_x, direction_to_zoom_y
+    
+    def __get_size_anchor_move_delta(self, anchor_pos: QPoint):
+        previous_x: int = self.__previous_position_of_size_anchor.x()
+        previous_y: int = self.__previous_position_of_size_anchor.y()
+
+        new_x: int = anchor_pos.x()
+        new_y: int = anchor_pos.y()
+
+        anchor_direction_x = new_x - previous_x
+        anchor_direction_y = new_y - previous_y
+
+        return anchor_direction_x, anchor_direction_y
+    
+    def __get_len_of_direction(self, dir_x, dir_y) -> float:
+        return math.sqrt(dir_x**2 + dir_y**2)
+    
+    
+    def __get_normalized_direction(self, dir_x, dir_y):
+        len_of_dir: float = math.sqrt(dir_x**2 + dir_y**2)
+        return (dir_x / len_of_dir), (dir_y / len_of_dir)
+
+        '''
+        previous_x: int = self.__previous_position_of_size_anchor.x()
+        previous_y: int = self.__previous_position_of_size_anchor.y()
+
+        new_x: int = anchor_pos.x()
+        new_y: int = anchor_pos.y()
+
+        delta_x: int = new_x - previous_x
+        delta_y: int = new_y - previous_y
+
+        sqr_magnitude = delta_x**2 + delta_y**2
+
+        if sqr_magnitude <= 10:
+            return
+
+        sign = 1 if delta_x < 0 else -1
+
+        delta = sign * math.sqrt(delta_x ** 2 + delta_y ** 2) / math.sqrt(2)
+
+        integer_part_of_delta, fractional_part_of_delta = divmod(delta, 1)
+        integer_part_of_delta = int(integer_part_of_delta)
+
+        self.__error_of_move_size_anchor += fractional_part_of_delta
+
+        integer_part_of_error, fractial_part_or_error = divmod(self.__error_of_move_size_anchor, 1)
+        integer_part_of_error = int(integer_part_of_error)
+
+        if integer_part_of_error > 0:
+            self.__error_of_move_size_anchor -= integer_part_of_error
+
+        self.__size += integer_part_of_delta + integer_part_of_error
+        self.__previous_position_of_size_anchor = anchor_pos
+
+        print('anchor_pos = {0}, size = {1}'.format(anchor_pos, self.__size))
+
+        '''
 
     @property
     def top_right_in_view(self) -> QPoint:
-        if self.__top_right_point_was_selected:
-            #self.__top_right_point_was_selected = False
-            return self.__top_right_in_view
-        else:
-            raise Exception("Top right point was not selected")
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x + half_size), int(pos_y + half_size))
 
     @property
     def top_left_in_view(self) -> QPoint:
-        return QPoint(self.__bottom_left_in_view.x(), self.__top_right_in_view.y())
-
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x - half_size), int(pos_y + half_size))
+        
     @property
     def bottom_left_in_view(self) -> QPoint:
-        if self.__bottom_left_point_was_selected:
-            #self.__bottom_left_point_was_selected = False
-            return self.__bottom_left_in_view
-        else:
-            raise Exception("Bottom left point was not selected")
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x - half_size), int(pos_y - half_size))
 
     @property
     def bottom_right_in_view(self) -> QPoint:
-        return QPoint(self.__top_right_in_view.x(), self.__bottom_left_in_view.y())
+        pos_x: int = self.__position.x()
+        pos_y: int = self.__position.y()
+        half_size: int = int(self.__size / 2)
+        return QPoint(int(pos_x + half_size), int(pos_y - half_size))
+    
+    def set_viewport_position(self, x: int, y: int) -> None:
+        self.__position: QPoint = QPoint(x, y)
+        pass
 
-    def set_top_right_in_view(self, point: QPoint) -> None:
-        self.__top_right_point_was_selected = True
-        self.__top_right_in_view = point
-        if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
-            self.__align_to_square_if_necessary()
-
-    def set_bottom_left_in_view(self, point: QPoint) -> None:
-        self.__bottom_left_point_was_selected = True
-        self.__bottom_left_in_view = point
-        if self.__top_right_point_was_selected and self.__bottom_left_point_was_selected:
-            self.__align_to_square_if_necessary()
-
-    def __align_to_square_if_necessary(self) -> None:
-        x_side_size = self.__bottom_left_in_view.x() - self.__top_right_in_view.x()
-        y_side_size = self.__top_right_in_view.y() - self.__bottom_left_in_view.y()
-        side_size = (x_side_size + y_side_size)/2
-        half_side_size = side_size/2
-        center_of_square = QPoint(int((self.__top_right_in_view.x() + self.__bottom_left_in_view.x()) / 2),
-                                  int((self.__top_right_in_view.y() + self.__bottom_left_in_view.y()) / 2))
-
-        self.__top_right_in_view = QPoint(int(center_of_square.x() + half_side_size),
-                                          int(center_of_square.y() + half_side_size))
-        self.__bottom_left_in_view = QPoint(int(center_of_square.x() - half_side_size),
-                                            int(center_of_square.y() - half_side_size))
+    def set_viewport_size(self, size: int) -> None:
+        if size <= 0:
+            raise IncorrectZoneInterestingSize(size)
+        self.__size = size
 
 
 
@@ -968,7 +1050,7 @@ class AppModel:
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
-        self.__interesting_solar_region = InterestingSolarRegion()
+        self.__zone_interesting = ZoneInteresting()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__selected_preview_mode = SelectedPreviewMode()
 
@@ -999,8 +1081,8 @@ class AppModel:
         return self.__bezier_mask
 
     @property
-    def interesting_solar_region(self) -> InterestingSolarRegion:
-        return self.__interesting_solar_region
+    def zone_interesting(self) -> ZoneInteresting:
+        return self.__zone_interesting
 
     @property
     def configuration(self) -> ConfigurationApp:

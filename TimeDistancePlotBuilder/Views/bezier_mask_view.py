@@ -42,8 +42,8 @@ class BezierMaskView:
 
     def __handle_as_normal(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame
-        top_right: QPoint = self.model.interesting_solar_region.top_right_in_view
-        bottom_left: QPoint = self.model.interesting_solar_region.bottom_left_in_view
+        top_right: QPoint = self.model.zone_interesting.top_right_in_view
+        bottom_left: QPoint = self.model.zone_interesting.bottom_left_in_view
         pixmap_of_interesting_solar_region = current_solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
         self.widget.update_background(pixmap_of_interesting_solar_region)
         self.widget.update_bezier_mask(self.model.bezier_mask)

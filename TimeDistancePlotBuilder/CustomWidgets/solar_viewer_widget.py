@@ -1,100 +1,132 @@
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QLabel, QWidget
+from PyQt5.QtWidgets import QLabel, QWidget, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
-from PyQt5.QtCore import Qt, pyqtSignal, QPoint
-
+from PyQt5.QtCore import Qt, pyqtSignal, QPoint, QPointF
+from TimeDistancePlotBuilder.Models.app_models import AppModel, ZoneInteresting
+from TimeDistancePlotBuilder.CustomWidgets.zone_interesting_control_point_widget import ZoneInterestingPositionControlPointWidget, ZoneInterestingSizeControlPointWidget
+from TimeDistancePlotBuilder.CustomWidgets.plot_widget import PlotWidget
 
 class SolarViewerWidget(QWidget):
-    wheelScrollSignal = pyqtSignal(int, int)
-    mouseMoveSignal = pyqtSignal(int, int)
-    plotWasAllocatedSignal = pyqtSignal(QPoint, QPoint)
-    def __init__(self, parent):
+    zoom_image_signal = pyqtSignal(int, int)
+    move_image_signal = pyqtSignal(int, int)
+    on_changed_position_of_zone_interesting_position_anchor_signal = pyqtSignal(int ,int)
+    on_changed_position_of_zone_interesting_size_anchor_signal = pyqtSignal(int, int)
+
+    def __init__(self, solar_viewer_controller, app_model: AppModel):
         super(SolarViewerWidget, self).__init__()
+        self.__zone_interesting_model: ZoneInteresting = app_model.zone_interesting
+        self.__app_model: AppModel = app_model
         self.setMinimumSize(600, 600)
         self.setMaximumSize(600, 600)
         self.setMouseTracking(True)
-        self.setAutoFillBackground(True)
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(Qt.red))
-        self.setPalette(palette)
-        self.label = QLabel(self)
-
-        self.__pixmap: QPixmap = QPixmap()
+        self.__scene = QGraphicsScene(self)
+        self.__scene.setSceneRect(0, 0, 600, 600)
+        self.__view = QGraphicsView(self.__scene, self)
+        self.__view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.__view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        view_rect = self.contentsRect()
+        self.__view.setSceneRect(0, 0, view_rect.width(), view_rect.height())
+        self.__view.show()
+        
+        self.__pixmap: QPixmap = QPixmap(600, 600)
         self.__offset: QPoint = QPoint(0, 0)
-        self.__top_right_of_interesting_area: QPoint = QPoint(-1, -1)
-        self.__bottom_left_of_interesting_area = QPoint(-1, -1)
-        self.__top_right_of_interesting_area_was_selected: bool = False
-        self.__is_moved: bool = False
 
-        self.__previous_x: int = -1
-        self.__previous_y: int = -1
+        self.__solar_plot: PlotWidget = None
 
-    def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
-        self.__pixmap = pixmap
-        self.__offset = offset
+        self.__zone_interesting_position_anchor: ZoneInterestingPositionControlPointWidget = None
 
-    def set_selected_zone_interesting(self, top_left: QPoint, bottom_right: QPoint) -> None:
-        self.__top_right_of_interesting_area = top_left
-        self.__bottom_left_of_interesting_area = bottom_right
+        self.__create_solar_plot()
+        self.__proxy_zone_interesting_position_anchor: QGraphicsProxyWidget = self.__create_zone_interesting_position_anchor()
+        self.__proxy_zone_interesting_size_anchor: QGraphicsScene = self.__create_zone_interesting_size_anchor()
+
+        self.__temps_objects_on_scene = []
+
+
+    def __create_solar_plot(self) -> QGraphicsProxyWidget:
+        self.__pixmap.fill(Qt.green)
+        self.__solar_plot = PlotWidget(self.__pixmap, self.__offset)
+        self.__solar_plot.zoom_image_signal.connect(self.__on_zoom_image)
+        self.__solar_plot.move_image_signal.connect(self.__on_move_image)
+        proxy = self.__scene.addWidget(self.__solar_plot)
+        return proxy
+    
+
+    def __create_zone_interesting_position_anchor(self) -> QGraphicsProxyWidget:
+        self.__zone_interesting_position_anchor = ZoneInterestingPositionControlPointWidget(self.__app_model)
+        self.__zone_interesting_position_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_position_anchor)
+        proxy = self.__scene.addWidget(self.__zone_interesting_position_anchor)
+        return proxy
+    
+    def __create_zone_interesting_size_anchor(self) -> QGraphicsProxyWidget:
+        self.__zone_interesting_size_anchor = ZoneInterestingSizeControlPointWidget(self.__app_model)
+        self.__zone_interesting_size_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_size_anchor)
+        proxy = self.__scene.addWidget(self.__zone_interesting_size_anchor)
+        return proxy
+
 
     def update_widget(self):
         self.update()
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-        painter = QPainter()
-        painter.begin(self)
-        self.__draw_solar_frame(painter)
-        self.__draw_border_of_zone_interesting(painter)
-        painter.end()
+        self.__clear_temps_objects()
+        self.__draw_solar_frame()
+        self.__draw_border_of_zone_interesting()  
+
+    def update_position_of_zone_interesting_position_anchor(self, pos: QPoint) -> None:
+        self.__zone_interesting_position_anchor.set_pos(pos)
+
+    def update_position_of_zone_interesting_size_anchor(self, pos: QPoint) -> None:
+        self.__zone_interesting_size_anchor.set_pos(pos)
+
+    def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
+        self.__pixmap = pixmap
+        self.__offset = offset
+
+    def __draw_solar_frame(self) -> None:
+        self.__solar_plot.update_plot(self.__pixmap, self.__offset)
+
+    def __draw_border_of_zone_interesting(self) -> None:
+        self.__draw_borders_lines()
+
+    def __draw_borders_lines(self) -> None:
+        pen = QPen(Qt.red, 3.0, Qt.DashLine, Qt.RoundCap, Qt.RoundJoin)
+        
+        br = self.__zone_interesting_model.bottom_right_in_view
+        tr = self.__zone_interesting_model.top_right_in_view
+        bl = self.__zone_interesting_model.bottom_left_in_view
+        tl = self.__zone_interesting_model.top_left_in_view
+        
+        br2tr_line = self.__scene.addLine(br.x(), br.y(), tr.x(), tr.y(), pen)
+        tr2tl_line = self.__scene.addLine(tr.x(), tr.y(), tl.x(), tl.y(), pen)
+        tl2bl_line = self.__scene.addLine(tl.x(), tl.y(), bl.x(), bl.y(), pen)
+        bl2br_line = self.__scene.addLine(bl.x(), bl.y(), br.x(), br.y(), pen)
+
+        self.__temps_objects_on_scene.append(br2tr_line)
+        self.__temps_objects_on_scene.append(tr2tl_line)
+        self.__temps_objects_on_scene.append(tl2bl_line)
+        self.__temps_objects_on_scene.append(bl2br_line)
 
 
-    def __draw_solar_frame(self, painter: QPainter) -> None:
-        painter.drawPixmap(self.__offset, self.__pixmap)
+    def __clear_temps_objects(self) -> None:
+        for item in self.__temps_objects_on_scene:
+            self.__scene.removeItem(item)
 
-    def __draw_border_of_zone_interesting(self, painter: QPainter) -> None:
-        painter.setPen(QPen(Qt.red, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        tl = self.__top_right_of_interesting_area
-        br = self.__bottom_left_of_interesting_area
+        self.__temps_objects_on_scene.clear()
 
-        if tl.x() == -1 or br.x() == -1:
-            return
+    def __on_move_image(self, pos_x: int, pos_y: int) -> None:
+        self.move_image_signal.emit(pos_x, pos_y)
 
-        p1 = QPoint(tl.x(), tl.y())
-        p2 = QPoint(tl.x(), br.y())
-        p3 = QPoint(br.x(), br.y())
-        p4 = QPoint(br.x(), tl.y())
+    def __on_zoom_image(self, zoom, tmp) -> None:
+        self.zoom_image_signal.emit(zoom, tmp)
 
-        painter.drawLine(p1, p2)
-        painter.drawLine(p2, p3)
-        painter.drawLine(p3, p4)
-        painter.drawLine(p4, p1)
+    def __on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
+        relative_pos: QPointF = self.__proxy_zone_interesting_position_anchor.mapToScene(pos_x, pos_y)
+        relative_pos_x: int = int(relative_pos.x())
+        relative_pos_y: int = int(relative_pos.y())
+        self.on_changed_position_of_zone_interesting_position_anchor_signal.emit(relative_pos_x, relative_pos_y)
 
-    # TODO: Пользователь может выбрать точки не в том порядке, модель должна уметь с этим работать
-    def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
-        if not self.__top_right_of_interesting_area_was_selected:
-            self.__top_right_of_interesting_area = QPoint(a0.x(), a0.y())
-            self.__top_right_of_interesting_area_was_selected = True
-        else:
-            self.__bottom_left_of_interesting_area = QPoint(a0.x(), a0.y())
-            self.__top_right_of_interesting_area_was_selected = False
-            self.plotWasAllocatedSignal.emit(self.__top_right_of_interesting_area, self.__bottom_left_of_interesting_area)
-
-    def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
-        self.__is_moved = True
-
-    def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
-        self.__is_moved = False
-
-    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
-        current_x = event.x()
-        current_y = event.y()
-        if self.__is_moved and not self.__previous_x == -1 and not self.__previous_y == -1:
-            delta_x = current_x - self.__previous_x
-            delta_y = current_y - self.__previous_y
-            self.mouseMoveSignal.emit(delta_x, delta_y)
-        self.__previous_x = current_x
-        self.__previous_y = current_y
-
-    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
-        self.wheelScrollSignal.emit(event.angleDelta().x(), event.angleDelta().y())
-
+    def __on_changed_position_of_zone_interesting_size_anchor(self, pos_x: int, pos_y: int) -> None:
+        relative_pos: QPointF = self.__proxy_zone_interesting_size_anchor.mapToScene(pos_x, pos_y)
+        relative_pos_x: int = int(relative_pos.x())
+        relative_pos_y: int = int(relative_pos.y())
+        self.on_changed_position_of_zone_interesting_size_anchor_signal.emit(relative_pos_x, relative_pos_y)
