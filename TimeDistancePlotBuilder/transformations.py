@@ -13,8 +13,8 @@ def transform_point_from_bezier_mask_to_solar_view(position_of_zone_interesting:
     s_2: int = size_of_zone_interesting
     ws: int = widget_size
 
-    p_2x = z_2.x() + ( p_1.x() - z_1.x() ) * int(s_2 / ws)
-    p_2y = z_2.y() + ( p_1.y() - z_1.y() ) * int(s_2 / ws)
+    p_2x = int( z_2.x() + ( p_1.x() - z_1.x() ) * (s_2 / ws) )
+    p_2y = int( z_2.y() + ( p_1.y() - z_1.y() ) * (s_2 / ws) )
     
     return QPoint(p_2x, p_2y)
   
@@ -43,14 +43,15 @@ def transform_point_from_solar_view_to_fits(point_in_solar_view: QPoint,
     s_3: int = size_of_fits
     ws: int = widget_size
 
-    p_3x = ( p_2.x() - offset.x() ) * int(s_3 / (ws * zoom)) 
-    p_3y = ( p_2.y() - offset.y() ) * int(s_3 / (ws * zoom))
+    p_3x = int( ( p_2.x() - offset.x() ) * (s_3 / (ws * zoom)) ) 
+    p_3y = int( ( p_2.y() - offset.y() ) * (s_3 / (ws * zoom)) )
     
-    #p_3y = s_3 - 1 - p_3y
+    p_3y = s_3 - 1 - p_3y
 
     return QPoint(p_3x, p_3y)
 
 
+# todo: need to test and fix !
 def transform_point_from_fits_to_solar_view(point_in_fits: QPoint,
                                             offset: QPoint,
                                             size_of_fits: int,
@@ -60,8 +61,10 @@ def transform_point_from_fits_to_solar_view(point_in_fits: QPoint,
     s_3: int = size_of_fits
     ws: int = widget_size
 
-    p_2x = p_3.x() * int(ws * zoom / s_3) + offset.x()
-    p_2y = p_3.y() * int(ws * zoom / s_3) + offset.y()
+    p_2x = int( p_3.x() * (ws * zoom / s_3) + offset.x() )
+    p_2y = int( p_3.y() * (ws * zoom / s_3) + offset.y() )
+
+    return QPoint(p_2x, p_2y)
 
 
 # todo: Перенести эти функции в TransformViewport, только он их будет использовать
