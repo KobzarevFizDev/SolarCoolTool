@@ -641,43 +641,14 @@ class ZoneInteresting:
     def __get_normalized_direction(self, dir_x, dir_y):
         len_of_dir: float = math.sqrt(dir_x**2 + dir_y**2)
         return (dir_x / len_of_dir), (dir_y / len_of_dir)
+    
+    @property
+    def size(self) -> QPoint:
+        return self.__size
 
-        '''
-        previous_x: int = self.__previous_position_of_size_anchor.x()
-        previous_y: int = self.__previous_position_of_size_anchor.y()
-
-        new_x: int = anchor_pos.x()
-        new_y: int = anchor_pos.y()
-
-        delta_x: int = new_x - previous_x
-        delta_y: int = new_y - previous_y
-
-        sqr_magnitude = delta_x**2 + delta_y**2
-
-        if sqr_magnitude <= 10:
-            return
-
-        sign = 1 if delta_x < 0 else -1
-
-        delta = sign * math.sqrt(delta_x ** 2 + delta_y ** 2) / math.sqrt(2)
-
-        integer_part_of_delta, fractional_part_of_delta = divmod(delta, 1)
-        integer_part_of_delta = int(integer_part_of_delta)
-
-        self.__error_of_move_size_anchor += fractional_part_of_delta
-
-        integer_part_of_error, fractial_part_or_error = divmod(self.__error_of_move_size_anchor, 1)
-        integer_part_of_error = int(integer_part_of_error)
-
-        if integer_part_of_error > 0:
-            self.__error_of_move_size_anchor -= integer_part_of_error
-
-        self.__size += integer_part_of_delta + integer_part_of_error
-        self.__previous_position_of_size_anchor = anchor_pos
-
-        print('anchor_pos = {0}, size = {1}'.format(anchor_pos, self.__size))
-
-        '''
+    @property
+    def position(self) -> QPoint:
+        return self.__position
 
     @property
     def top_right_in_view(self) -> QPoint:
@@ -720,7 +691,8 @@ class ZoneInteresting:
 
 # todo: Подумать над названием
 class ViewportTransform:
-    def __init__(self):
+    def __init__(self, zone_interesting: ZoneInteresting):
+        self.__zone_interesting: ZoneInteresting = zone_interesting
         self.__zoom = 1
         self.__origin_size_image = 600
         self.__offset: QPoint = QPoint(0, 0)
@@ -744,6 +716,36 @@ class ViewportTransform:
     def offset(self, new_offset) -> None:
         self.__offset = new_offset
 
+
+    def transform_point_from_bezier_mask_widget_to_fits(self, point_in_bezier_mask: QPoint) -> QPoint:
+        size_of_fits = 4096
+        position_of_zone_interesting: QPoint = self.__zone_interesting.position
+        size_of_zone_interesting: int = self.__zone_interesting.size
+        widget_size: int = 600
+
+        offset = self.offset
+
+        # print('p* = ({0},{1})'.format(point_in_bezier_mask.x(), point_in_bezier_mask.y()))
+
+        point_in_solar_view =  transformations.transform_point_from_bezier_mask_to_solar_view(position_of_zone_interesting, 
+                                                                                              point_in_bezier_mask,
+                                                                                              size_of_zone_interesting,
+                                                                                              widget_size)
+        
+        # print('p** = ({0},{1})'.format(point_in_solar_view.x(), point_in_solar_view.y()))
+
+        point_in_fits = transformations.transform_point_from_solar_view_to_fits(point_in_solar_view, 
+                                                                                self.offset, 
+                                                                                size_of_fits, 
+                                                                                widget_size, 
+                                                                                self.zoom)
+        
+        # print('p*** = ({0},{1})'.format(point_in_fits.x(), point_in_fits.y()))
+
+        return point_in_fits
+
+    # legacy -----------------------------------
+
     def transform_from_viewport_pixel_to_image_pixel(self, viewport_pixel: QPoint) -> QPoint:
         image_pixel = transformations.transform_point_from_view_to_image(viewport_pixel,
                                                                          [600, 600],
@@ -759,6 +761,9 @@ class ViewportTransform:
                                                                             self.__zoom,
                                                                             self.__offset)
         return viewport_pixel
+    
+
+    # legacy -----------------------------------
 
     def get_transformed_pixmap_for_viewport(self, solar_frame: SolarFrame) -> QPixmap:
         scale: int = int(self.__zoom * self.__origin_size_image)
@@ -955,14 +960,40 @@ class TimeDistancePlot:
         for coordinate_of_pixel in coordinates_of_pixels_of_one_slice:
             pixel_x_coordinate = coordinate_of_pixel.x()
             pixel_y_coordinate = coordinate_of_pixel.y()
-            pixel_value = 0
-            if is_debug:
-                pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            else:
-                pixel_value = frame[4095 - pixel_y_coordinate][pixel_x_coordinate]
+            pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
+            # pixel_value = 0
+            # if is_debug:
+                # pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
+            # else:
+                # pixel_value = frame[4095 - pixel_y_coordinate][pixel_x_coordinate]
+            # 
+            #print('frame[{0}][{1}]={2}'.format(4095 - pixel_y_coordinate, pixel_x_coordinate, pixel_value))
             accumulator += pixel_value
 
         return int(accumulator / len(coordinates_of_pixels_of_one_slice))
+    
+    def __get_coordinates_of_pixels_from_bezier_mask(self,
+                                                     bezier_mask: BezierMask,
+                                                     number_of_slices_along_loop: int,
+                                                     need_to_transform_for_viewport_to_image: bool) -> List[List[QPoint]]:
+        coordinates: List[List[QPoint]] = list()
+        bottom_points: List[QPoint] = bezier_mask.get_bottom_border(number_of_slices_along_loop)
+        top_points: List[QPoint] = bezier_mask.get_top_border(number_of_slices_along_loop)
+        for i in range(number_of_slices_along_loop):
+            bottom_point: QPoint = bottom_points[i]
+            top_point: QPoint = top_points[i]
+
+            if need_to_transform_for_viewport_to_image:
+                viewport_transform: ViewportTransform = getattr(self, "__viewport_transform")
+                bottom_point = viewport_transform.transform_point_from_bezier_mask_widget_to_fits(bottom_point)
+                top_point = viewport_transform.transform_point_from_bezier_mask_widget_to_fits(top_point)
+
+            pixels_coordinates = get_pixels_of_line(bottom_point.x(),
+                                                    bottom_point.y(),
+                                                    top_point.x(),
+                                                    top_point.y())
+            coordinates.append(pixels_coordinates)
+        return coordinates
 
     def get_time_distance_plot_as_qpixmap_in_grayscale(self) -> QPixmap:
         frame = getattr(self, "__time_distance_plot_array")
@@ -1000,29 +1031,6 @@ class TimeDistancePlot:
         finish_index = (i + 1) * width_one_step
         return start_index, finish_index
 
-    def __get_coordinates_of_pixels_from_bezier_mask(self,
-                                                     bezier_mask: BezierMask,
-                                                     number_of_slices_along_loop: int,
-                                                     need_to_tronsform_for_viewport_to_image: bool) -> List[List[QPoint]]:
-        coordinates: List[List[QPoint]] = list()
-        bottom_points: List[QPoint] = bezier_mask.get_bottom_border(number_of_slices_along_loop)
-        top_points: List[QPoint] = bezier_mask.get_top_border(number_of_slices_along_loop)
-        for i in range(number_of_slices_along_loop):
-            bottom_point: QPoint = bottom_points[i]
-            top_point: QPoint = top_points[i]
-
-            if need_to_tronsform_for_viewport_to_image:
-                viewport_transform: ViewportTransform = getattr(self, "__viewport_transform")
-                bottom_point = viewport_transform.transform_from_viewport_pixel_to_image_pixel(bottom_point)
-                top_point = viewport_transform.transform_from_viewport_pixel_to_image_pixel(top_point)
-
-            pixels_coordinates = get_pixels_of_line(bottom_point.x(),
-                                                    bottom_point.y(),
-                                                    top_point.x(),
-                                                    top_point.y())
-            coordinates.append(pixels_coordinates)
-        return coordinates
-
     def save_as_png(self, path_to_save: str, current_channel: int):
         cm = get_cmap_by_channel(current_channel)
         frame = getattr(self, "__time_distance_plot_array")
@@ -1044,13 +1052,13 @@ class TimeDistancePlot:
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
-        self.__path_to_export_result = configuration_app.path_to_export_results #path_to_export_result
-        self.__viewport_transform = ViewportTransform()
+        self.__path_to_export_result = configuration_app.path_to_export_results
+        self.__zone_interesting = ZoneInteresting()
+        self.__viewport_transform = ViewportTransform(self.__zone_interesting)
         self.__solar_frames_storage = SolarFramesStorage(self.__viewport_transform, configuration_app)
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
-        self.__zone_interesting = ZoneInteresting()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__selected_preview_mode = SelectedPreviewMode()
 
