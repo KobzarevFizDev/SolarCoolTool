@@ -22,7 +22,6 @@ class SolarViewportView:
         self.widget.on_changed_position_of_zone_interesting_position_anchor_signal.connect(self.on_changed_position_of_zone_interesting_position_anchor)
         self.widget.on_changed_position_of_zone_interesting_size_anchor_signal.connect(self.on_changed_size_of_zone_interesting_size_anchor)
 
-
     def zoom(self, x, y):
         if y > 0:
             self.controller.increase_zoom(0.05)
@@ -39,11 +38,20 @@ class SolarViewportView:
         self.controller.set_position_of_zone_interesting_size_anchor(pos_x, pos_y)
 
     def model_is_changed(self):
-        if self.model.selected_preview_mode.state == AppStates.SOLAR_PREVIEW_STATE:
+        if self.model.app_state.current_state == AppStates.SOLAR_PREVIEW_STATE:
             self.__show_view()
             self.__handle_view()
+            self.widget.hide_button_for_export()
+        elif self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
+            self.widget.show_button_for_export()
         else:
             self.__hide_view()
+        
+        # if self.model.selected_preview_mode.state == AppStates.SOLAR_PREVIEW_STATE:
+        #     self.__show_view()
+        #     self.__handle_view()
+        # else:
+        #     self.__hide_view()
 
     def __hide_view(self):
         self.widget.hide()

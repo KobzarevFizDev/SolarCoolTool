@@ -23,7 +23,7 @@ class CurrentAppStateView:
         self.model_is_changed()
 
     def model_is_changed(self):
-        current_state = self.model.selected_preview_mode.state
+        current_state = self.model.app_state.current_state
         self.__show_current_selected_state(current_state)
 
     def __show_current_selected_state(self, current_state: AppStates):
@@ -55,13 +55,13 @@ class CurrentAppStateView:
         return button
 
     def __on_selected_solar_preview_state(self):
-        self.model.selected_preview_mode.set_solar_preview_mode_state()
+        self.model.app_state.set_solar_preview_mode_state()
         self.model.notify_observers()
 
     def __on_selected_distance_plot_state(self):
-        self.model.selected_preview_mode.set_time_distance_mode_state()
+        self.model.app_state.set_time_distance_mode_state()
         self.model.notify_observers()
 
     def __on_selected_distance_plot_debug_state(self):
-        self.model.selected_preview_mode.set_time_distance_plot_export_state()
+        self.model.app_state.set_time_distance_plot_export_state()
         self.model.notify_observers()

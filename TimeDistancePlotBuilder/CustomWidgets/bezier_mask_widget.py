@@ -1,7 +1,7 @@
 from typing import List
 
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView, QPushButton
 from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
@@ -17,6 +17,7 @@ class BezierMaskWidget(QWidget):
     mouseDoubleClickSignal = pyqtSignal(int, int)
     mouseMoveSignal = pyqtSignal(int, int)
     mouseWheelSignal = pyqtSignal(int)
+    exportSignal = pyqtSignal(QWidget)
 
     def __init__(self, parent):
         super(BezierMaskWidget, self).__init__()
@@ -53,6 +54,16 @@ class BezierMaskWidget(QWidget):
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__temps_objects_on_scene = []
 
+        self.__export_button: QPushButton = self.__create_export_button()
+        self.hide_button_export_button()
+
+    def __create_export_button(self) -> QPushButton:
+        export_button = QPushButton("Export", self)
+        export_button.clicked.connect(self.__on_export_button_clicked)
+        return export_button
+    
+    def __on_export_button_clicked(self) -> None:
+        self.exportSignal.emit(self)
 
 # TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
@@ -188,3 +199,10 @@ class BezierMaskWidget(QWidget):
         self.__control_widget1.setPos(p1)
         self.__control_widget2.setPos(p2)
         self.__anchor_widget2.setPos(p3)
+
+    def show_button_export_button(self) -> None:
+        self.__export_button.show()
+
+    def hide_button_export_button(self) -> None:
+        self.__export_button.hide()
+

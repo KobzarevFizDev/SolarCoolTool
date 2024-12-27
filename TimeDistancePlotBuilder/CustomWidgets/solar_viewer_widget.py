@@ -27,7 +27,7 @@ class SolarViewerWidget(QWidget):
         view_rect = self.contentsRect()
         self.__view.setSceneRect(0, 0, view_rect.width(), view_rect.height())
         self.__view.show()
-        
+    
         self.__pixmap: QPixmap = QPixmap(600, 600)
         self.__offset: QPoint = QPoint(0, 0)
 
@@ -40,7 +40,6 @@ class SolarViewerWidget(QWidget):
         self.__proxy_zone_interesting_size_anchor: QGraphicsScene = self.__create_zone_interesting_size_anchor()
 
         self.__temps_objects_on_scene = []
-
 
     def __create_solar_plot(self) -> QGraphicsProxyWidget:
         self.__pixmap.fill(Qt.green)
@@ -63,7 +62,6 @@ class SolarViewerWidget(QWidget):
         proxy = self.__scene.addWidget(self.__zone_interesting_size_anchor)
         return proxy
 
-
     def update_widget(self):
         self.update()
 
@@ -81,6 +79,12 @@ class SolarViewerWidget(QWidget):
     def set_solar_frame_to_draw(self, pixmap: QPixmap, offset: QPoint) -> None:
         self.__pixmap = pixmap
         self.__offset = offset
+
+    def show_button_for_export(self) -> None:
+        pass
+
+    def hide_button_for_export(self) -> None:
+        pass
 
     def __draw_solar_frame(self) -> None:
         self.__solar_plot.update_plot(self.__pixmap, self.__offset)

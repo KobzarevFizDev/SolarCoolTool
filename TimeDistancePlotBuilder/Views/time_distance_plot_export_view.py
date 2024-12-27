@@ -47,7 +47,7 @@ class TimeDistancePlotExportView:
         self.__label_of_t_slider.setText(f"t = {t}")
 
     def __is_need_to_show_this_view(self) -> bool:
-        return self.model.selected_preview_mode.state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
+        return self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
         self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)

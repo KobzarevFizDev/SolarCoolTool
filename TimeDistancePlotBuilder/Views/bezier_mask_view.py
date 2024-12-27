@@ -19,28 +19,25 @@ class BezierMaskView:
         self.model.add_observer(self)
         self.widget.create_bezier_mask_tool(self.model.bezier_mask, self.model)
         self.widget.mouseWheelSignal.connect(self.onWheel)
+        self.widget.exportSignal.connect(self.on_export_clicked)
 
     def onWheel(self, delta):
         self.controller.onWheel(delta)
 
+    def on_export_clicked(self, widget):
+        self.widget.hide_button_export_button()
+        self.controller.on_export_bezier_mask(widget)
+        self.widget.show_button_export_button()
+
     def model_is_changed(self):
-        if self.__is_need_to_show_solar_as_background():
-            self.__handle_as_normal()
+        if self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
+            self.widget.show_button_export_button()
         else:
-            self.__handle_as_test_mode()
+            self.widget.hide_button_export_button()
 
-    def __is_need_to_show_solar_as_background(self) -> bool:
-        #print(self.model.selected_preview_mode.current_preview_mode)
-        return not self.model.selected_preview_mode.state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
+        self.__update_bezier_widget_state()
 
-    def __handle_as_test_mode(self):
-        t = self.model.test_animated_frame.current_t
-        frame_as_qpixmap: QPixmap = self.model.test_animated_frame.get_frame_by_t_as_qpixmap(t)
-        self.widget.update_background(frame_as_qpixmap)
-        self.widget.update_bezier_mask(self.model.bezier_mask)
-
-
-    def __handle_as_normal(self):
+    def __update_bezier_widget_state(self):
         current_solar_frame: SolarFrame = self.model.time_line.current_solar_frame
         top_right: QPoint = self.model.zone_interesting.top_right_in_view
         bottom_left: QPoint = self.model.zone_interesting.bottom_left_in_view

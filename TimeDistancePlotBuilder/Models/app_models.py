@@ -219,7 +219,6 @@ class SolarFrame:
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
 
-
     @property
     def id(self) -> int:
         return self.__id
@@ -256,6 +255,7 @@ class SolarFrame:
 
     def __get_map(self):
         m = sunpy.map.Map(self.__path_to_fits_file)
+        m.data[np.isnan(m.data)] = 0
         return m
 
 
@@ -848,7 +848,7 @@ class CurrentAppState:
         self.__state = AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     @property
-    def state(self) -> AppStates:
+    def current_state(self) -> AppStates:
         return self.__state
 
 
@@ -1045,6 +1045,7 @@ class TimeDistancePlot:
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
+        self.__configuration = configuration_app
         self.__path_to_export_result = configuration_app.path_to_export_results
         self.__zone_interesting = ZoneInteresting()
         self.__viewport_transform = ViewportTransform(self.__zone_interesting)
@@ -1094,7 +1095,7 @@ class AppModel:
         return self.__test_animated_frame
 
     @property
-    def selected_preview_mode(self) -> CurrentAppState:
+    def app_state(self) -> CurrentAppState:
         return self.__selected_preview_mode
 
     def add_observer(self, in_observer):

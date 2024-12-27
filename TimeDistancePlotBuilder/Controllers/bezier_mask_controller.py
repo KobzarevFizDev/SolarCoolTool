@@ -14,6 +14,11 @@ class BezierMaskController:
     def onWheel(self, delta):
         self.__handle_test_mode(delta)
 
+    def on_export_bezier_mask(self, widget):
+        path_to_export: str = f"{self.model.configuration.path_to_export_results}\export_bezier_mask.png"
+        pixmap = widget.grab()
+        pixmap.save(path_to_export)
+
     def __handle_normal_mode(self, delta):
         if delta > 0:
             self.__increase_number_of_segments()
