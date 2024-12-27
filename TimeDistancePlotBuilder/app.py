@@ -9,7 +9,7 @@ from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import Ti
 from TimeDistancePlotBuilder.Controllers.time_distance_plot_export_controller import TimeDistancePlotExportController
 from TimeDistancePlotBuilder.Controllers.solar_viewer_controller import SolarViewportController
 from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMaskController
-from TimeDistancePlotBuilder.Controllers.progress_controller import ProgressController
+from TimeDistancePlotBuilder.Controllers.select_bezier_segments_controller import SelectBezierSegmentsController
 from TimeDistancePlotBuilder.Controllers.selected_preview_mode_controller import SelectedPreviewModeController
 
 from TimeDistancePlotBuilder.Models.app_models import AppModel
@@ -31,7 +31,7 @@ class TimeDistancePlotBuilder(QMainWindow):
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
         self.__time_distance_plot_debug_controller = TimeDistancePlotExportController(self.__app_model, self)
-        self.__progress_controller = ProgressController(self.__app_model, self)
+        self.__progress_controller = SelectBezierSegmentsController(self.__app_model, self)
         self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)

@@ -66,3 +66,4 @@ class SolarViewportView:
         self.widget.update_position_of_zone_interesting_size_anchor(self.model.zone_interesting.top_left_in_view)
         self.widget.set_solar_frame_to_draw(pixmap_of_solar_to_show, offset)
         self.widget.update_widget()
+

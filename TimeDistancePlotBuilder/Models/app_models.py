@@ -1043,6 +1043,26 @@ class TimeDistancePlot:
         frame: npt.NDArray = getattr(self, "__time_distance_plot_array")
         np.save(path_to_save, frame)
 
+
+class SelectedBezierSegments:
+    def __init__(self, number_of_bizer_segments: int):
+        self.__number_of_segments: int = number_of_bizer_segments
+        self.__statuses: List[bool] = [False for _ in range(number_of_bizer_segments)]
+
+    def set_segment_as_selected(self, index: int) -> None:
+        self.__statuses[index] = True
+
+    def set_segment_as_unselected(self, index: int) -> None:
+        self.__statuses[index] = False
+
+    def status_of_segment(self, index: int) -> bool:
+        return self.__statuses[index]
+    
+    @property
+    def number_of_bizer_segments(self) -> int:
+        return self.__number_of_segments
+
+
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
         self.__configuration = configuration_app
@@ -1054,7 +1074,8 @@ class AppModel:
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
-        self.__selected_preview_mode = CurrentAppState()
+        self.__app_state = CurrentAppState()
+        self.__selected_bezier_segments = SelectedBezierSegments(10)
 
         self.__observers = []
 
@@ -1096,7 +1117,11 @@ class AppModel:
 
     @property
     def app_state(self) -> CurrentAppState:
-        return self.__selected_preview_mode
+        return self.__app_state
+    
+    @property
+    def selected_bezier_segments(self) -> SelectedBezierSegments:
+        return self.__selected_bezier_segments
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)
