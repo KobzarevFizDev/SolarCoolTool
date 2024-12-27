@@ -27,11 +27,11 @@ class SelectBezierSegmentsWidget(QWidget):
 
     def set_segment_as_selected(self, index: int) -> None:
         button: QPushButton = self.__buttons[index]
-        button.setStyleSheet("background-color: yellow; border: 2px solid black")
+        button.setStyleSheet("background-color: green; border: 2px solid black")
 
     def set_segment_as_unselected(self, index: int) -> None:
         button: QPushButton = self.__buttons[index]
-        button.setStyleSheet("background-color: blue; border: 2px solid black")
+        button.setStyleSheet("background-color: yellow; border: 2px solid black")
 
     def __on_clicked(self):
         clicked_button = self.sender()

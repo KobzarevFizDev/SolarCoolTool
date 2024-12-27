@@ -38,4 +38,4 @@ class BezierMaskView:
         bottom_left: QPoint = self.model.zone_interesting.bottom_left_in_view
         pixmap_of_interesting_solar_region = current_solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
         self.widget.update_background(pixmap_of_interesting_solar_region)
-        self.widget.update_bezier_mask(self.model.bezier_mask)
+        self.widget.update_bezier_mask(self.model.bezier_mask, self.model)
