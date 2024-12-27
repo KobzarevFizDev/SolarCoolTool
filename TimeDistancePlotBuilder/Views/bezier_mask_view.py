@@ -4,7 +4,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap
 
 from TimeDistancePlotBuilder.CustomWidgets.bezier_mask_widget import BezierMaskWidget
-from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum, TimeDistancePlot, Cubedata
+from TimeDistancePlotBuilder.Models.app_models import AppStates, TimeDistancePlot, Cubedata
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFrame
@@ -31,7 +31,7 @@ class BezierMaskView:
 
     def __is_need_to_show_solar_as_background(self) -> bool:
         #print(self.model.selected_preview_mode.current_preview_mode)
-        return not self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
+        return not self.model.selected_preview_mode.state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     def __handle_as_test_mode(self):
         t = self.model.test_animated_frame.current_t

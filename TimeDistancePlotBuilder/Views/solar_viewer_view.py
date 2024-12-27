@@ -4,7 +4,7 @@ from PyQt5.QtCore import QPoint
 
 from TimeDistancePlotBuilder.CustomWidgets.solar_viewer_widget import SolarViewerWidget
 
-from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum
+from TimeDistancePlotBuilder.Models.app_models import AppStates
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
@@ -39,7 +39,7 @@ class SolarViewportView:
         self.controller.set_position_of_zone_interesting_size_anchor(pos_x, pos_y)
 
     def model_is_changed(self):
-        if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
+        if self.model.selected_preview_mode.state == AppStates.SOLAR_PREVIEW_STATE:
             self.__show_view()
             self.__handle_view()
         else:

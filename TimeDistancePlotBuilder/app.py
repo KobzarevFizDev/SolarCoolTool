@@ -6,7 +6,7 @@ from TimeDistancePlotBuilder.Controllers.time_line_controller import TimeLineCon
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
 
 from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import TimeDistancePlotController
-from TimeDistancePlotBuilder.Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
+from TimeDistancePlotBuilder.Controllers.time_distance_plot_export_controller import TimeDistancePlotExportController
 from TimeDistancePlotBuilder.Controllers.solar_viewer_controller import SolarViewportController
 from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMaskController
 from TimeDistancePlotBuilder.Controllers.progress_controller import ProgressController
@@ -17,10 +17,10 @@ from TimeDistancePlotBuilder.Models.app_models import AppModel
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 
-class CurveEditorWindow(QMainWindow):
+class TimeDistancePlotBuilder(QMainWindow):
     def __init__(self, path_to_configuration: str):
         super().__init__()
-        self.setWindowTitle("Solar cool tool")
+        self.setWindowTitle("TimeDistancePlotBuilder")
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
@@ -30,7 +30,7 @@ class CurveEditorWindow(QMainWindow):
         self.__app_model = AppModel(configuration)
 
         self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
-        self.__time_distance_plot_debug_controller = TimeDistancePlotDebugController(self.__app_model, self)
+        self.__time_distance_plot_debug_controller = TimeDistancePlotExportController(self.__app_model, self)
         self.__progress_controller = ProgressController(self.__app_model, self)
         self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
         self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
@@ -52,7 +52,7 @@ def main():
     else:  
         path_to_configuration: str = sys.argv[1]
         app = QApplication(sys.argv)
-        ex = CurveEditorWindow(path_to_configuration)
+        ex = TimeDistancePlotBuilder(path_to_configuration)
         ex.show()
         sys.exit(app.exec_())
 

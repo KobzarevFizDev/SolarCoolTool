@@ -828,28 +828,28 @@ class TimeLine:
 
 
 @unique
-class PreviewModeEnum(IntEnum):
-    SOLAR_PREVIEW = 1
-    DISTANCE_PLOT_PREVIEW = 2
-    TEST_MODE_DISTANCE_PLOT_PREVIEW = 3
+class AppStates(IntEnum):
+    SOLAR_PREVIEW_STATE = 1
+    TIME_DISTANCE_PLOT_PREVIEW_STATE = 2
+    EXPORT_TIME_DISTANCE_PLOT_STATE = 3
 
 
-class SelectedPreviewMode:
+class CurrentAppState:
     def __init__(self):
-        self.__mode: PreviewModeEnum = PreviewModeEnum.SOLAR_PREVIEW
+        self.__state: AppStates = AppStates.SOLAR_PREVIEW_STATE
 
-    def set_solar_preview_mode(self):
-        self.__mode = PreviewModeEnum.SOLAR_PREVIEW
+    def set_solar_preview_mode_state(self):
+        self.__state = AppStates.SOLAR_PREVIEW_STATE
 
-    def set_time_distance_mode(self):
-        self.__mode = PreviewModeEnum.DISTANCE_PLOT_PREVIEW
+    def set_time_distance_mode_state(self):
+        self.__state = AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
 
-    def set_distance_plot_debug_mode(self):
-        self.__mode = PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
+    def set_time_distance_plot_export_state(self):
+        self.__state = AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     @property
-    def current_preview_mode(self) -> PreviewModeEnum:
-        return self.__mode
+    def state(self) -> AppStates:
+        return self.__state
 
 
 class TimeDistancePlot:
@@ -961,13 +961,6 @@ class TimeDistancePlot:
             pixel_x_coordinate = coordinate_of_pixel.x()
             pixel_y_coordinate = coordinate_of_pixel.y()
             pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            # pixel_value = 0
-            # if is_debug:
-                # pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            # else:
-                # pixel_value = frame[4095 - pixel_y_coordinate][pixel_x_coordinate]
-            # 
-            #print('frame[{0}][{1}]={2}'.format(4095 - pixel_y_coordinate, pixel_x_coordinate, pixel_value))
             accumulator += pixel_value
 
         return int(accumulator / len(coordinates_of_pixels_of_one_slice))
@@ -1060,7 +1053,7 @@ class AppModel:
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
-        self.__selected_preview_mode = SelectedPreviewMode()
+        self.__selected_preview_mode = CurrentAppState()
 
         self.__observers = []
 
@@ -1101,7 +1094,7 @@ class AppModel:
         return self.__test_animated_frame
 
     @property
-    def selected_preview_mode(self) -> SelectedPreviewMode:
+    def selected_preview_mode(self) -> CurrentAppState:
         return self.__selected_preview_mode
 
     def add_observer(self, in_observer):
