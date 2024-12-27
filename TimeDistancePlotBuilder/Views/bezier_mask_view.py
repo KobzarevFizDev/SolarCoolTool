@@ -18,23 +18,18 @@ class BezierMaskView:
         parentWindow.layout.addWidget(self.widget, 1, 0, 1, 2)
         self.model.add_observer(self)
         self.widget.create_bezier_mask_tool(self.model.bezier_mask, self.model)
-        self.widget.mouseWheelSignal.connect(self.onWheel)
-        self.widget.exportSignal.connect(self.on_export_clicked)
+        self.widget.mouse_wheel_signal.connect(self.onWheel)
+        self.widget.export_signal.connect(self.on_export_clicked)
 
     def onWheel(self, delta):
         self.controller.onWheel(delta)
 
     def on_export_clicked(self, widget):
-        self.widget.hide_button_export_button()
-        self.controller.on_export_bezier_mask(widget)
-        self.widget.show_button_export_button()
+        self.widget.hide_export_button()
+        self.controller.export_bezier_mask(widget)
+        self.widget.show_export_button()
 
     def model_is_changed(self):
-        if self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
-            self.widget.show_button_export_button()
-        else:
-            self.widget.hide_button_export_button()
-
         self.__update_bezier_widget_state()
 
     def __update_bezier_widget_state(self):

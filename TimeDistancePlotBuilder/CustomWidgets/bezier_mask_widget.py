@@ -12,12 +12,12 @@ from TimeDistancePlotBuilder.Models.app_models import (BezierMask,
 
 
 class BezierMaskWidget(QWidget):
-    mousePressSignal = pyqtSignal(int, int)
-    mouseReleaseSignal = pyqtSignal(int, int)
-    mouseDoubleClickSignal = pyqtSignal(int, int)
-    mouseMoveSignal = pyqtSignal(int, int)
-    mouseWheelSignal = pyqtSignal(int)
-    exportSignal = pyqtSignal(QWidget)
+    mouse_press_signal = pyqtSignal(int, int)
+    mouse_release_signal = pyqtSignal(int, int)
+    mouse_double_click_signal = pyqtSignal(int, int)
+    mouse_move_signal = pyqtSignal(int, int)
+    mouse_wheel_signal = pyqtSignal(int)
+    export_signal = pyqtSignal(QWidget)
 
     def __init__(self, parent):
         super(BezierMaskWidget, self).__init__()
@@ -55,7 +55,6 @@ class BezierMaskWidget(QWidget):
         self.__temps_objects_on_scene = []
 
         self.__export_button: QPushButton = self.__create_export_button()
-        self.hide_button_export_button()
 
     def __create_export_button(self) -> QPushButton:
         export_button = QPushButton("Export", self)
@@ -63,23 +62,23 @@ class BezierMaskWidget(QWidget):
         return export_button
     
     def __on_export_button_clicked(self) -> None:
-        self.exportSignal.emit(self)
+        self.export_signal.emit(self)
 
 # TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
-        self.mousePressSignal.emit(event.x(), event.y())
+        self.mouse_press_signal.emit(event.x(), event.y())
 
     def mouseMoveEvent(self, event):
-        self.mouseMoveSignal.emit(event.x(), event.y())
+        self.mouse_move_signal.emit(event.x(), event.y())
 
     def mouseDoubleClickEvent(self, event):
-        self.mouseDoubleClickSignal.emit(event.x(), event.y())
+        self.mouse_double_click_signal.emit(event.x(), event.y())
 
     def mouseReleaseEvent(self, event):
-        self.mouseReleaseSignal.emit(event.x(), event.y())
+        self.mouse_release_signal.emit(event.x(), event.y())
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
-        self.mouseWheelSignal.emit(a0.angleDelta().y())
+        self.mouse_wheel_signal.emit(a0.angleDelta().y())
 
     def create_bezier_mask_tool(self,
                                 spline: BezierMask,
@@ -200,9 +199,9 @@ class BezierMaskWidget(QWidget):
         self.__control_widget2.setPos(p2)
         self.__anchor_widget2.setPos(p3)
 
-    def show_button_export_button(self) -> None:
+    def show_export_button(self) -> None:
         self.__export_button.show()
 
-    def hide_button_export_button(self) -> None:
+    def hide_export_button(self) -> None:
         self.__export_button.hide()
 

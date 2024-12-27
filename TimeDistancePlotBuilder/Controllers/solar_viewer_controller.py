@@ -30,6 +30,11 @@ class SolarViewportController:
         self.__model.zone_interesting.set_position_of_size_anchor(anchor_pos)
         self.__model.notify_observers()
 
+    def export_solar_view(self, widget):
+        path_to_export: str = f"{self.__model.configuration.path_to_export_results}\solar_view.png"
+        pixmap = widget.grab()
+        pixmap.save(path_to_export)
+
     
 
 

@@ -1,5 +1,5 @@
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QLabel, QWidget, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget
+from PyQt5.QtWidgets import QLabel, QWidget, QGraphicsScene, QGraphicsView, QGraphicsProxyWidget, QPushButton
 from PyQt5.QtGui import QPalette, QColor, QPixmap, QImage, QPainter, QPen
 from PyQt5.QtCore import Qt, pyqtSignal, QPoint, QPointF
 from TimeDistancePlotBuilder.Models.app_models import AppModel, ZoneInteresting
@@ -11,6 +11,7 @@ class SolarViewerWidget(QWidget):
     move_image_signal = pyqtSignal(int, int)
     on_changed_position_of_zone_interesting_position_anchor_signal = pyqtSignal(int ,int)
     on_changed_position_of_zone_interesting_size_anchor_signal = pyqtSignal(int, int)
+    export_signal = pyqtSignal(QWidget)
 
     def __init__(self, solar_viewer_controller, app_model: AppModel):
         super(SolarViewerWidget, self).__init__()
@@ -41,6 +42,8 @@ class SolarViewerWidget(QWidget):
 
         self.__temps_objects_on_scene = []
 
+        self.__export_button: QPushButton = self.__create_export_button()
+
     def __create_solar_plot(self) -> QGraphicsProxyWidget:
         self.__pixmap.fill(Qt.green)
         self.__solar_plot = PlotWidget(self.__pixmap, self.__offset)
@@ -49,7 +52,6 @@ class SolarViewerWidget(QWidget):
         proxy = self.__scene.addWidget(self.__solar_plot)
         return proxy
     
-
     def __create_zone_interesting_position_anchor(self) -> QGraphicsProxyWidget:
         self.__zone_interesting_position_anchor = ZoneInterestingPositionControlPointWidget(self.__app_model)
         self.__zone_interesting_position_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_position_anchor)
@@ -61,6 +63,14 @@ class SolarViewerWidget(QWidget):
         self.__zone_interesting_size_anchor.change_position_signal.connect(self.__on_changed_position_of_zone_interesting_size_anchor)
         proxy = self.__scene.addWidget(self.__zone_interesting_size_anchor)
         return proxy
+    
+    def __create_export_button(self) -> QPushButton:
+        export_button = QPushButton("Export", self)
+        export_button.clicked.connect(self.__on_export_button_clicked)
+        return export_button
+    
+    def __on_export_button_clicked(self) -> None:
+        self.export_signal.emit(self)
 
     def update_widget(self):
         self.update()
@@ -80,11 +90,11 @@ class SolarViewerWidget(QWidget):
         self.__pixmap = pixmap
         self.__offset = offset
 
-    def show_button_for_export(self) -> None:
-        pass
+    def show_export_button(self) -> None:
+        self.__export_button.show()
 
-    def hide_button_for_export(self) -> None:
-        pass
+    def hide_export_button(self) -> None:
+        self.__export_button.hide()
 
     def __draw_solar_frame(self) -> None:
         self.__solar_plot.update_plot(self.__pixmap, self.__offset)

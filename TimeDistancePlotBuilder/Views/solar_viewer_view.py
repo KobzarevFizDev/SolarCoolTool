@@ -19,6 +19,7 @@ class SolarViewportView:
         self.model.add_observer(self)
         self.widget.zoom_image_signal.connect(self.zoom)
         self.widget.move_image_signal.connect(self.move)
+        self.widget.export_signal.connect(self.on_export)
         self.widget.on_changed_position_of_zone_interesting_position_anchor_signal.connect(self.on_changed_position_of_zone_interesting_position_anchor)
         self.widget.on_changed_position_of_zone_interesting_size_anchor_signal.connect(self.on_changed_size_of_zone_interesting_size_anchor)
 
@@ -27,6 +28,11 @@ class SolarViewportView:
             self.controller.increase_zoom(0.05)
         else:
             self.controller.decrease_zoom(0.05)
+
+    def on_export(self, widget):
+        self.widget.hide_export_button()
+        self.controller.export_solar_view(widget)
+        self.widget.show_export_button()
 
     def move(self, x, y):
         self.controller.move_solar_image(QPoint(x, y))
@@ -41,17 +47,10 @@ class SolarViewportView:
         if self.model.app_state.current_state == AppStates.SOLAR_PREVIEW_STATE:
             self.__show_view()
             self.__handle_view()
-            self.widget.hide_button_for_export()
         elif self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
-            self.widget.show_button_for_export()
+            pass
         else:
             self.__hide_view()
-        
-        # if self.model.selected_preview_mode.state == AppStates.SOLAR_PREVIEW_STATE:
-        #     self.__show_view()
-        #     self.__handle_view()
-        # else:
-        #     self.__hide_view()
 
     def __hide_view(self):
         self.widget.hide()
