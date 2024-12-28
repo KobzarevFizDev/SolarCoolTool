@@ -30,6 +30,7 @@ class BezierMaskView:
         self.widget.show_export_button()
 
     def model_is_changed(self):
+        print(f"length of bezier = {self.model.bezier_mask.length_in_pixels}")
         self.__update_bezier_widget_state()
 
     def __update_bezier_widget_state(self):

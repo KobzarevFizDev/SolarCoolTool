@@ -1,19 +1,21 @@
 import math
 import os
 import sqlite3
-from typing import List
+from typing import List, Tuple
 from enum import IntEnum, unique
 
 from matplotlib import pyplot as plt
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
+from scipy.integrate import quad
+from scipy.optimize import minimize_scalar
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
 
 import numpy as np
-from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtCore import QPoint, QPointF, QRect
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -443,7 +445,7 @@ class BezierCurve:
     def points(self) -> List[QPoint]:
         return [self.__p0, self.__p1, self.__p2, self.__p3]
 
-    def point_at_t(self, t) -> QPoint:
+    def point_at_t(self, t: float) -> QPoint:
         A = (1-t)**3 * self.__p0
         B = 3 * (1-t)**2 * t * self.__p1
         C = 3 * (1-t)*t**2 * self.__p2
@@ -451,17 +453,47 @@ class BezierCurve:
 
         return A + B + C + D
 
-    def tangent_at_t(self, t) -> QPoint:
+    # todo: удалить, оставить только функции которые возвращают нормализованные значения
+    def tangent_at_t(self, t: float) -> QPoint:
         A = 3 * (1-t)**2 * (self.__p1 - self.__p0)
         B = 6 * (1 - t) * t * (self.__p2 - self.__p1)
         C = 3 * t**2 * (self.__p3 - self.__p2)
         return A + B + C
+    
+    def get_normalized_tangent_at_t(self, t: float) -> QPoint:
+        tangent: QPoint = self.tangent_at_t(t)
+        norm: float = math.sqrt(tangent.x() ** 2 + tangent.y() ** 2)
+        return QPoint(tangent.x() / norm, tangent.y() / norm)
 
-    def normal_at_t(self, t) -> QPoint:
+    def normal_at_t(self, t: float) -> QPoint:
         tangent = self.tangent_at_t(t)
         return QPoint(tangent.y(), -tangent.x())
+    
+    def get_normalized_normal_at_t(self, t: float) -> QPointF:
+        normal: QPoint = self.normal_at_t(t)
+        norm = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
+        return QPointF(normal.x() / norm, normal.y() / norm)
+    
+    def arc_length(self, t: float) -> float:
+        integrand = lambda t: (tangent := self.tangent_at_t(t)) and np.linalg.norm([tangent.x(), tangent.y()])
+        length, _ = quad(integrand, 0, t)
+        return length 
+    
+    def find_t_for_equal_distances(self, number_of_points: int) -> List[float]:
+        total_length: float = self.arc_length(1)
+        segment_length: float = total_length / (number_of_points - 1)
+        t_values = [0]
 
-# todo: Написать тесты для проверки границ маски
+        for i in range(1, number_of_points - 1):
+            target_length: float = i * segment_length
+            func = lambda t: abs(self.arc_length(t) - target_length)
+            print('start')
+            result = minimize_scalar(func, bounds=(0, 1), method="bounded", tol=1e-2)
+            print('finish')
+            t_values.append(result.x)
+
+        t_values.append(1)
+        return t_values
 
 class BezierMask:
     def __init__(self,
@@ -486,6 +518,10 @@ class BezierMask:
     @property
     def number_of_segments(self) -> int:
         return self.__number_of_segments
+    
+    @property
+    def length_in_pixels(self) -> float:
+        return self.__bezier_curve.arc_length(1)
 
     def __create_initial_bezier_curve(self) -> BezierCurve:
         bezier_curve = BezierCurve(QPoint(100, 100),
@@ -515,6 +551,23 @@ class BezierMask:
             border_point = self.__bezier_curve.point_at_t(t)
             border_points.append(border_point)
         return border_points
+    
+    def get_slices(self, number_of_slices: int, is_uniformly: bool) -> List[Tuple[QPoint, QPoint]]:
+        t_values: List[float] = self.__get_t_values_for_slices(number_of_slices, is_uniformly)
+        slices = list()
+        for t in t_values:
+            bottom_point: QPointF = QPointF(self.__bezier_curve.point_at_t(t))
+            normal: QPoint = self.__bezier_curve.get_normalized_normal_at_t(t)
+            offset: QPoint = QPoint( int(normal.x() * (self.__width_in_pixels)), int(normal.y() * (self.__width_in_pixels)) )
+            top_point: QPoint = bottom_point + offset
+            slices.append([bottom_point, top_point])
+        return slices
+    
+    def __get_t_values_for_slices(self, number_of_slices: int , is_uniformly: bool) -> List[float]:
+        if is_uniformly:
+            return self.__bezier_curve.find_t_for_equal_distances(number_of_slices)
+        else:
+            return [(0.5 + i) * (1 / number_of_slices) for i in range(number_of_slices)]
 
     def increase_number_of_segments(self) -> None:
         self.__number_of_segments += 1
@@ -851,7 +904,40 @@ class CurrentAppState:
     def current_state(self) -> AppStates:
         return self.__state
 
+class TDP:
+    def __init__(self, 
+                 bezier_mask: BezierMask, 
+                 viewport_transform: ViewportTransform, 
+                 cubedata: Cubedata):
+        self.__bezier_mask = bezier_mask
+        self.__viewport_transform = viewport_transform
+        self.__cubedata = cubedata
 
+        self.__w = 3 # Толщина временного шага в пикселях (1 кадр это 3 пикселя в time distance plot)
+        self.__ro = 0.5 # Плотность срезов (чем меньше тем реже срезы)
+
+
+    def build(self) -> None:
+        # 0. Расчитать значение срезов
+        # 1. Получить срезы вдоль кривой
+        # 2. Конвертировать срезы в координаты изображения
+        # 3. Извлечь все элементы лежащие на срезе с помощью векторизации numpy
+        # 4. Усреднить элементы лежащие на срезе
+        # 5. Добавить в итогов массив полученное значение
+
+        pass
+
+    def save_as_png() -> None:
+        pass
+
+    def save_as_numpy_array() -> None:
+        pass
+
+    def convert_to_qpixmap() -> QPixmap:
+        pass
+
+
+# todo: Легаси
 class TimeDistancePlot:
 
     # TODO: Вынести дополнетельные параметры
