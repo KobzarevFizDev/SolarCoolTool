@@ -100,7 +100,7 @@ class BezierMaskWidget(QWidget):
         self.__clear_current_mask()
         self.__update_position_points_widgets(spline.bezier_curve)
 
-        self.__draw_sections(spline)
+        # self.__draw_sections(spline)
 
         for i in range(spline.number_of_segments):
             is_selected: bool = app_model.selected_bezier_segments.status_of_segment(i)

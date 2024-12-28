@@ -751,6 +751,21 @@ class ViewportTransform:
         self.__offset: QPoint = QPoint(0, 0)
 
     @property
+    def dpi_of_bezier_mask_window(self) -> float:
+        widget_size = 600
+        dpi_of_solar_view: float = self.dpi_solar_view_window
+        size_of_zone_interesting_in_image_pixels = dpi_of_solar_view * self.__zone_interesting.size
+        dpi_of_bezier_mask_window = size_of_zone_interesting_in_image_pixels / widget_size
+        return dpi_of_bezier_mask_window
+
+    @property
+    def dpi_solar_view_window(self) -> float:
+        widget_size = 600
+        image_size = 4096
+        dpi_of_solar_view = image_size / (widget_size * self.__zoom)
+        return dpi_of_solar_view
+
+    @property
     def zoom(self) -> float:
         return self.__zoom
 
@@ -776,25 +791,17 @@ class ViewportTransform:
         size_of_zone_interesting: int = self.__zone_interesting.size
         widget_size: int = 600
 
-        offset = self.offset
-
-        # print('p* = ({0},{1})'.format(point_in_bezier_mask.x(), point_in_bezier_mask.y()))
-
         point_in_solar_view =  transformations.transform_point_from_bezier_mask_to_solar_view(position_of_zone_interesting, 
                                                                                               point_in_bezier_mask,
                                                                                               size_of_zone_interesting,
                                                                                               widget_size)
         
-        # print('p** = ({0},{1})'.format(point_in_solar_view.x(), point_in_solar_view.y()))
-
         point_in_fits = transformations.transform_point_from_solar_view_to_fits(point_in_solar_view, 
                                                                                 self.offset, 
                                                                                 size_of_fits, 
                                                                                 widget_size, 
                                                                                 self.zoom)
         
-        # print('p*** = ({0},{1})'.format(point_in_fits.x(), point_in_fits.y()))
-
         return point_in_fits
 
     # legacy -----------------------------------
