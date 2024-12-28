@@ -6,15 +6,15 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QPushButton, QHBoxLayout
 
 from TimeDistancePlotBuilder.CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
-from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum, TimeDistancePlot
+from TimeDistancePlotBuilder.Models.app_models import AppStates, TimeDistancePlot
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
-    from TimeDistancePlotBuilder.Controllers.time_distance_plot_debug_controller import TimeDistancePlotDebugController
+    from TimeDistancePlotBuilder.Controllers.time_distance_plot_export_controller import TimeDistancePlotExportController
 
-class TimeDistancePlotDebugView:
+class TimeDistancePlotExportView:
     def __init__(self, controller, model, parent_window):
-        self.controller: TimeDistancePlotDebugController = controller
+        self.controller: TimeDistancePlotExportController = controller
         self.model: AppModel = model
         self.model.add_observer(self)
         self.__parent_window = parent_window
@@ -47,7 +47,7 @@ class TimeDistancePlotDebugView:
         self.__label_of_t_slider.setText(f"t = {t}")
 
     def __is_need_to_show_this_view(self) -> bool:
-        return self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
+        return self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
         self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)

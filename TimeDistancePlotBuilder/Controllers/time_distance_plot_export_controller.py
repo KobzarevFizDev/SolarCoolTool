@@ -1,11 +1,11 @@
 from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot
-from TimeDistancePlotBuilder.Views.time_distance_plot_debug_view import TimeDistancePlotDebugView
+from TimeDistancePlotBuilder.Views.time_distance_plot_export_view import TimeDistancePlotExportView
 
 
-class TimeDistancePlotDebugController:
+class TimeDistancePlotExportController:
     def __init__(self, model, mainAppWindow):
         self.model: AppModel = model
-        self.view: TimeDistancePlotDebugView = TimeDistancePlotDebugView(self, model, mainAppWindow)
+        self.view: TimeDistancePlotExportView = TimeDistancePlotExportView(self, model, mainAppWindow)
         self.__time_distance_plot = self.__create_debug_time_distance_plot()
 
     def change_t(self, t: float):

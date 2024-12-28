@@ -219,7 +219,6 @@ class SolarFrame:
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
 
-
     @property
     def id(self) -> int:
         return self.__id
@@ -256,6 +255,7 @@ class SolarFrame:
 
     def __get_map(self):
         m = sunpy.map.Map(self.__path_to_fits_file)
+        m.data[np.isnan(m.data)] = 0
         return m
 
 
@@ -828,28 +828,28 @@ class TimeLine:
 
 
 @unique
-class PreviewModeEnum(IntEnum):
-    SOLAR_PREVIEW = 1
-    DISTANCE_PLOT_PREVIEW = 2
-    TEST_MODE_DISTANCE_PLOT_PREVIEW = 3
+class AppStates(IntEnum):
+    SOLAR_PREVIEW_STATE = 1
+    TIME_DISTANCE_PLOT_PREVIEW_STATE = 2
+    EXPORT_TIME_DISTANCE_PLOT_STATE = 3
 
 
-class SelectedPreviewMode:
+class CurrentAppState:
     def __init__(self):
-        self.__mode: PreviewModeEnum = PreviewModeEnum.SOLAR_PREVIEW
+        self.__state: AppStates = AppStates.SOLAR_PREVIEW_STATE
 
-    def set_solar_preview_mode(self):
-        self.__mode = PreviewModeEnum.SOLAR_PREVIEW
+    def set_solar_preview_mode_state(self):
+        self.__state = AppStates.SOLAR_PREVIEW_STATE
 
-    def set_time_distance_mode(self):
-        self.__mode = PreviewModeEnum.DISTANCE_PLOT_PREVIEW
+    def set_time_distance_mode_state(self):
+        self.__state = AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
 
-    def set_distance_plot_debug_mode(self):
-        self.__mode = PreviewModeEnum.TEST_MODE_DISTANCE_PLOT_PREVIEW
+    def set_time_distance_plot_export_state(self):
+        self.__state = AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     @property
-    def current_preview_mode(self) -> PreviewModeEnum:
-        return self.__mode
+    def current_state(self) -> AppStates:
+        return self.__state
 
 
 class TimeDistancePlot:
@@ -961,13 +961,6 @@ class TimeDistancePlot:
             pixel_x_coordinate = coordinate_of_pixel.x()
             pixel_y_coordinate = coordinate_of_pixel.y()
             pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            # pixel_value = 0
-            # if is_debug:
-                # pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            # else:
-                # pixel_value = frame[4095 - pixel_y_coordinate][pixel_x_coordinate]
-            # 
-            #print('frame[{0}][{1}]={2}'.format(4095 - pixel_y_coordinate, pixel_x_coordinate, pixel_value))
             accumulator += pixel_value
 
         return int(accumulator / len(coordinates_of_pixels_of_one_slice))
@@ -1050,8 +1043,29 @@ class TimeDistancePlot:
         frame: npt.NDArray = getattr(self, "__time_distance_plot_array")
         np.save(path_to_save, frame)
 
+
+class SelectedBezierSegments:
+    def __init__(self, number_of_bizer_segments: int):
+        self.__number_of_segments: int = number_of_bizer_segments
+        self.__statuses: List[bool] = [False for _ in range(number_of_bizer_segments)]
+
+    def set_segment_as_selected(self, index: int) -> None:
+        self.__statuses[index] = True
+
+    def set_segment_as_unselected(self, index: int) -> None:
+        self.__statuses[index] = False
+
+    def status_of_segment(self, index: int) -> bool:
+        return self.__statuses[index]
+    
+    @property
+    def number_of_bizer_segments(self) -> int:
+        return self.__number_of_segments
+
+
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
+        self.__configuration = configuration_app
         self.__path_to_export_result = configuration_app.path_to_export_results
         self.__zone_interesting = ZoneInteresting()
         self.__viewport_transform = ViewportTransform(self.__zone_interesting)
@@ -1060,7 +1074,8 @@ class AppModel:
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
-        self.__selected_preview_mode = SelectedPreviewMode()
+        self.__app_state = CurrentAppState()
+        self.__selected_bezier_segments = SelectedBezierSegments(10)
 
         self.__observers = []
 
@@ -1101,8 +1116,12 @@ class AppModel:
         return self.__test_animated_frame
 
     @property
-    def selected_preview_mode(self) -> SelectedPreviewMode:
-        return self.__selected_preview_mode
+    def app_state(self) -> CurrentAppState:
+        return self.__app_state
+    
+    @property
+    def selected_bezier_segments(self) -> SelectedBezierSegments:
+        return self.__selected_bezier_segments
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

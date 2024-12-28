@@ -1,7 +1,7 @@
 from typing import List
 
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView
+from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView, QPushButton
 from PyQt5.QtGui import QPen, QPalette, QColor, QPixmap, QPainter
 from PyQt5.QtCore import Qt, QPoint, pyqtSignal
 
@@ -12,11 +12,12 @@ from TimeDistancePlotBuilder.Models.app_models import (BezierMask,
 
 
 class BezierMaskWidget(QWidget):
-    mousePressSignal = pyqtSignal(int, int)
-    mouseReleaseSignal = pyqtSignal(int, int)
-    mouseDoubleClickSignal = pyqtSignal(int, int)
-    mouseMoveSignal = pyqtSignal(int, int)
-    mouseWheelSignal = pyqtSignal(int)
+    mouse_press_signal = pyqtSignal(int, int)
+    mouse_release_signal = pyqtSignal(int, int)
+    mouse_double_click_signal = pyqtSignal(int, int)
+    mouse_move_signal = pyqtSignal(int, int)
+    mouse_wheel_signal = pyqtSignal(int)
+    export_signal = pyqtSignal(QWidget)
 
     def __init__(self, parent):
         super(BezierMaskWidget, self).__init__()
@@ -53,92 +54,142 @@ class BezierMaskWidget(QWidget):
         # Объекты которые нужно перериосвывать каждый кадр (стирать и рисовать заново)
         self.__temps_objects_on_scene = []
 
+        self.__export_button: QPushButton = self.__create_export_button()
+
+        self.__selected_color = Qt.green
+        self.__unselected_color = Qt.yellow
+
+    def __create_export_button(self) -> QPushButton:
+        export_button = QPushButton("Export", self)
+        export_button.clicked.connect(self.__on_export_button_clicked)
+        return export_button
+    
+    def __on_export_button_clicked(self) -> None:
+        self.export_signal.emit(self)
 
 # TODO: Событие колеса мыши необходимо перенести сюда
     def mousePressEvent(self, event):
-        self.mousePressSignal.emit(event.x(), event.y())
+        self.mouse_press_signal.emit(event.x(), event.y())
 
     def mouseMoveEvent(self, event):
-        self.mouseMoveSignal.emit(event.x(), event.y())
+        self.mouse_move_signal.emit(event.x(), event.y())
 
     def mouseDoubleClickEvent(self, event):
-        self.mouseDoubleClickSignal.emit(event.x(), event.y())
+        self.mouse_double_click_signal.emit(event.x(), event.y())
 
     def mouseReleaseEvent(self, event):
-        self.mouseReleaseSignal.emit(event.x(), event.y())
+        self.mouse_release_signal.emit(event.x(), event.y())
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
-        self.mouseWheelSignal.emit(a0.angleDelta().y())
+        self.mouse_wheel_signal.emit(a0.angleDelta().y())
 
     def create_bezier_mask_tool(self,
                                 spline: BezierMask,
                                 app_model: AppModel) -> None:
         self.__draw_points_widgets(spline.bezier_curve, app_model)
-        self.__draw_bottom_line_of_mask(spline)
-        self.__draw_top_line_of_mask(spline)
-        self.__draw_border_between_section(spline)
+        for i in range(spline.number_of_segments):
+            is_selected: bool = app_model.selected_bezier_segments.status_of_segment(i)
+            self.__draw_bezier_segment(spline, i, is_selected)
         self.__draw_control_lines(spline.bezier_curve)
 
 
     def update_background(self, background: QPixmap) -> None:
         self.__currentPixmapOfPlot.setPixmap(background)
 
-    def update_bezier_mask(self, spline: BezierMask) -> None:
+    def update_bezier_mask(self, spline: BezierMask, app_model: AppModel) -> None:
         self.__clear_current_mask()
         self.__update_position_points_widgets(spline.bezier_curve)
-        self.__draw_bottom_line_of_mask(spline)
-        self.__draw_top_line_of_mask(spline)
-        self.__draw_border_between_section(spline)
+
+        for i in range(spline.number_of_segments):
+            is_selected: bool = app_model.selected_bezier_segments.status_of_segment(i)
+            self.__draw_bezier_segment(spline, i, is_selected)
+
         self.__draw_control_lines(spline.bezier_curve)
 
+    def __draw_bezier_segment(self, bezier_mask: BezierMask, index: int, is_selected: bool) -> None:
+        is_first = index == 0
+        is_last = bezier_mask.number_of_segments - 1 == index
 
-    def __draw_bottom_line_of_mask(self, bezier_mask: BezierMask):
-        points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
-        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(len(points_of_bottom_border_mask) - 1):
-            p1: QPoint = points_of_bottom_border_mask[i]
-            p2: QPoint = points_of_bottom_border_mask[i + 1]
-            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__temps_objects_on_scene.append(new_line)
-
-    def __draw_top_line_of_mask(self, bezier_mask: BezierMask):
-        points_of_top_border_mask: List[QPoint] = bezier_mask.get_top_border()
-        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(len(points_of_top_border_mask) - 1):
-            p1: QPoint = points_of_top_border_mask[i]
-            p2: QPoint = points_of_top_border_mask[i + 1]
-            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__temps_objects_on_scene.append(new_line)
+        if is_first == False and is_last == False:
+            self.draw_middle_bezier_segment(bezier_mask, index, is_selected)
+        elif is_first == True:
+            self.draw_start_bezier_segment(bezier_mask, index, is_selected)
+        elif is_last == True:
+            self.draw_end_bezier_segment(bezier_mask, index, is_selected)
 
 
-    def __draw_border_between_section(self, bezier_mask: BezierMask):
-        points_of_top_border_mask: List[QPoint] = bezier_mask.get_top_border()
-        points_of_bottom_border_mask: List[QPoint] = bezier_mask.get_bottom_border()
+    def draw_start_bezier_segment(self, bezier_mask: BezierMask, index: int, is_selected: bool) -> None:
+        bottom_points: List[QPoint] = bezier_mask.get_bottom_border()
+        top_points: List[QPoint] = bezier_mask.get_top_border()
 
-        pen = QPen(Qt.yellow, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        new_line = self.scene.addLine(points_of_bottom_border_mask[0].x(),
-                                      points_of_bottom_border_mask[0].y(),
-                                      points_of_top_border_mask[0].x(),
-                                      points_of_top_border_mask[0].y(),
-                                      pen)
+        segment_color = self.__get_segment_color(is_selected)
+        pen = QPen(segment_color, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)    
 
-        self.__temps_objects_on_scene.append(new_line)
+        bp1: QPoint = bottom_points[index]
+        bp2: QPoint = bottom_points[index + 1]
 
-        new_line = self.scene.addLine(points_of_bottom_border_mask[len(points_of_bottom_border_mask) - 1].x(),
-                                      points_of_bottom_border_mask[len(points_of_bottom_border_mask) - 1].y(),
-                                      points_of_top_border_mask[len(points_of_bottom_border_mask) - 1].x(),
-                                      points_of_top_border_mask[len(points_of_bottom_border_mask) - 1].y(),
-                                      pen)
+        tp1: QPoint = top_points[index]
+        tp2: QPoint = top_points[index + 1]
 
-        self.__temps_objects_on_scene.append(new_line)
+        l1 = self.scene.addLine(tp1.x(), tp1.y(), bp1.x(), bp1.y(), pen)
+        l2 = self.scene.addLine(tp1.x(), tp1.y(), tp2.x(), tp2.y(), pen)
+        l3 = self.scene.addLine(bp1.x(), bp1.y(), bp2.x(), bp2.y(), pen)
 
-        pen = QPen(Qt.white, 1.0, Qt.DotLine, Qt.RoundCap, Qt.RoundJoin)
-        for i in range(1, len(points_of_bottom_border_mask) - 1):
-            p1: QPoint = points_of_top_border_mask[i]
-            p2: QPoint = points_of_bottom_border_mask[i]
-            new_line = self.scene.addLine(p1.x(), p1.y(), p2.x(), p2.y(), pen)
-            self.__temps_objects_on_scene.append(new_line)
+        self.__temps_objects_on_scene.append(l1)
+        self.__temps_objects_on_scene.append(l2)
+        self.__temps_objects_on_scene.append(l3)
 
+
+    def draw_middle_bezier_segment(self, bezier_mask: BezierMask, index: int, is_selected: bool) -> None:
+        bottom_points: List[QPoint] = bezier_mask.get_bottom_border()
+        top_points: List[QPoint] = bezier_mask.get_top_border()
+        
+        bp1: QPoint = bottom_points[index]
+        bp2: QPoint = bottom_points[index + 1]
+
+        tp1: QPoint = top_points[index]
+        tp2: QPoint = top_points[index + 1]
+
+        segment_color = self.__get_segment_color(is_selected)
+
+        pen = QPen(segment_color, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)    
+        between_section_pen = QPen(Qt.white, 1.0, Qt.DotLine, Qt.RoundCap, Qt.RoundJoin)
+        l1 = self.scene.addLine(bp1.x(), bp1.y(), tp1.x(), tp1.y(), between_section_pen)  
+        l2 = self.scene.addLine(tp1.x(), tp1.y(), tp2.x(), tp2.y(), pen)  
+        l3 = self.scene.addLine(bp2.x(), bp2.y(), bp1.x(), bp1.y(), pen)  
+
+        self.__temps_objects_on_scene.append(l1)
+        self.__temps_objects_on_scene.append(l2)
+        self.__temps_objects_on_scene.append(l3)
+
+    def draw_end_bezier_segment(self, bezier_mask: BezierMask, index: int, is_selected: bool) -> None:
+        bottom_points: List[QPoint] = bezier_mask.get_bottom_border()
+        top_points: List[QPoint] = bezier_mask.get_top_border()
+
+        segment_color = self.__get_segment_color(is_selected)
+        pen = QPen(segment_color, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)  
+        between_section_pen = QPen(Qt.white, 1.0, Qt.DotLine, Qt.RoundCap, Qt.RoundJoin)  
+
+        bp1: QPoint = bottom_points[index]
+        bp2: QPoint = bottom_points[index + 1]
+
+        tp1: QPoint = top_points[index]
+        tp2: QPoint = top_points[index + 1]
+
+        l1 = self.scene.addLine(tp2.x(), tp2.y(), bp2.x(), bp2.y(), pen)
+        l2 = self.scene.addLine(tp1.x(), tp1.y(), tp2.x(), tp2.y(), pen)
+        l3 = self.scene.addLine(bp2.x(), bp2.y(), bp1.x(), bp1.y(), pen)
+        l4 = self.scene.addLine(tp1.x(), tp1.y(), bp1.x(), bp1.y(), between_section_pen)
+
+        self.__temps_objects_on_scene.append(l1)
+        self.__temps_objects_on_scene.append(l2)
+        self.__temps_objects_on_scene.append(l3)
+        self.__temps_objects_on_scene.append(l4)
+
+    def __get_segment_color(self, is_selected: bool):
+        return self.__selected_color if is_selected else self.__unselected_color 
+
+            
     def __draw_points_widgets(self,
                               bezier_curve: BezierCurve,
                               app_model: AppModel) -> None:
@@ -188,3 +239,10 @@ class BezierMaskWidget(QWidget):
         self.__control_widget1.setPos(p1)
         self.__control_widget2.setPos(p2)
         self.__anchor_widget2.setPos(p3)
+
+    def show_export_button(self) -> None:
+        self.__export_button.show()
+
+    def hide_export_button(self) -> None:
+        self.__export_button.hide()
+

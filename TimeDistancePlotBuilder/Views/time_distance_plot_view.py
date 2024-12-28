@@ -6,7 +6,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QPushButton, QHBoxLayout
 
 from TimeDistancePlotBuilder.CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
-from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum
+from TimeDistancePlotBuilder.Models.app_models import AppStates
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
@@ -45,7 +45,7 @@ class TimeDistancePlotView:
         self.__time_distance_plot_widget.update()
 
     def __is_need_to_show_this_view(self) -> bool:
-        return self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.DISTANCE_PLOT_PREVIEW
+        return self.model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
         self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)

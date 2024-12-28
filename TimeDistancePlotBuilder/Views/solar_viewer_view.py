@@ -4,7 +4,7 @@ from PyQt5.QtCore import QPoint
 
 from TimeDistancePlotBuilder.CustomWidgets.solar_viewer_widget import SolarViewerWidget
 
-from TimeDistancePlotBuilder.Models.app_models import PreviewModeEnum
+from TimeDistancePlotBuilder.Models.app_models import AppStates
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
@@ -19,15 +19,20 @@ class SolarViewportView:
         self.model.add_observer(self)
         self.widget.zoom_image_signal.connect(self.zoom)
         self.widget.move_image_signal.connect(self.move)
+        self.widget.export_signal.connect(self.on_export)
         self.widget.on_changed_position_of_zone_interesting_position_anchor_signal.connect(self.on_changed_position_of_zone_interesting_position_anchor)
         self.widget.on_changed_position_of_zone_interesting_size_anchor_signal.connect(self.on_changed_size_of_zone_interesting_size_anchor)
-
 
     def zoom(self, x, y):
         if y > 0:
             self.controller.increase_zoom(0.05)
         else:
             self.controller.decrease_zoom(0.05)
+
+    def on_export(self, widget):
+        self.widget.hide_export_button()
+        self.controller.export_solar_view(widget)
+        self.widget.show_export_button()
 
     def move(self, x, y):
         self.controller.move_solar_image(QPoint(x, y))
@@ -39,9 +44,11 @@ class SolarViewportView:
         self.controller.set_position_of_zone_interesting_size_anchor(pos_x, pos_y)
 
     def model_is_changed(self):
-        if self.model.selected_preview_mode.current_preview_mode == PreviewModeEnum.SOLAR_PREVIEW:
+        if self.model.app_state.current_state == AppStates.SOLAR_PREVIEW_STATE:
             self.__show_view()
             self.__handle_view()
+        elif self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
+            pass
         else:
             self.__hide_view()
 
@@ -59,3 +66,4 @@ class SolarViewportView:
         self.widget.update_position_of_zone_interesting_size_anchor(self.model.zone_interesting.top_left_in_view)
         self.widget.set_solar_frame_to_draw(pixmap_of_solar_to_show, offset)
         self.widget.update_widget()
+
