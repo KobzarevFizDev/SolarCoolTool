@@ -60,7 +60,7 @@ class CubedataFrame:
 
 
     @property
-    def frame_content(self) -> npt.NDArray:
+    def content(self) -> npt.NDArray:
         return self.__frame_content
 
     @property
@@ -151,7 +151,7 @@ class TestAnimatedFrame:
         return frame
 
     def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
-        frame_content = self.get_frame_by_t(t).frame_content
+        frame_content = self.get_frame_by_t(t).content
         frame_content = frame_content.astype(np.uint8)
         qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
@@ -912,36 +912,120 @@ class CurrentAppState:
         return self.__state
 
 class TDP:
-    def __init__(self, 
-                 bezier_mask: BezierMask, 
-                 viewport_transform: ViewportTransform, 
-                 cubedata: Cubedata):
+    def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
         self.__bezier_mask = bezier_mask
         self.__viewport_transform = viewport_transform
-        self.__cubedata = cubedata
 
-        self.__w = 3 # Толщина временного шага в пикселях (1 кадр это 3 пикселя в time distance plot)
+        self.__width_of_tdp_step = 3 # Толщина временного шага в пикселях (1 кадр это 3 пикселя в time distance plot)
         self.__ro = 0.5 # Плотность срезов (чем меньше тем реже срезы)
+        self.__channel: int = -1
+        
+        self.__tdp_array: npt.NDArray = None
 
 
-    def build(self) -> None:
-        # 0. Расчитать значение срезов
-        # 1. Получить срезы вдоль кривой
-        # 2. Конвертировать срезы в координаты изображения
-        # 3. Извлечь все элементы лежащие на срезе с помощью векторизации numpy
-        # 4. Усреднить элементы лежащие на срезе
-        # 5. Добавить в итогов массив полученное значение
+    def build(self, cubedata: Cubedata, channel: int) -> None:
+        self.__channel = channel
 
+        number_of_slices: int = self.__get_number_of_slices()
+        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly=False)
+        slices = self.__convert_slices_to_fits_coordinates(slices)
+
+        self.__initialize_tdp_array(cubedata, number_of_slices)
+
+        for index_of_step in range(cubedata.number_of_frames):
+            frame: CubedataFrame = cubedata.get_frame(index_of_step)
+            self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+    def __get_number_of_slices(self) -> int:        
+        dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
+        l: float = self.__bezier_mask.length_in_pixels
+        number_of_slices = int(dpi * l * self.__ro) 
+        return number_of_slices
+    
+    def __convert_slices_to_fits_coordinates(self, slices: List[Tuple[QPoint, QPoint]]) -> List[Tuple[QPoint, QPoint]]:
+        for i in range(len(slices)):
+            slice: Tuple[QPoint, QPoint] = slices[i]
+            bp_in_bezier_mask_window_coordinates: QPoint = slice[0]
+            tp_in_bezier_mask_window_coordinates: QPoint = slice[1]
+            bp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(bp_in_bezier_mask_window_coordinates) 
+            tp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(tp_in_bezier_mask_window_coordinates)
+            slice[0] = bp_in_fits_coordinates
+            slice[1] = tp_in_fits_coordinates
+            slices[i] = slice
+        return slices
+    
+    def __initialize_tdp_array(self, cubedata: Cubedata, number_of_slices: int) -> None:
+        horizontal_length_of_tdp: int = cubedata.number_of_frames * self.__width_of_tdp_step
+        vertical_length_of_tdp: int = number_of_slices
+        self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+    
+    def __handle_tdp_step(self, 
+                          slices:List[Tuple[QPoint, QPoint]], 
+                          frame: CubedataFrame,
+                          width_of_step_in_pixels: int,
+                          index_of_step: int) -> npt.NDArray:
+        start_column_index = index_of_step * width_of_step_in_pixels
+        finish_column_index = (index_of_step + 1) * width_of_step_in_pixels - 1
+        columns_indexes = [i for i in range(start_column_index, finish_column_index + 1)]
+
+        for i, slice in enumerate(slices):
+            mean_value_of_slice: float = self.__get_mean_value_of_slice(slice, frame)
+            self.__tdp_array[:, columns_indexes] = mean_value_of_slice
+
+        print(self.__tdp_array)
         pass
 
-    def save_as_png() -> None:
+    def __get_mean_value_of_slice(self, slice: Tuple[QPoint, QPoint], frame: CubedataFrame) -> float:
+        bp: QPoint = slice[0]
+        tp: QPoint = slice[1]
+
+        x1 = bp.x()
+        y1 = bp.y()
+
+        x2 = tp.x()
+        y2 = tp.y()
+
+        pixels_coordinates: List[QPoint] = get_pixels_of_line(x1, y1, x2, y2)
+
+        count = 0
+        total_sum = 0 
+
+        for pixel_coordinate in pixels_coordinates:
+            pixel_x: int = pixel_coordinate.x()
+            pixel_y: int = pixel_coordinate.y()
+
+            count += 1
+
+            total_sum += frame.content[pixel_y][pixel_x] 
+
+        # Вычисляем среднее значение
+        mean_value = total_sum / count
+        return mean_value
+
+    def save_as_png(self) -> None:
         pass
 
-    def save_as_numpy_array() -> None:
+    def save_as_numpy_array(self) -> None:
         pass
 
-    def convert_to_qpixmap() -> QPixmap:
-        pass
+    def convert_to_qpixmap(self) -> QPixmap:
+        cm = get_cmap_by_channel(self.__channel)
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        dpi_value = 100
+        l = self.__tdp_array.shape[1] / dpi_value
+        h = self.__tdp_array.shape[0] / dpi_value
+        fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        axes = fig.add_subplot()
+        axes.set_axis_off()
+        # axes.imshow(self.__tdp_array, cmap=cm)
+        axes.imshow(self.__tdp_array.astype(np.float32), cmap=cm)
+        # axes.imshow(frame, cmap=cm)
+        # axes.imshow(frame.astype(np.float32), cmap=cm)
+        canvas.draw()
+        width, height = int(fig.figbbox.width), int(fig.figbbox.height)
+        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        return QPixmap.fromImage(im)
 
 
 # todo: Легаси
@@ -971,7 +1055,7 @@ class TimeDistancePlot:
                                                                             True)
 
         for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).frame_content
+            frame_content = cubedata.get_frame(i).content
 
             line = instance.__get_time_distance_line(frame_content,
                                                      height_time_distance_plot,
@@ -1007,7 +1091,7 @@ class TimeDistancePlot:
                                                                             False)
 
         for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).frame_content
+            frame_content = cubedata.get_frame(i).content
 
 
             line = instance.__get_time_distance_line(frame_content,
@@ -1169,6 +1253,7 @@ class AppModel:
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__app_state = CurrentAppState()
         self.__selected_bezier_segments = SelectedBezierSegments(10)
+        self.__tdp = TDP(self.__bezier_mask, self.__viewport_transform)
 
         self.__observers = []
 
@@ -1215,6 +1300,10 @@ class AppModel:
     @property
     def selected_bezier_segments(self) -> SelectedBezierSegments:
         return self.__selected_bezier_segments
+    
+    @property
+    def time_distance_plot(self) -> TDP:
+        return self.__tdp
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

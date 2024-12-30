@@ -2,17 +2,18 @@ from typing import TYPE_CHECKING
 
 import os
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot
+from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot, TDP
 from TimeDistancePlotBuilder.Views.time_distance_plot_view import TimeDistancePlotView
+
+from PyQt5.QtGui import QPixmap
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import Cubedata
 
 class TimeDistancePlotController:
     def __init__(self, model, mainAppWindow):
-        self.model: AppModel = model
-        self.view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
-        self.__time_distance_plot: TimeDistancePlot = None
+        self.__model: AppModel = model
+        self.__view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
         #self.__create_time_distance_plot()
 
     def change_t(self, t: float):
@@ -22,17 +23,29 @@ class TimeDistancePlotController:
 
 
     def update_time_distance_plot(self) -> None:
-        start_index: int = self.model.time_line.start_interval_of_time_distance_plot
-        finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
-        bezier_mask = self.model.bezier_mask
-        viewport_transform = self.model.viewport_transform
-        cubedata: Cubedata = self.model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
-        self.__time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask,
-                                                                                                           viewport_transform,
-                                                                                                           cubedata)
-        channel: int = self.model.current_channel.channel
-        pixmap = self.__time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
-        self.view.update_time_distance_plot_pixmap(pixmap)
+        print("TimeDistancePlotController::update_time_distance_plot()")
+
+        start_index: int = self.__model.time_line.start_interval_of_time_distance_plot
+        finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        bezier_mask = self.__model.bezier_mask
+        viewport_transform = self.__model.viewport_transform
+        cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
+        channel: int = self.__model.current_channel.channel
+        self.__model.time_distance_plot.build(cubedata, channel)
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap()
+        self.__view.update_time_distance_plot_pixmap(pixmap)
+
+        # start_index: int = self.model.time_line.start_interval_of_time_distance_plot
+        # finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
+        # bezier_mask = self.model.bezier_mask
+        # viewport_transform = self.model.viewport_transform
+        # cubedata: Cubedata = self.model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
+        # self.__time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask,
+        #                                                                                                    viewport_transform,
+        #                                                                                                    cubedata)
+        # channel: int = self.model.current_channel.channel
+        # pixmap = self.__time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
+        # self.view.update_time_distance_plot_pixmap(pixmap)
 
     def export_time_distance_plot(self) -> None:
         path_to_dir_to_export_result = self.__create_dir_to_save_export_data()
@@ -41,27 +54,27 @@ class TimeDistancePlotController:
         self.__export_metadata_of_time_distance_plot_as_txt_file(path_to_dir_to_export_result)
 
     def __create_dir_to_save_export_data(self) -> str:
-        all_result_dirs = [d for d in os.listdir(self.model.path_to_export_result) if os.path.isdir(os.path.join(self.model.path_to_export_result, d))]
+        all_result_dirs = [d for d in os.listdir(self.__model.path_to_export_result) if os.path.isdir(os.path.join(self.__model.path_to_export_result, d))]
         result_dirs = [d for d in all_result_dirs if "result" in d]
         new_result_index = len(result_dirs) + 1
         name_of_dir_for_save_export_data = f"result {new_result_index}"
-        path_to_dir_to_export_result = os.path.join(self.model.path_to_export_result, name_of_dir_for_save_export_data)
+        path_to_dir_to_export_result = os.path.join(self.__model.path_to_export_result, name_of_dir_for_save_export_data)
         os.mkdir(path_to_dir_to_export_result)
         return path_to_dir_to_export_result
 
     def __export_time_distance_plot_as_png(self, path_of_dir_to_export_result: str) -> None:
-        current_channel: int = self.model.current_channel.channel
+        current_channel: int = self.__model.current_channel.channel
         path_to_save_time_distance_plot_as_png = os.path.join(path_of_dir_to_export_result, f"time_distance_plot_A{current_channel}.png")
         self.__time_distance_plot.save_as_png(path_to_save_time_distance_plot_as_png, current_channel)
 
     def __export_time_distance_plot_as_numpy_array(self, path_of_dir_to_export_result: str) -> None:
-        current_channel: int = self.model.current_channel.channel
+        current_channel: int = self.__model.current_channel.channel
         numpy_array_file_name = f"tdp_A{current_channel}.npy"
         path_to_save_time_distance_plot_as_numpy_array = os.path.join(path_of_dir_to_export_result, numpy_array_file_name)
         self.__time_distance_plot.save_numpy_array(path_to_save_time_distance_plot_as_numpy_array)
 
     def __export_metadata_of_time_distance_plot_as_txt_file(self, path_of_dir_to_export_result: str) -> None:
-        current_channel: int = self.model.current_channel.channel
+        current_channel: int = self.__model.current_channel.channel
         metadata_file_name = f"tdp_A{current_channel}_metadata.txt"
         path_to_metadata_file = os.path.join(path_of_dir_to_export_result, metadata_file_name)
 
@@ -81,13 +94,13 @@ class TimeDistancePlotController:
 
 
     def __create_time_distance_plot(self) -> None:
-        start_index: int = self.model.time_line.start_interval_of_time_distance_plot
-        finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
-        bezier_mask = self.model.bezier_mask
-        viewport_transform = self.model.viewport_transform
-        cubedata: Cubedata = self.model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
+        start_index: int = self.__model.time_line.start_interval_of_time_distance_plot
+        finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        bezier_mask = self.__model.bezier_mask
+        viewport_transform = self.__model.viewport_transform
+        cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask, viewport_transform, cubedata)
-        channel: int = self.model.current_channel.channel
+        channel: int = self.__model.current_channel.channel
         pixmap = time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
-        self.view.update_time_distance_plot_pixmap(pixmap)
+        self.__view.update_time_distance_plot_pixmap(pixmap)
 
