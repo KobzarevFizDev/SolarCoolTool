@@ -20,8 +20,7 @@ class TimeDistancePlotWidget(QWidget):
         self.__draw_border(painter)
         painter.end()
 
-    def draw_time_distance_plot(self,
-                                pixmap_of_time_distance_plot: QPixmap):
+    def draw_time_distance_plot(self, pixmap_of_time_distance_plot: QPixmap):
         #pixmap_of_time_distance_plot = pixmap_of_time_distance_plot.scaled(560, 560)
         self.__pixmap = pixmap_of_time_distance_plot
 

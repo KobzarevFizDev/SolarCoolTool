@@ -27,12 +27,10 @@ class TimeDistancePlotController:
 
         start_index: int = self.__model.time_line.start_interval_of_time_distance_plot
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
-        bezier_mask = self.__model.bezier_mask
-        viewport_transform = self.__model.viewport_transform
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
         self.__model.time_distance_plot.build(cubedata, channel)
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap()
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(vertical_size_in_px=500, horizontal_size_in_px=500)
         self.__view.update_time_distance_plot_pixmap(pixmap)
 
         # start_index: int = self.model.time_line.start_interval_of_time_distance_plot

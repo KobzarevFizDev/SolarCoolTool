@@ -970,10 +970,7 @@ class TDP:
 
         for i, slice in enumerate(slices):
             mean_value_of_slice: float = self.__get_mean_value_of_slice(slice, frame)
-            self.__tdp_array[:, columns_indexes] = mean_value_of_slice
-
-        print(self.__tdp_array)
-        pass
+            self.__tdp_array[i,columns_indexes] = mean_value_of_slice
 
     def __get_mean_value_of_slice(self, slice: Tuple[QPoint, QPoint], frame: CubedataFrame) -> float:
         bp: QPoint = slice[0]
@@ -998,9 +995,14 @@ class TDP:
 
             total_sum += frame.content[pixel_y][pixel_x] 
 
-        # Вычисляем среднее значение
         mean_value = total_sum / count
         return mean_value
+    
+    def __resize_tdp_array(self, new_y_size: int = None, new_x_size: int = None) -> npt.NDArray:
+        old_y_size, old_x_size = self.__tdp_array.shape
+        zoom_y = new_y_size / old_y_size if new_y_size is not None else 1 
+        zoom_x = new_x_size / old_x_size if new_x_size is not None else 1
+        return zoom(self.__tdp_array, (zoom_y, zoom_x), order=1)
 
     def save_as_png(self) -> None:
         pass
@@ -1008,20 +1010,18 @@ class TDP:
     def save_as_numpy_array(self) -> None:
         pass
 
-    def convert_to_qpixmap(self) -> QPixmap:
+    def convert_to_qpixmap(self, vertical_size_in_px: int = None, horizontal_size_in_px: int = None) -> QPixmap:
         cm = get_cmap_by_channel(self.__channel)
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
         dpi_value = 100
-        l = self.__tdp_array.shape[1] / dpi_value
-        h = self.__tdp_array.shape[0] / dpi_value
+        tdp: npt.NDArray = self.__resize_tdp_array(vertical_size_in_px, horizontal_size_in_px)
+        l = tdp.shape[1] / dpi_value
+        h = tdp.shape[0] / dpi_value
         fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
         canvas = FigureCanvas(fig)
         axes = fig.add_subplot()
         axes.set_axis_off()
-        # axes.imshow(self.__tdp_array, cmap=cm)
-        axes.imshow(self.__tdp_array.astype(np.float32), cmap=cm)
-        # axes.imshow(frame, cmap=cm)
-        # axes.imshow(frame.astype(np.float32), cmap=cm)
+        axes.imshow(tdp.astype(np.float32), cmap=cm)
         canvas.draw()
         width, height = int(fig.figbbox.width), int(fig.figbbox.height)
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
