@@ -3,7 +3,7 @@ import numpy.typing as npt
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, QSizePolicy
 
 from TimeDistancePlotBuilder.CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
 from TimeDistancePlotBuilder.CustomWidgets.tdp_ruler_widget import TdpRulerWidget
@@ -12,7 +12,6 @@ from TimeDistancePlotBuilder.Models.app_models import AppStates
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
     from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import TimeDistancePlotController
-
 
 class TimeDistancePlotView:
     def __init__(self, controller, model, parent_window):
@@ -23,7 +22,7 @@ class TimeDistancePlotView:
         self.__layout = QVBoxLayout()
 
         self.__create_t_slider()
-        self.__create_ruler()
+        self.__create_time_ruler()
         self.__create_time_distance_plot_widget()
         # self.__create_additional_widgets()
 
@@ -51,8 +50,14 @@ class TimeDistancePlotView:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
+        container = QHBoxLayout()
+        self.__time_distance_along_loop_ruler = TdpRulerWidget.create_distance_along_loop_ruler(self.__parent_window)
+        self.__time_distance_along_loop_ruler.set_values(start=0, finish=600, step=100)
         self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)
-        self.__layout.addWidget(self.__time_distance_plot_widget)
+        container.addWidget(self.__time_distance_along_loop_ruler, alignment=Qt.AlignTop)
+        container.addWidget(self.__time_distance_plot_widget)
+        self.__layout.addLayout(container)
+        self.__time_distance_along_loop_ruler.update()
 
     def __create_t_slider(self) -> None:
         self.__t_slider = QSlider(Qt.Horizontal)
@@ -60,10 +65,13 @@ class TimeDistancePlotView:
         self.__t_slider.valueChanged.connect(self.__controller.change_t)
         self.__layout.addWidget(self.__t_slider)
 
-    def __create_ruler(self) -> None:
-        self.__tdp_ruler = TdpRulerWidget(self.__parent_window)
-        self.__layout.addWidget(self.__tdp_ruler)
-        self.__tdp_ruler.set_values(10, 60, 10, 'c')
+    def __create_time_ruler(self) -> None:
+        container = QHBoxLayout()
+        self.__tdp_time_ruler = TdpRulerWidget.create_time_ruler(self.__parent_window)  
+        container.addStretch()
+        container.addWidget(self.__tdp_time_ruler)
+        self.__layout.addLayout(container)
+        self.__tdp_time_ruler.set_values(start=10, finish=60, step=10)
 
     def __create_additional_widgets(self) -> None:
         l = QHBoxLayout()
@@ -81,11 +89,6 @@ class TimeDistancePlotView:
         label = QLabel("t = 0")
         return label
 
-    # def __create_t_slider(self) -> QSlider:
-    #     slider = QSlider(Qt.Horizontal)
-    #     slider.setRange(0, 100)
-    #     slider.valueChanged.connect(self.controller.change_t)
-    #     return slider
 
     def __create_bake_button(self) -> QPushButton:
         bake_button = QPushButton("Bake")
