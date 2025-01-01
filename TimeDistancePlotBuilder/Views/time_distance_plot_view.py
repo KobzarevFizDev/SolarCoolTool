@@ -63,7 +63,7 @@ class TimeDistancePlotView:
     def __create_ruler(self) -> None:
         self.__tdp_ruler = TdpRulerWidget(self.__parent_window)
         self.__layout.addWidget(self.__tdp_ruler)
-        self.__tdp_ruler.update_ruler(0, 50, 2)
+        self.__tdp_ruler.set_values(10, 60, 10, 'c')
 
     def __create_additional_widgets(self) -> None:
         l = QHBoxLayout()
