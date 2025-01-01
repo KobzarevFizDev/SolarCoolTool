@@ -25,7 +25,7 @@ class TdpRulerWidget(QWidget):
 
     @classmethod
     def create_distance_along_loop_ruler(cls, parent):
-        return TdpRulerWidget(parent, width=30, height=500, unit_of_measurement='Mm', is_horizontal=False)
+        return TdpRulerWidget(parent, width=30, height=450, unit_of_measurement='Mm', is_horizontal=False)
 
     def set_values(self, start: int, finish: int, step: int) -> None:
         self.__start = start
@@ -78,14 +78,10 @@ class TdpRulerWidget(QWidget):
 
         text_width = 50
         text_height = 30
-        text_offset = 25
- 
         painter.drawLine(ruler_width, ruler_length, ruler_width, 0)
 
         number_of_steps = (self.__finish - self.__start) // self.__step
         step_size_px = ruler_length // number_of_steps
-
-        print(f'step = {step_size_px}')
 
         for i in range(self.__start, self.__finish):
             y_pos = int((i - self.__start) / self.__step * step_size_px)

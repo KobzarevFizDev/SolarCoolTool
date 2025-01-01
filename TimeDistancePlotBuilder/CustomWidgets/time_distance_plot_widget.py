@@ -5,11 +5,11 @@ from PyQt5.QtGui import QPixmap, QPalette, QColor, QPainter, QPen
 
 
 class TimeDistancePlotWidget(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent, length: int, height: int):
         super(TimeDistancePlotWidget, self).__init__()
         self.__start_border = 10
         self.__finish_border = 20
-        self.__pixmap = QPixmap(600, 500)
+        self.__pixmap = QPixmap(length, height)
         self.__pixmap.fill(Qt.blue)
 
 

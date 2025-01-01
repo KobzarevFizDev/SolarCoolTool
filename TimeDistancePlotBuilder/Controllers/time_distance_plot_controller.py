@@ -30,7 +30,7 @@ class TimeDistancePlotController:
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
         self.__model.time_distance_plot.build(cubedata, channel)
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(vertical_size_in_px=500, horizontal_size_in_px=500)
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(vertical_size_in_px=450, horizontal_size_in_px=570)
         self.__view.update_time_distance_plot_pixmap(pixmap)
 
         # start_index: int = self.model.time_line.start_interval_of_time_distance_plot
