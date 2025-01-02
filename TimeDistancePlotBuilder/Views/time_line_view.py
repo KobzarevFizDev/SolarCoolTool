@@ -64,7 +64,7 @@ class TimeLineView:
 
     def __update_time_distance_plot_slider(self):
         number_images_in_channel = self.model.current_channel.number_of_images_in_current_channel
-        start_index_of_time_distance_plot: int = self.model.time_line.start_interval_of_time_distance_plot
+        start_index_of_time_distance_plot: int = self.model.time_line.start_frame_to_build_tdp
         finish_index_of_time_distance_plot: int = self.model.time_line.finish_interval_of_time_distance_plot
         self.__time_distance_plot_slider.setRange(0, number_images_in_channel)
         self.__time_distance_slider_label.setText(f"Time distance plot slider. [{start_index_of_time_distance_plot} <-> {finish_index_of_time_distance_plot}]")

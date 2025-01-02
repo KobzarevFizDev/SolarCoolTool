@@ -1,7 +1,7 @@
 from PyQt5 import QtGui
-from PyQt5.QtWidgets import QLabel, QWidget
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QPixmap, QPalette, QColor, QPainter, QPen
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPainter, QPen
 
 
 class TdpRulerWidget(QWidget):
@@ -31,12 +31,6 @@ class TdpRulerWidget(QWidget):
         self.__start = start
         self.__finish = finish
         self.__step = step
-
-    # def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
-    #     painter = QPainter(self)
-    #     background_color = QColor('red')
-    #     painter.fillRect(QRect(0, 0, self.width(), self.height()), background_color)
-    #     painter.end()
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         painter = QPainter(self)
@@ -88,7 +82,7 @@ class TdpRulerWidget(QWidget):
             if i % self.__step == 0:
                 painter.save()
                 painter.translate(ruler_width - text_height, y_pos + text_width // 2)
-                painter.rotate(-90)  # Повернуть на -90 градусов
+                painter.rotate(-90) 
                 text = f"{i}, {self.__unit_of_measurement}"
                 painter.drawText(0, 0, text_width, text_height, Qt.AlignRight, text)
                 painter.restore()

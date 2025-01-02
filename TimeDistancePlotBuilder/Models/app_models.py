@@ -836,8 +836,9 @@ class TimeLine:
     def __init__(self, solar_frames_storage: SolarFramesStorage):
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__index_of_current_solar_frame: int = 0
-        self.__start_interval_border_of_time_distance_plot: int = 0
-        self.__finish_interval_border_of_time_distance_plot: int = 3
+        self.__start_frame_to_build_tdp: int = 0
+        self.__finish_frame_to_build_tdp: int = 3
+        self.__current_tdp_step: int = 0
 
     @property
     def index_of_current_solar_frame(self) -> int:
@@ -852,20 +853,20 @@ class TimeLine:
         self.__index_of_current_solar_frame = new_index
 
     @property
-    def start_interval_of_time_distance_plot(self) -> int:
-        return self.__start_interval_border_of_time_distance_plot
+    def start_frame_to_build_tdp(self) -> int:
+        return self.__start_frame_to_build_tdp
 
-    @start_interval_of_time_distance_plot.setter
-    def start_interval_of_time_distance_plot(self, new_index) -> None:
+    @start_frame_to_build_tdp.setter
+    def start_frame_to_build_tdp(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception(f"Index of start interval time distance plot cannot be >= number of solar frames in current channel. Index = {new_index}")
 
-        self.__start_interval_border_of_time_distance_plot = new_index
+        self.__start_frame_to_build_tdp = new_index
 
     @property
     def finish_interval_of_time_distance_plot(self) -> int:
-        return self.__finish_interval_border_of_time_distance_plot
+        return self.__finish_frame_to_build_tdp
 
     @finish_interval_of_time_distance_plot.setter
     def finish_interval_of_time_distance_plot(self, new_index) -> None:
@@ -873,7 +874,7 @@ class TimeLine:
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
 
-        self.__finish_interval_border_of_time_distance_plot = new_index
+        self.__finish_frame_to_build_tdp = new_index
 
     @property
     def total_solar_frames(self) -> int:
@@ -885,6 +886,13 @@ class TimeLine:
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
 
+    @property
+    def tdp_step(self) -> int:
+        return self.__current_tdp_step
+
+    @tdp_step.setter
+    def tdp_step(self, value: int) -> None:
+        self.__current_tdp_step = value
 
 
 @unique
@@ -922,6 +930,9 @@ class TDP:
         
         self.__tdp_array: npt.NDArray = None
 
+    @property
+    def width_of_tdp_step(self) -> int:
+        return self.__width_of_tdp_step
 
     def build(self, cubedata: Cubedata, channel: int) -> None:
         self.__channel = channel
@@ -935,6 +946,26 @@ class TDP:
         for index_of_step in range(cubedata.number_of_frames):
             frame: CubedataFrame = cubedata.get_frame(index_of_step)
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+    def build_test_tdp(self, number_of_frames: int) -> None:
+        self.__channel = 131
+
+        horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
+        vertical_length_of_tdp: int = 500
+        self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+
+        width_of_black_line = 20
+
+        borders_indexes = [i * width_of_black_line for i in range(horizontal_length_of_tdp)]
+
+        for i in range(len(borders_indexes) - 1):
+            if i % 2 == 0:
+                continue
+
+            start_border: int = borders_indexes[i]
+            finish_border: int = borders_indexes[i + 1]
+            self.__tdp_array[:, start_border:finish_border] = 1
+       
 
     def __get_number_of_slices(self) -> int:        
         dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
@@ -998,11 +1029,10 @@ class TDP:
         mean_value = total_sum / count
         return mean_value
     
-    def __resize_tdp_array(self, new_y_size: int = None, new_x_size: int = None) -> npt.NDArray:
-        old_y_size, old_x_size = self.__tdp_array.shape
-        zoom_y = new_y_size / old_y_size if new_y_size is not None else 1 
-        zoom_x = new_x_size / old_x_size if new_x_size is not None else 1
-        return zoom(self.__tdp_array, (zoom_y, zoom_x), order=1)
+    def __vertical_resize_tdp_array(self, new_vertical_size_in_px) -> npt.NDArray:
+        old_vertical_size = self.__tdp_array.shape[0]
+        vertical_zoom = new_vertical_size_in_px / old_vertical_size
+        return zoom(self.__tdp_array, (vertical_zoom, 1), order=1)
 
     def save_as_png(self) -> None:
         pass
@@ -1010,11 +1040,13 @@ class TDP:
     def save_as_numpy_array(self) -> None:
         pass
 
-    def convert_to_qpixmap(self, vertical_size_in_px: int = None, horizontal_size_in_px: int = None) -> QPixmap:
+    def convert_to_qpixmap(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_viewport_size_in_px: int) -> QPixmap:
         cm = get_cmap_by_channel(self.__channel)
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
         dpi_value = 100
-        tdp: npt.NDArray = self.__resize_tdp_array(vertical_size_in_px, horizontal_size_in_px)
+        tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
+        offset_from_start = current_tdp_step * self.__width_of_tdp_step
+        tdp = tdp[: ,offset_from_start: offset_from_start + horizontal_viewport_size_in_px]
         l = tdp.shape[1] / dpi_value
         h = tdp.shape[0] / dpi_value
         fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
@@ -1026,6 +1058,23 @@ class TDP:
         width, height = int(fig.figbbox.width), int(fig.figbbox.height)
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(im)
+
+    # def convert_to_qpixmap(self, vertical_size_in_px: int = None, horizontal_size_in_px: int = None) -> QPixmap:
+    #     cm = get_cmap_by_channel(self.__channel)
+    #     sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+    #     dpi_value = 100
+    #     tdp: npt.NDArray = self.__resize_tdp_array(vertical_size_in_px, horizontal_size_in_px)
+    #     l = tdp.shape[1] / dpi_value
+    #     h = tdp.shape[0] / dpi_value
+    #     fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
+    #     canvas = FigureCanvas(fig)
+    #     axes = fig.add_subplot()
+    #     axes.set_axis_off()
+    #     axes.imshow(tdp.astype(np.float32), cmap=cm)
+    #     canvas.draw()
+    #     width, height = int(fig.figbbox.width), int(fig.figbbox.height)
+    #     im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+    #     return QPixmap.fromImage(im)
 
 
 # todo: Легаси

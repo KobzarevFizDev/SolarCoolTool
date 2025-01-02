@@ -14,24 +14,35 @@ class TimeDistancePlotController:
     def __init__(self, model, mainAppWindow):
         self.__model: AppModel = model
         self.__view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
-        #self.__create_time_distance_plot()
 
-    def change_t(self, t: float):
-        t /= 100
-        if t > 1 or t < 0:
-            raise Exception("TimeDistancePlotDebugController::change_t() not correct value of t")
 
+    def set_current_tdp_step(self, step: int) -> None:
+        print(f"TimeDistancePlotController::set_current_tdp_step({step})")
+        self.__model.time_line.tdp_step = step
+        self.__model.notify_observers()
+
+    def set_smooth_parametr(self, smooth_parametr_slider_value: int) -> None:
+        smooth_parametr_value = smooth_parametr_slider_value / 100
+        print(f"TimeDistancePlotController::set_smooth_parametr({smooth_parametr_slider_value})")
+
+    def set_range_of_tdp_build(self, range) -> None:
+        start_frame_index: int = range[0]
+        finish_frame_index: int = range[1]
+        
+        print(f"TimeDistancePlotController::set_range_of_tdp_build({start_frame_index}, {finish_frame_index})")
 
     def update_time_distance_plot(self) -> None:
         print("TimeDistancePlotController::update_time_distance_plot()")
 
-        start_index: int = self.__model.time_line.start_interval_of_time_distance_plot
+        start_index: int = self.__model.time_line.start_frame_to_build_tdp
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
-        self.__model.time_distance_plot.build(cubedata, channel)
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(vertical_size_in_px=450, horizontal_size_in_px=570)
-        self.__view.update_time_distance_plot_pixmap(pixmap)
+        self.__model.time_distance_plot.build_test_tdp(300)
+        # self.__model.time_distance_plot.build(cubedata, channel)
+        current_tdp_step: int = self.__model.time_line.tdp_step
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
+        self.__view.set_time_distance_plot_pixmap(pixmap)
 
         # start_index: int = self.model.time_line.start_interval_of_time_distance_plot
         # finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
@@ -92,7 +103,7 @@ class TimeDistancePlotController:
 
 
     def __create_time_distance_plot(self) -> None:
-        start_index: int = self.__model.time_line.start_interval_of_time_distance_plot
+        start_index: int = self.__model.time_line.start_frame_to_build_tdp
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         bezier_mask = self.__model.bezier_mask
         viewport_transform = self.__model.viewport_transform
@@ -100,5 +111,5 @@ class TimeDistancePlotController:
         time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask, viewport_transform, cubedata)
         channel: int = self.__model.current_channel.channel
         pixmap = time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
-        self.__view.update_time_distance_plot_pixmap(pixmap)
+        self.__view.set_time_distance_plot_pixmap(pixmap)
 

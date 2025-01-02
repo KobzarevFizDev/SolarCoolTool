@@ -23,7 +23,7 @@ class TimeDistancePlotView:
         self.__parent_window = parent_window
         self.__layout = QVBoxLayout()
 
-        self.__create_t_slider()
+        self.__create_tdp_step_slider()
         self.__create_time_ruler()
         self.__create_time_distance_plot_widget()
         self.__create_additional_widgets()
@@ -38,15 +38,26 @@ class TimeDistancePlotView:
         else:
             self.__hide_this_view()
 
-        self.__update_t_value()
+        self.__set_title_of_current_tdp_step()
+        self.__highlight_tdp_step()
 
-    def update_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
+    def set_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
         self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
         self.__time_distance_plot_widget.update()
 
-    def update_time_distance_plot_current_segment(self, start_border: int, finish_border: int) -> None:
-        self.__time_distance_plot_widget.draw_borders(start_border, finish_border)
+    def __set_title_of_current_tdp_step(self) -> None:
+        current_step: int = self.__model.time_line.tdp_step
+        self.__tdp_step_slider_label.setText(f'Step = {current_step}')
+
+
+    def __highlight_tdp_step(self) -> None:
+        current_step: int = self.__model.time_line.tdp_step
+        width_tdp_step: int = self.__model.time_distance_plot.width_of_tdp_step
+        start_tdp_step_pos: int = current_step * width_tdp_step
+        finish_tdp_step_pos: int = start_tdp_step_pos + width_tdp_step
+        self.__time_distance_plot_widget.highlight_tdp_step(start_tdp_step_pos, finish_tdp_step_pos)
         self.__time_distance_plot_widget.update()
+
 
     def __is_need_to_show_this_view(self) -> bool:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
@@ -61,16 +72,15 @@ class TimeDistancePlotView:
         self.__layout.addLayout(container)
         self.__time_distance_along_loop_ruler.update()
 
-    def __create_t_slider(self) -> None:
+    def __create_tdp_step_slider(self) -> None:
         container = QHBoxLayout()
-        self.__t_slider_label = QLabel('t = 0')
-        self.__t_slider = QSlider(Qt.Horizontal)
-        self.__t_slider.setRange(0, 100)
-        self.__t_slider.valueChanged.connect(self.__controller.change_t)
-        container.addWidget(self.__t_slider_label)
-        container.addWidget(self.__t_slider)
+        self.__tdp_step_slider_label = QLabel('t = 0')
+        self.__tdp_step_slider = QSlider(Qt.Horizontal)
+        self.__tdp_step_slider.setRange(0, 100)
+        self.__tdp_step_slider.valueChanged.connect(self.__controller.set_current_tdp_step)
+        container.addWidget(self.__tdp_step_slider_label)
+        container.addWidget(self.__tdp_step_slider)
         self.__layout.addLayout(container)
-        # self.__layout.addWidget(self.__t_slider)
 
     def __create_time_ruler(self) -> None:
         container = QHBoxLayout()
@@ -84,39 +94,34 @@ class TimeDistancePlotView:
         build_buttons_container = QHBoxLayout()
         range_slider_container = QHBoxLayout()
         smooth_parametr_container = QHBoxLayout()
+
         self.__smooth_parametr_label = self.__create_smooth_parametr_label()
         self.__smooth_parametr_slider = self.__create_smooth_parametr_slider()
         smooth_parametr_container.addWidget(self.__smooth_parametr_label)
         smooth_parametr_container.addWidget(self.__smooth_parametr_slider)
+
         self.__label_of_range_of_tdp_build_slider: QLabel = self.__create_label_of_range_of_tdp_build_slider()
         self.__range_of_tdp_slider: QRangeSlider = self.__create_range_of_tdp_build_slider()
-        self.__build_button: QPushButton = self.__create_build_button()
-        self.__uniformly_build_button: QPushButton = self.__create_uniformly_build_button()
         range_slider_container.addWidget(self.__label_of_range_of_tdp_build_slider)
         range_slider_container.addWidget(self.__range_of_tdp_slider)
+        
+        self.__build_button: QPushButton = self.__create_build_button()
+        self.__uniformly_build_button: QPushButton = self.__create_uniformly_build_button()
         build_buttons_container.addWidget(self.__build_button)
         build_buttons_container.addWidget(self.__uniformly_build_button)
+        
         self.__layout.addLayout(smooth_parametr_container)
         self.__layout.addLayout(range_slider_container)
         self.__layout.addLayout(build_buttons_container)
     
-    # def __create_time_distance_slider(self) -> QSlider:
-    #     self.__time_distance_slider_label = QLabel("Time distance plot slider:")
-    #     self.__time_distance_slider_label.setStyleSheet("font: 14pt;")
-    #     self.layout.addWidget(self.__time_distance_slider_label)
-    #     self.__time_distance_plot_slider = QRangeSlider(Qt.Horizontal)
-    #     self.number_images_in_channel = self.model.current_channel.number_of_images_in_current_channel
-    #     self.__time_line_slider.setRange(0, self.number_images_in_channel-1)
-    #     self.__time_distance_plot_slider.setValue((0, self.number_images_in_channel-1))
-    #     self.__time_distance_plot_slider.valueChanged.connect(self.controller.on_changed_value_of_time_distance_plot_slider)
-    #     self.layout.addWidget(self.__time_distance_plot_slider)
-    #     return self.__time_distance_plot_slider
-
     def __create_smooth_parametr_label(self) -> QLabel:
         return QLabel('Sigma = 0')
 
     def __create_smooth_parametr_slider(self) -> QSlider:
         smooth_slider = QSlider(Qt.Horizontal)
+        smooth_slider.setRange(0, 500)
+        smooth_slider.setValue(0)
+        smooth_slider.valueChanged.connect(self.__controller.set_smooth_parametr)
         return smooth_slider
 
     def __create_label_of_range_of_tdp_build_slider(self) -> QLabel:
@@ -124,6 +129,9 @@ class TimeDistancePlotView:
 
     def __create_range_of_tdp_build_slider(self) -> QRangeSlider:
         range_of_tdp_slider = QRangeSlider(Qt.Horizontal)
+        range_of_tdp_slider.setRange(0, 500)
+        range_of_tdp_slider.setValue((100, 500))
+        range_of_tdp_slider.valueChanged.connect(self.__controller.set_range_of_tdp_build)
         return range_of_tdp_slider
 
     def __create_build_button(self) -> QPushButton:
@@ -135,12 +143,6 @@ class TimeDistancePlotView:
         uniformly_build_tdp_button = QPushButton("Uniformly build")
         uniformly_build_tdp_button.clicked.connect(self.__controller.update_time_distance_plot)
         return uniformly_build_tdp_button
-
-    def __update_t_value(self) -> None:
-        pass
-        # t = self.__model.test_animated_frame.current_t
-        # self.__label_of_t_slider.setText(f"t = {t}")
-
 
     def __show_this_view(self):
         # self.__label_of_t_slider.show()

@@ -15,7 +15,7 @@ class TimeLineController:
         self.__model.notify_observers()
 
     def on_changed_value_of_time_distance_plot_slider(self, value) -> None:
-        self.__model.time_line.start_interval_of_time_distance_plot = value[0]
+        self.__model.time_line.start_frame_to_build_tdp = value[0]
         self.__model.time_line.finish_interval_of_time_distance_plot = value[1]
         self.__model.notify_observers()
 

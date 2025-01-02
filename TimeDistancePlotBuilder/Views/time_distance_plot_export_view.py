@@ -39,7 +39,7 @@ class TimeDistancePlotExportView:
         self.__time_distance_plot_widget.update()
 
     def update_time_distance_plot_current_segment(self, start_border: int, finish_border: int) -> None:
-        self.__time_distance_plot_widget.draw_borders(start_border, finish_border)
+        self.__time_distance_plot_widget.highlight_tdp_step(start_border, finish_border)
         self.__time_distance_plot_widget.update()
 
     def __update_t_value(self) -> None:
