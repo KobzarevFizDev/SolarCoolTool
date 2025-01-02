@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
     from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import TimeDistancePlotController
 
+TIME_DISTANCE_PLOT_WIDGET_WIDTH = 570
+
 class TimeDistancePlotView:
     def __init__(self, controller, model, parent_window):
         self.__controller: TimeDistancePlotController = controller
@@ -39,25 +41,44 @@ class TimeDistancePlotView:
             self.__hide_this_view()
 
         self.__set_title_of_current_tdp_step()
-        self.__highlight_tdp_step()
+
+        if self.__model.time_distance_plot.is_builded: 
+            self.__update_time_distance_plot()
+            self.__highlight_tdp_step()
+
+    def __update_time_distance_plot(self) -> None:
+        current_tdp_step: int = self.__model.time_line.tdp_step
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
+        self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
 
     def set_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
         self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
         self.__time_distance_plot_widget.update()
 
+    def set_ranges_of_tdp_slider(self, max_value: int) -> None:
+        self.__tdp_step_slider.setRange(0, max_value)
+
     def __set_title_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
         self.__tdp_step_slider_label.setText(f'Step = {current_step}')
 
-
     def __highlight_tdp_step(self) -> None:
-        current_step: int = self.__model.time_line.tdp_step
         width_tdp_step: int = self.__model.time_distance_plot.width_of_tdp_step
-        start_tdp_step_pos: int = current_step * width_tdp_step
-        finish_tdp_step_pos: int = start_tdp_step_pos + width_tdp_step
+        current_step: int = self.__model.time_line.tdp_step
+        is_need_to_scroll_tdp: bool = self.__model.time_distance_plot.is_need_to_scroll_tdp(current_step, horizontal_viewport_size_in_px=TIME_DISTANCE_PLOT_WIDGET_WIDTH)
+    
+        start_tdp_step_pos: int = -1
+        finish_tdp_step_pos: int = -1
+    
+        if is_need_to_scroll_tdp:
+            start_tdp_step_pos = TIME_DISTANCE_PLOT_WIDGET_WIDTH // 2 
+            finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
+        else:
+            start_tdp_step_pos = current_step * width_tdp_step
+            finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
+        
         self.__time_distance_plot_widget.highlight_tdp_step(start_tdp_step_pos, finish_tdp_step_pos)
         self.__time_distance_plot_widget.update()
-
 
     def __is_need_to_show_this_view(self) -> bool:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
@@ -105,8 +126,10 @@ class TimeDistancePlotView:
         range_slider_container.addWidget(self.__label_of_range_of_tdp_build_slider)
         range_slider_container.addWidget(self.__range_of_tdp_slider)
         
+        self.__debug_build_button: QPushButton = self.__create_debug_build_button()
         self.__build_button: QPushButton = self.__create_build_button()
         self.__uniformly_build_button: QPushButton = self.__create_uniformly_build_button()
+        build_buttons_container.addWidget(self.__debug_build_button)
         build_buttons_container.addWidget(self.__build_button)
         build_buttons_container.addWidget(self.__uniformly_build_button)
         
@@ -134,14 +157,19 @@ class TimeDistancePlotView:
         range_of_tdp_slider.valueChanged.connect(self.__controller.set_range_of_tdp_build)
         return range_of_tdp_slider
 
+    def __create_debug_build_button(self) -> QPushButton:
+        debug_build_button = QPushButton("Debug build")
+        debug_build_button.clicked.connect(self.__controller.debug_build_time_distance_plot)
+        return debug_build_button
+
     def __create_build_button(self) -> QPushButton:
         build_tdp_button = QPushButton("Build")
-        build_tdp_button.clicked.connect(self.__controller.update_time_distance_plot)
+        build_tdp_button.clicked.connect(self.__controller.build_time_distance_plot)
         return build_tdp_button
 
     def __create_uniformly_build_button(self) -> QPushButton:
         uniformly_build_tdp_button = QPushButton("Uniformly build")
-        uniformly_build_tdp_button.clicked.connect(self.__controller.update_time_distance_plot)
+        uniformly_build_tdp_button.clicked.connect(self.__controller.build_time_distance_plot)
         return uniformly_build_tdp_button
 
     def __show_this_view(self):

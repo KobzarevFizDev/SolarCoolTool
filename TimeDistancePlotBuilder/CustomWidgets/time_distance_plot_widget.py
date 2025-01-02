@@ -41,7 +41,5 @@ class TimeDistancePlotWidget(QWidget):
         p3 = QPoint(self.__finish_tdp_step_pos, 0)
         p4 = QPoint(self.__finish_tdp_step_pos, 500)
 
-        print(f'draw border {self.__start_tdp_step_pos} -> {self.__finish_tdp_step_pos}')
-
         painter.drawLine(p1.x(), p1.y(), p2.x(), p2.y())
         painter.drawLine(p3.x(), p3.y(), p4.x(), p4.y())

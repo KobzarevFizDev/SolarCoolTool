@@ -841,6 +841,14 @@ class TimeLine:
         self.__current_tdp_step: int = 0
 
     @property
+    def max_index_of_solar_frame_for_debug_tdp(self) -> int:
+        return 400
+
+    @property
+    def max_index_of_solar_frame(self) -> int:
+        return self.__solar_frames_storage.get_number_of_frames_in_current_channel()
+
+    @property
     def index_of_current_solar_frame(self) -> int:
         return self.__index_of_current_solar_frame
 
@@ -929,12 +937,26 @@ class TDP:
         self.__channel: int = -1
         
         self.__tdp_array: npt.NDArray = None
+        self.__is_builded: bool = False
+
+    @property
+    def is_builded(self) -> bool:
+        return self.__is_builded
 
     @property
     def width_of_tdp_step(self) -> int:
         return self.__width_of_tdp_step
+    
+    @property
+    def total_tdp_steps(self) -> int:
+        return self.__tdp_array.shape[1] // self.__width_of_tdp_step
+    
+    @property
+    def length_of_tdp_in_px(self) -> int:
+        return self.__tdp_array.shape[1]
 
     def build(self, cubedata: Cubedata, channel: int) -> None:
+        self.__is_builded = True
         self.__channel = channel
 
         number_of_slices: int = self.__get_number_of_slices()
@@ -948,6 +970,7 @@ class TDP:
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
 
     def build_test_tdp(self, number_of_frames: int) -> None:
+        self.__is_builded = True
         self.__channel = 131
 
         horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
@@ -1044,9 +1067,9 @@ class TDP:
         cm = get_cmap_by_channel(self.__channel)
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
         dpi_value = 100
-        tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
-        offset_from_start = current_tdp_step * self.__width_of_tdp_step
-        tdp = tdp[: ,offset_from_start: offset_from_start + horizontal_viewport_size_in_px]
+
+        tdp: npt.NDArray = self.__get_segment_of_tdp_for_viewport(current_tdp_step, vertical_size_in_px, horizontal_viewport_size_in_px)
+
         l = tdp.shape[1] / dpi_value
         h = tdp.shape[0] / dpi_value
         fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
@@ -1058,6 +1081,37 @@ class TDP:
         width, height = int(fig.figbbox.width), int(fig.figbbox.height)
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(im)
+    
+    def is_need_to_scroll_tdp(self, current_tdp_step: int, horizontal_viewport_size_in_px: int) -> None:
+        horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_px // self.__width_of_tdp_step
+        half_horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_tdp_steps // 2
+
+        start_need_to_scroll_step: int = half_horizontal_viewport_size_in_tdp_steps
+        finish_need_to_scroll_step: int = self.total_tdp_steps - half_horizontal_viewport_size_in_tdp_steps
+
+        return (start_need_to_scroll_step < current_tdp_step) and (current_tdp_step < finish_need_to_scroll_step)
+    
+    def __get_segment_of_tdp_for_viewport(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_viewport_size_in_px: int) -> npt.NDArray:
+        tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
+        offset_from_start_in_px = current_tdp_step * self.__width_of_tdp_step
+        horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_px // self.__width_of_tdp_step
+        half_horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_tdp_steps // 2
+
+        start_need_to_scroll_step: int = half_horizontal_viewport_size_in_tdp_steps
+        finish_need_to_scroll_step: int = self.total_tdp_steps - half_horizontal_viewport_size_in_tdp_steps
+
+        if self.is_need_to_scroll_tdp(current_tdp_step, horizontal_viewport_size_in_px):
+            tdp = tdp[: , offset_from_start_in_px: offset_from_start_in_px + horizontal_viewport_size_in_px]
+
+        # if (start_need_to_scroll_step > current_tdp_step):
+        #     tdp = tdp[: , 0:horizontal_viewport_size_in_px]
+        # elif (start_need_to_scroll_step < current_tdp_step) and (current_tdp_step < finish_need_to_scroll_step):
+        #     tdp = tdp[: , offset_from_start_in_px: offset_from_start_in_px + horizontal_viewport_size_in_px]
+        # elif current_tdp_step > finish_need_to_scroll_step:
+        #     tdp = tdp[: , self.length_of_tdp_in_px - horizontal_viewport_size_in_px : self.length_of_tdp_in_px]
+
+        return tdp
+
 
     # def convert_to_qpixmap(self, vertical_size_in_px: int = None, horizontal_size_in_px: int = None) -> QPixmap:
     #     cm = get_cmap_by_channel(self.__channel)
