@@ -977,7 +977,7 @@ class TDP:
         vertical_length_of_tdp: int = 500
         self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
 
-        width_of_black_line = 20
+        width_of_black_line = 200
 
         borders_indexes = [i * width_of_black_line for i in range(horizontal_length_of_tdp)]
 
@@ -1082,35 +1082,46 @@ class TDP:
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(im)
     
-    def is_need_to_scroll_tdp(self, current_tdp_step: int, horizontal_viewport_size_in_px: int) -> None:
-        horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_px // self.__width_of_tdp_step
-        half_horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_tdp_steps // 2
+    # todo: Ошибка: неточное положение 
+    def get_borders_of_tdp_steps(self, current_tdp_step: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> Tuple[int, int]:
+        visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
+        half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
+   
+        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+            start = current_tdp_step * self.width_of_tdp_step
+            finish = (current_tdp_step + 1) * self.width_of_tdp_step
+            return [start, finish]
 
-        start_need_to_scroll_step: int = half_horizontal_viewport_size_in_tdp_steps
-        finish_need_to_scroll_step: int = self.total_tdp_steps - half_horizontal_viewport_size_in_tdp_steps
+        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
+            start = horizontal_size_of_visible_tdp_segment_in_px // 2
+            finish = start + self.width_of_tdp_step
+            return [start, finish]
 
-        return (start_need_to_scroll_step < current_tdp_step) and (current_tdp_step < finish_need_to_scroll_step)
+        elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
+            steps_left_to_tdp_end = self.total_tdp_steps - current_tdp_step
+            start = horizontal_size_of_visible_tdp_segment_in_px - (steps_left_to_tdp_end - 1) * self.__width_of_tdp_step
+            finish = start + self.__width_of_tdp_step
+            return [start, finish]
+        
+        else:
+            raise Exception("get borders error")
+
     
-    def __get_segment_of_tdp_for_viewport(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_viewport_size_in_px: int) -> npt.NDArray:
+    ы# todo: Ошибка: неточное положение 
+    def __get_segment_of_tdp_for_viewport(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> npt.NDArray:
+        visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
+        half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
+
         tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
-        offset_from_start_in_px = current_tdp_step * self.__width_of_tdp_step
-        horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_px // self.__width_of_tdp_step
-        half_horizontal_viewport_size_in_tdp_steps = horizontal_viewport_size_in_tdp_steps // 2
 
-        start_need_to_scroll_step: int = half_horizontal_viewport_size_in_tdp_steps
-        finish_need_to_scroll_step: int = self.total_tdp_steps - half_horizontal_viewport_size_in_tdp_steps
-
-        if self.is_need_to_scroll_tdp(current_tdp_step, horizontal_viewport_size_in_px):
-            tdp = tdp[: , offset_from_start_in_px: offset_from_start_in_px + horizontal_viewport_size_in_px]
-
-        # if (start_need_to_scroll_step > current_tdp_step):
-        #     tdp = tdp[: , 0:horizontal_viewport_size_in_px]
-        # elif (start_need_to_scroll_step < current_tdp_step) and (current_tdp_step < finish_need_to_scroll_step):
-        #     tdp = tdp[: , offset_from_start_in_px: offset_from_start_in_px + horizontal_viewport_size_in_px]
-        # elif current_tdp_step > finish_need_to_scroll_step:
-        #     tdp = tdp[: , self.length_of_tdp_in_px - horizontal_viewport_size_in_px : self.length_of_tdp_in_px]
-
-        return tdp
+        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+            return tdp[ : ,0 : horizontal_size_of_visible_tdp_segment_in_px - 1]
+        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
+            offset_from_start_in_px = (current_tdp_step - half_visible_tdp_segment_in_steps) * self.__width_of_tdp_step
+            return tdp[ : ,offset_from_start_in_px : offset_from_start_in_px + horizontal_size_of_visible_tdp_segment_in_px - 1]
+        elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
+            return tdp [ : , self.length_of_tdp_in_px - horizontal_size_of_visible_tdp_segment_in_px : self.length_of_tdp_in_px - 1]
+         
 
 
     # def convert_to_qpixmap(self, vertical_size_in_px: int = None, horizontal_size_in_px: int = None) -> QPixmap:

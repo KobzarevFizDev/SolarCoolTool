@@ -63,22 +63,30 @@ class TimeDistancePlotView:
         self.__tdp_step_slider_label.setText(f'Step = {current_step}')
 
     def __highlight_tdp_step(self) -> None:
-        width_tdp_step: int = self.__model.time_distance_plot.width_of_tdp_step
         current_step: int = self.__model.time_line.tdp_step
-        is_need_to_scroll_tdp: bool = self.__model.time_distance_plot.is_need_to_scroll_tdp(current_step, horizontal_viewport_size_in_px=TIME_DISTANCE_PLOT_WIDGET_WIDTH)
-    
-        start_tdp_step_pos: int = -1
-        finish_tdp_step_pos: int = -1
-    
-        if is_need_to_scroll_tdp:
-            start_tdp_step_pos = TIME_DISTANCE_PLOT_WIDGET_WIDTH // 2 
-            finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
-        else:
-            start_tdp_step_pos = current_step * width_tdp_step
-            finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
-        
-        self.__time_distance_plot_widget.highlight_tdp_step(start_tdp_step_pos, finish_tdp_step_pos)
+        borders = self.__model.time_distance_plot.get_borders_of_tdp_steps(current_step, TIME_DISTANCE_PLOT_WIDGET_WIDTH)
+        start: int = borders[0]
+        finish: int = borders[1]
+
+        self.__time_distance_plot_widget.highlight_tdp_step(start, finish)
         self.__time_distance_plot_widget.update()
+
+        # width_tdp_step: int = self.__model.time_distance_plot.width_of_tdp_step
+        # current_step: int = self.__model.time_line.tdp_step
+        # is_need_to_scroll_tdp: bool = self.__model.time_distance_plot.is_need_to_scroll_tdp(current_step, horizontal_viewport_size_in_px=TIME_DISTANCE_PLOT_WIDGET_WIDTH)
+    
+        # start_tdp_step_pos: int = -1
+        # finish_tdp_step_pos: int = -1
+    
+        # if is_need_to_scroll_tdp:
+        #     start_tdp_step_pos = TIME_DISTANCE_PLOT_WIDGET_WIDTH // 2 
+        #     finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
+        # else:
+        #     start_tdp_step_pos = current_step * width_tdp_step
+        #     finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
+        
+        # self.__time_distance_plot_widget.highlight_tdp_step(start_tdp_step_pos, finish_tdp_step_pos)
+        # self.__time_distance_plot_widget.update()
 
     def __is_need_to_show_this_view(self) -> bool:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
