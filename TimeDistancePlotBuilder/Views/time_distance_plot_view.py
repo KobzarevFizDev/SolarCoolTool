@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Tuple
 import numpy.typing as npt
 
 from PyQt5.QtCore import Qt
@@ -34,6 +34,23 @@ class TimeDistancePlotView:
 
         self.model_is_changed()
 
+    
+    @property
+    def tdp_widget_vertical_size_in_px(self) -> int:
+        return 450
+
+    @property
+    def tdp_widget_horizontal_size_in_px(self) -> int:
+        return 570
+
+    @property
+    def tdp_widget_horizontal_size_in_steps(self) -> int:
+        return self.tdp_widget_horizontal_size_in_px // self.__model.time_distance_plot.width_of_tdp_step
+    
+    @property
+    def tdp_widget_vertical_size_in_steps(self) -> int:
+        return self.tdp_widget_vertical_size_in_px // self.__model.time_distance_plot.width_of_tdp_step
+
     def model_is_changed(self):
         if self.__is_need_to_show_this_view():
             self.__show_this_view()
@@ -45,10 +62,24 @@ class TimeDistancePlotView:
         if self.__model.time_distance_plot.is_builded: 
             self.__update_time_distance_plot()
             self.__highlight_tdp_step()
+            self.__update_time_ruler()
 
+
+    def __update_time_ruler(self) -> None: 
+        start_step, finish_step = self.__controller.get_borders_of_visible_tdp_segment_in_tdp_steps()
+        start_time_in_seconds: int = start_step * self.__model.time_distance_plot.time_step_in_seconds
+        finish_time_in_seconds: int = finish_step * self.__model.time_distance_plot.time_step_in_seconds
+        step_in_seconds: int = (finish_time_in_seconds - start_time_in_seconds) // 10
+
+        self.__tdp_time_ruler.set_values(start_time_in_seconds, finish_time_in_seconds, step_in_seconds)
+        self.__tdp_time_ruler.update()
+
+    # todo: Ненужно перерисовывать без необходимости
     def __update_time_distance_plot(self) -> None:
         current_tdp_step: int = self.__model.time_line.tdp_step
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
+        # pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=self.tdp_widget_vertical_size_in_px, horizontal_viewport_size_in_px=570)
+        start_border, finish_border = self.__controller.get_borders_of_visible_tdp_segment_in_tdp_steps()
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(start_border, finish_border, vertical_size_in_px=self.tdp_widget_vertical_size_in_px)
         self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
 
     def set_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
@@ -57,6 +88,7 @@ class TimeDistancePlotView:
 
     def set_ranges_of_tdp_slider(self, max_value: int) -> None:
         self.__tdp_step_slider.setRange(0, max_value)
+        self.__tdp_step_slider.value = 0
 
     def __set_title_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
@@ -64,29 +96,10 @@ class TimeDistancePlotView:
 
     def __highlight_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
-        borders = self.__model.time_distance_plot.get_borders_of_tdp_steps(current_step, TIME_DISTANCE_PLOT_WIDGET_WIDTH)
-        start: int = borders[0]
-        finish: int = borders[1]
+        start, finish = self.__controller.get_borders_of_tdp_step()
 
         self.__time_distance_plot_widget.highlight_tdp_step(start, finish)
         self.__time_distance_plot_widget.update()
-
-        # width_tdp_step: int = self.__model.time_distance_plot.width_of_tdp_step
-        # current_step: int = self.__model.time_line.tdp_step
-        # is_need_to_scroll_tdp: bool = self.__model.time_distance_plot.is_need_to_scroll_tdp(current_step, horizontal_viewport_size_in_px=TIME_DISTANCE_PLOT_WIDGET_WIDTH)
-    
-        # start_tdp_step_pos: int = -1
-        # finish_tdp_step_pos: int = -1
-    
-        # if is_need_to_scroll_tdp:
-        #     start_tdp_step_pos = TIME_DISTANCE_PLOT_WIDGET_WIDTH // 2 
-        #     finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
-        # else:
-        #     start_tdp_step_pos = current_step * width_tdp_step
-        #     finish_tdp_step_pos = start_tdp_step_pos + width_tdp_step
-        
-        # self.__time_distance_plot_widget.highlight_tdp_step(start_tdp_step_pos, finish_tdp_step_pos)
-        # self.__time_distance_plot_widget.update()
 
     def __is_need_to_show_this_view(self) -> bool:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
@@ -95,7 +108,7 @@ class TimeDistancePlotView:
         container = QHBoxLayout()
         self.__time_distance_along_loop_ruler = TdpRulerWidget.create_distance_along_loop_ruler(self.__parent_window)
         self.__time_distance_along_loop_ruler.set_values(start=0, finish=600, step=100)
-        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length=570, height=450)
+        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length_in_px=570, height_in_px=450)
         container.addWidget(self.__time_distance_along_loop_ruler, alignment=Qt.AlignTop)
         container.addWidget(self.__time_distance_plot_widget)
         self.__layout.addLayout(container)
@@ -111,13 +124,16 @@ class TimeDistancePlotView:
         container.addWidget(self.__tdp_step_slider)
         self.__layout.addLayout(container)
 
+
     def __create_time_ruler(self) -> None:
         container = QHBoxLayout()
         self.__tdp_time_ruler = TdpRulerWidget.create_time_ruler(self.__parent_window)  
         container.addStretch()
         container.addWidget(self.__tdp_time_ruler)
         self.__layout.addLayout(container)
-        self.__tdp_time_ruler.set_values(start=10, finish=60, step=10)
+
+        self.__tdp_time_ruler.set_values(start=0, finish=100, step=10)
+        self.__tdp_time_ruler.update()
 
     def __create_additional_widgets(self) -> None:
         build_buttons_container = QHBoxLayout()

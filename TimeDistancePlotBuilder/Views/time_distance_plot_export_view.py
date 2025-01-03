@@ -50,7 +50,7 @@ class TimeDistancePlotExportView:
         return self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
-        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length=500, height=600)
+        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length_in_px=500, height_in_px=600)
         self.__layout.addWidget(self.__time_distance_plot_widget)
 
     def __create_additional_widgets(self) -> None:

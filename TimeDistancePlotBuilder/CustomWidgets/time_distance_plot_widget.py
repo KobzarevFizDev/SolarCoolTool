@@ -5,13 +5,18 @@ from PyQt5.QtGui import QPixmap, QPalette, QColor, QPainter, QPen
 
 
 class TimeDistancePlotWidget(QWidget):
-    def __init__(self, parent, length: int, height: int):
+    def __init__(self, parent, length_in_px: int, height_in_px: int):
         super(TimeDistancePlotWidget, self).__init__()
         self.__start_tdp_step_pos = 10
         self.__finish_tdp_step_pos = 20
-        self.__pixmap = QPixmap(length, height)
+        self.__pixmap = QPixmap(length_in_px, height_in_px)
         self.__pixmap.fill(Qt.blue)
 
+        self.__length_in_px = length_in_px
+
+    @property
+    def horizontal_length_in_tdp_steps(self) -> int:
+        return self.__length_in_px
 
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         painter = QPainter()
@@ -21,7 +26,6 @@ class TimeDistancePlotWidget(QWidget):
         painter.end()
 
     def draw_time_distance_plot(self, pixmap_of_time_distance_plot: QPixmap):
-        #pixmap_of_time_distance_plot = pixmap_of_time_distance_plot.scaled(560, 560)
         self.__pixmap = pixmap_of_time_distance_plot
 
     def highlight_tdp_step(self, start_tdp_step_pos: int, finish_tdp_step_pos: int):

@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from typing import Tuple, List
 
 import os
 
@@ -42,10 +43,52 @@ class TimeDistancePlotController:
         number_of_frames = self.__model.time_line.max_index_of_solar_frame_for_debug_tdp
         self.__model.time_distance_plot.build_test_tdp(number_of_frames)
         current_tdp_step: int = self.__model.time_line.tdp_step
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
+        from_tdp_step, to_tdp_step = self.get_borders_of_visible_tdp_segment_in_tdp_steps()
+        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(from_tdp_step, to_tdp_step, vertical_size_in_px=450)
+        # pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
         self.__view.set_time_distance_plot_pixmap(pixmap)
         self.__view.set_ranges_of_tdp_slider(number_of_frames)
 
+
+    def get_borders_of_tdp_step(self) -> Tuple[int, int]:
+        current_tdp_step: int = self.__model.time_line.tdp_step
+        visible_tdp_segment_in_steps: int = self.__view.tdp_widget_horizontal_size_in_steps
+        half_visible_tdp_segment_in_steps: int = visible_tdp_segment_in_steps // 2
+        width_of_tdp_steps: int = self.__model.time_distance_plot.width_of_tdp_step
+        total_tdp_steps: int = self.__model.time_distance_plot.total_tdp_steps
+
+        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+            start = current_tdp_step * width_of_tdp_steps
+            finish = (current_tdp_step + 1) * width_of_tdp_steps
+            return [start, finish]
+
+        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < total_tdp_steps - half_visible_tdp_segment_in_steps):
+            start = self.__view.tdp_widget_horizontal_size_in_px // 2
+            finish = start + width_of_tdp_steps
+            return [start, finish]
+
+        else:
+            steps_left_to_tdp_end = total_tdp_steps - current_tdp_step
+            start = self.__view.tdp_widget_horizontal_size_in_px - (steps_left_to_tdp_end - 1) * width_of_tdp_steps
+            finish = start + width_of_tdp_steps
+            return [start, finish]
+
+    def get_borders_of_visible_tdp_segment_in_tdp_steps(self) -> Tuple[int, int]:
+        current_tdp_step: int = self.__model.time_line.tdp_step
+        visible_tdp_segment_in_steps: int = self.__view.tdp_widget_horizontal_size_in_steps
+        half_visible_tdp_segment_in_steps: int = visible_tdp_segment_in_steps // 2
+        total_tdp_steps = self.__model.time_distance_plot.total_tdp_steps 
+
+        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+            return (0, visible_tdp_segment_in_steps - 1)
+        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.__model.time_distance_plot.total_tdp_steps - half_visible_tdp_segment_in_steps):
+            offset_from_start_in_steps = (current_tdp_step - half_visible_tdp_segment_in_steps)
+            return (offset_from_start_in_steps, offset_from_start_in_steps + visible_tdp_segment_in_steps - 1)
+        else:
+            return (total_tdp_steps - visible_tdp_segment_in_steps, total_tdp_steps - 1)
+    
+
+    # todo: Легаси
     def export_time_distance_plot(self) -> None:
         path_to_dir_to_export_result = self.__create_dir_to_save_export_data()
         self.__export_time_distance_plot_as_png(path_to_dir_to_export_result)
@@ -91,27 +134,3 @@ class TimeDistancePlotController:
         with open(path_to_metadata_file, "w") as f:
             f.writelines(content_of_metadata_file)
 
-
-    def __create_time_distance_plot(self) -> None:
-        start_index: int = self.__model.time_line.start_frame_to_build_tdp
-        finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
-        bezier_mask = self.__model.bezier_mask
-        viewport_transform = self.__model.viewport_transform
-        cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
-        time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask, viewport_transform, cubedata)
-        channel: int = self.__model.current_channel.channel
-        pixmap = time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
-        self.__view.set_time_distance_plot_pixmap(pixmap)
-
-
-        # start_index: int = self.model.time_line.start_interval_of_time_distance_plot
-        # finish_index: int = self.model.time_line.finish_interval_of_time_distance_plot
-        # bezier_mask = self.model.bezier_mask
-        # viewport_transform = self.model.viewport_transform
-        # cubedata: Cubedata = self.model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
-        # self.__time_distance_plot: TimeDistancePlot = TimeDistancePlot.create_distance_plot_from_real_data(bezier_mask,
-        #                                                                                                    viewport_transform,
-        #                                                                                                    cubedata)
-        # channel: int = self.model.current_channel.channel
-        # pixmap = self.__time_distance_plot.get_time_distance_plot_as_qpixmap_using_cmap_of_channel(channel)
-        # self.view.update_time_distance_plot_pixmap(pixmap)

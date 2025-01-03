@@ -98,6 +98,10 @@ class Cubedata:
     @property
     def number_of_frames(self) -> int:
         return len(self.__frames)
+    
+    @property
+    def time_step_in_seconds(self) -> int:
+        return 12
 
     def get_frame(self, index: int) -> CubedataFrame:
         if index >= len(self.__frames):
@@ -416,7 +420,6 @@ class SolarFramesStorage:
         connection.close()
         return dates
 
-    # t = 0 <-> 1
     def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
         first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
         x_size = first_frame.pixels_array.shape[1]
@@ -954,8 +957,16 @@ class TDP:
     @property
     def length_of_tdp_in_px(self) -> int:
         return self.__tdp_array.shape[1]
+    
+    @property
+    def time_step_in_seconds(self) -> int:
+        if self.__is_builded == False:
+            return 12
+        else:
+            return self.__time_step
 
     def build(self, cubedata: Cubedata, channel: int) -> None:
+        self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
         self.__channel = channel
 
@@ -970,6 +981,7 @@ class TDP:
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
 
     def build_test_tdp(self, number_of_frames: int) -> None:
+        self.__time_step = 12
         self.__is_builded = True
         self.__channel = 131
 
@@ -1051,11 +1063,17 @@ class TDP:
 
         mean_value = total_sum / count
         return mean_value
-    
-    def __vertical_resize_tdp_array(self, new_vertical_size_in_px) -> npt.NDArray:
-        old_vertical_size = self.__tdp_array.shape[0]
+
+    def __vertical_resize_tdp_array(self, tdp_segment: npt.NDArray, new_vertical_size_in_px: float) -> npt.NDArray:
+        old_vertical_size = tdp_segment.shape[0]
         vertical_zoom = new_vertical_size_in_px / old_vertical_size
-        return zoom(self.__tdp_array, (vertical_zoom, 1), order=1)
+        return zoom(tdp_segment, (vertical_zoom, 1), order=1)
+
+
+    # def __vertical_resize_tdp_array(self, new_vertical_size_in_px) -> npt.NDArray:
+    #     old_vertical_size = self.__tdp_array.shape[0]
+    #     vertical_zoom = new_vertical_size_in_px / old_vertical_size
+    #     return zoom(self.__tdp_array, (vertical_zoom, 1), order=1)
 
     def save_as_png(self) -> None:
         pass
@@ -1063,12 +1081,13 @@ class TDP:
     def save_as_numpy_array(self) -> None:
         pass
 
-    def convert_to_qpixmap(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_viewport_size_in_px: int) -> QPixmap:
+    def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:
         cm = get_cmap_by_channel(self.__channel)
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
         dpi_value = 100
 
-        tdp: npt.NDArray = self.__get_segment_of_tdp_for_viewport(current_tdp_step, vertical_size_in_px, horizontal_viewport_size_in_px)
+        tdp: npt.NDArray = self.__tdp_array[ : , start_step * self.__width_of_tdp_step : (finish_step - 1) * self.__width_of_tdp_step]
+        tdp = self.__vertical_resize_tdp_array(tdp, vertical_size_in_px)
 
         l = tdp.shape[1] / dpi_value
         h = tdp.shape[0] / dpi_value
@@ -1081,46 +1100,65 @@ class TDP:
         width, height = int(fig.figbbox.width), int(fig.figbbox.height)
         im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
         return QPixmap.fromImage(im)
+
+    # def convert_to_qpixmap(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_viewport_size_in_px: int) -> QPixmap:
+    #     cm = get_cmap_by_channel(self.__channel)
+    #     sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+    #     dpi_value = 100
+
+    #     tdp: npt.NDArray = self.__get_segment_of_tdp_for_viewport(current_tdp_step, vertical_size_in_px, horizontal_viewport_size_in_px)
+
+    #     l = tdp.shape[1] / dpi_value
+    #     h = tdp.shape[0] / dpi_value
+    #     fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
+    #     canvas = FigureCanvas(fig)
+    #     axes = fig.add_subplot()
+    #     axes.set_axis_off()
+    #     axes.imshow(tdp.astype(np.float32), cmap=cm)
+    #     canvas.draw()
+    #     width, height = int(fig.figbbox.width), int(fig.figbbox.height)
+    #     im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+    #     return QPixmap.fromImage(im)
     
     # todo: Ошибка: неточное положение 
-    def get_borders_of_tdp_steps(self, current_tdp_step: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> Tuple[int, int]:
-        visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
-        half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
+    # def get_borders_of_tdp_steps(self, current_tdp_step: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> Tuple[int, int]:
+    #     visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
+    #     half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
    
-        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
-            start = current_tdp_step * self.width_of_tdp_step
-            finish = (current_tdp_step + 1) * self.width_of_tdp_step
-            return [start, finish]
+    #     if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+    #         start = current_tdp_step * self.width_of_tdp_step
+    #         finish = (current_tdp_step + 1) * self.width_of_tdp_step
+    #         return [start, finish]
 
-        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
-            start = horizontal_size_of_visible_tdp_segment_in_px // 2
-            finish = start + self.width_of_tdp_step
-            return [start, finish]
+    #     elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
+    #         start = horizontal_size_of_visible_tdp_segment_in_px // 2
+    #         finish = start + self.width_of_tdp_step
+    #         return [start, finish]
 
-        elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
-            steps_left_to_tdp_end = self.total_tdp_steps - current_tdp_step
-            start = horizontal_size_of_visible_tdp_segment_in_px - (steps_left_to_tdp_end - 1) * self.__width_of_tdp_step
-            finish = start + self.__width_of_tdp_step
-            return [start, finish]
+    #     elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
+    #         steps_left_to_tdp_end = self.total_tdp_steps - current_tdp_step
+    #         start = horizontal_size_of_visible_tdp_segment_in_px - (steps_left_to_tdp_end - 1) * self.__width_of_tdp_step
+    #         finish = start + self.__width_of_tdp_step
+    #         return [start, finish]
         
-        else:
-            raise Exception("get borders error")
+    #     else:
+    #         raise Exception("get borders error")
 
     
-    ы# todo: Ошибка: неточное положение 
-    def __get_segment_of_tdp_for_viewport(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> npt.NDArray:
-        visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
-        half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
+    # todo: Ошибка: неточное положение 
+    # def __get_segment_of_tdp_for_viewport(self, current_tdp_step: int, vertical_size_in_px: int, horizontal_size_of_visible_tdp_segment_in_px: int) -> npt.NDArray:
+    #     visible_tdp_segment_in_steps = horizontal_size_of_visible_tdp_segment_in_px // self.__width_of_tdp_step
+    #     half_visible_tdp_segment_in_steps = visible_tdp_segment_in_steps // 2
 
-        tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
+    #     tdp: npt.NDArray = self.__vertical_resize_tdp_array(vertical_size_in_px)
 
-        if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
-            return tdp[ : ,0 : horizontal_size_of_visible_tdp_segment_in_px - 1]
-        elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
-            offset_from_start_in_px = (current_tdp_step - half_visible_tdp_segment_in_steps) * self.__width_of_tdp_step
-            return tdp[ : ,offset_from_start_in_px : offset_from_start_in_px + horizontal_size_of_visible_tdp_segment_in_px - 1]
-        elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
-            return tdp [ : , self.length_of_tdp_in_px - horizontal_size_of_visible_tdp_segment_in_px : self.length_of_tdp_in_px - 1]
+    #     if (0 <= current_tdp_step) and (current_tdp_step < half_visible_tdp_segment_in_steps):
+    #         return tdp[ : ,0 : horizontal_size_of_visible_tdp_segment_in_px - 1]
+    #     elif (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.total_tdp_steps - half_visible_tdp_segment_in_steps):
+    #         offset_from_start_in_px = (current_tdp_step - half_visible_tdp_segment_in_steps) * self.__width_of_tdp_step
+    #         return tdp[ : ,offset_from_start_in_px : offset_from_start_in_px + horizontal_size_of_visible_tdp_segment_in_px - 1]
+    #     elif (self.total_tdp_steps - half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step <= self.total_tdp_steps):
+    #         return tdp [ : , self.length_of_tdp_in_px - horizontal_size_of_visible_tdp_segment_in_px : self.length_of_tdp_in_px - 1]
          
 
 
