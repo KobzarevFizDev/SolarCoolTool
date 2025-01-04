@@ -34,7 +34,6 @@ class TimeDistancePlotView:
 
         self.model_is_changed()
 
-    
     @property
     def tdp_widget_vertical_size_in_px(self) -> int:
         return 450
@@ -59,10 +58,14 @@ class TimeDistancePlotView:
 
         self.__set_title_of_current_tdp_step()
 
+    # todo: Ненужно перерисовывать без необходимости
+
         if self.__model.time_distance_plot.is_builded: 
-            self.__update_time_distance_plot()
+            self.__update_pixmap_of_tdp()
             self.__highlight_tdp_step()
             self.__update_time_ruler()
+            self.__update_time_distance_along_loop_ruler()
+            self.__set_ranges_of_tdp_step_slider()
 
 
     def __update_time_ruler(self) -> None: 
@@ -74,28 +77,31 @@ class TimeDistancePlotView:
         self.__tdp_time_ruler.set_values(start_time_in_seconds, finish_time_in_seconds, step_in_seconds)
         self.__tdp_time_ruler.update()
 
-    # todo: Ненужно перерисовывать без необходимости
-    def __update_time_distance_plot(self) -> None:
-        current_tdp_step: int = self.__model.time_line.tdp_step
-        # pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=self.tdp_widget_vertical_size_in_px, horizontal_viewport_size_in_px=570)
+    def __update_time_distance_along_loop_ruler(self) -> None:
+        length_of_loop_in_px: float = self.__model.bezier_mask.length_in_pixels
+        length_of_loop_in_megameters: float = length_of_loop_in_px * self.__model.viewport_transform.dpi_of_bezier_mask_window
+        
+        finish_rule = int(length_of_loop_in_megameters)
+        rule_step = finish_rule // 4
+        self.__time_distance_along_loop_ruler.set_values(start=0, finish=finish_rule, step=rule_step)
+        self.__time_distance_along_loop_ruler.update()
+
+    def __update_pixmap_of_tdp(self) -> None:
         start_border, finish_border = self.__controller.get_borders_of_visible_tdp_segment_in_tdp_steps()
         pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(start_border, finish_border, vertical_size_in_px=self.tdp_widget_vertical_size_in_px)
         self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
-
-    def set_time_distance_plot_pixmap(self, pixmap: QPixmap) -> None:
-        self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
         self.__time_distance_plot_widget.update()
 
-    def set_ranges_of_tdp_slider(self, max_value: int) -> None:
-        self.__tdp_step_slider.setRange(0, max_value)
+    def __set_ranges_of_tdp_step_slider(self) -> None:
+        numbers_of_step: int = self.__model.time_distance_plot.total_tdp_steps
         self.__tdp_step_slider.value = 0
+        self.__tdp_step_slider.setRange(0, numbers_of_step)
 
     def __set_title_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
         self.__tdp_step_slider_label.setText(f'Step = {current_step}')
 
     def __highlight_tdp_step(self) -> None:
-        current_step: int = self.__model.time_line.tdp_step
         start, finish = self.__controller.get_borders_of_tdp_step()
 
         self.__time_distance_plot_widget.highlight_tdp_step(start, finish)
@@ -108,7 +114,7 @@ class TimeDistancePlotView:
         container = QHBoxLayout()
         self.__time_distance_along_loop_ruler = TdpRulerWidget.create_distance_along_loop_ruler(self.__parent_window)
         self.__time_distance_along_loop_ruler.set_values(start=0, finish=600, step=100)
-        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length_in_px=570, height_in_px=450)
+        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length_in_px=self.tdp_widget_horizontal_size_in_px, height_in_px=self.tdp_widget_vertical_size_in_px)
         container.addWidget(self.__time_distance_along_loop_ruler, alignment=Qt.AlignTop)
         container.addWidget(self.__time_distance_plot_widget)
         self.__layout.addLayout(container)
@@ -123,7 +129,6 @@ class TimeDistancePlotView:
         container.addWidget(self.__tdp_step_slider_label)
         container.addWidget(self.__tdp_step_slider)
         self.__layout.addLayout(container)
-
 
     def __create_time_ruler(self) -> None:
         container = QHBoxLayout()

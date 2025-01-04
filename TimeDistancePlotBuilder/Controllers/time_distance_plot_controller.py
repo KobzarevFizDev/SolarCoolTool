@@ -33,22 +33,13 @@ class TimeDistancePlotController:
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
-        self.__model.time_distance_plot.build_test_tdp(300)
-        # self.__model.time_distance_plot.build(cubedata, channel)
-        current_tdp_step: int = self.__model.time_line.tdp_step
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
-        self.__view.set_time_distance_plot_pixmap(pixmap)
+        self.__model.time_distance_plot.build(cubedata, channel)
+        self.__model.notify_observers()
 
     def debug_build_time_distance_plot(self) -> None:
         number_of_frames = self.__model.time_line.max_index_of_solar_frame_for_debug_tdp
         self.__model.time_distance_plot.build_test_tdp(number_of_frames)
-        current_tdp_step: int = self.__model.time_line.tdp_step
-        from_tdp_step, to_tdp_step = self.get_borders_of_visible_tdp_segment_in_tdp_steps()
-        pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(from_tdp_step, to_tdp_step, vertical_size_in_px=450)
-        # pixmap: QPixmap = self.__model.time_distance_plot.convert_to_qpixmap(current_tdp_step, vertical_size_in_px=450, horizontal_viewport_size_in_px=570)
-        self.__view.set_time_distance_plot_pixmap(pixmap)
-        self.__view.set_ranges_of_tdp_slider(number_of_frames)
-
+        self.__model.notify_observers()
 
     def get_borders_of_tdp_step(self) -> Tuple[int, int]:
         current_tdp_step: int = self.__model.time_line.tdp_step
