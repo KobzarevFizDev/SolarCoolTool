@@ -23,29 +23,20 @@ from TimeDistancePlotBuilder.Popups.loading_popup import LoadingPopup
 class TimeDistancePlotBuilder(QMainWindow):
     def __init__(self, path_to_configuration: str):
         super().__init__()
+
+        self.__controllers_was_created: bool = False
+
         self.setWindowTitle("TimeDistancePlotBuilder")
         self.setGeometry(200, 200, 1200, 600)
 
         self.layout = QGridLayout()
 
         configuration: ConfigurationApp = ConfigurationApp(path_to_configuration)
+        self.__app_model = AppModel(configuration)
 
-        popup = LoadingPopup(self)
-        popup.show()
+        self.__loading_popup = LoadingPopup(self)
 
-        self.thread1 = QThread()
-        self.worker = NewSolarFramesStorage()
-        self.worker.moveToThread(self.thread1)
-
-        self.worker.progress.connect(popup.update_progress)
-        self.thread1.started.connect(self.worker.process)
-        self.worker.finished.connect(self.thread1.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread1.finished.connect(self.thread1.deleteLater)
-
-
-        self.thread1.start()
-
+        self.__load_solar_frames_for_current_channel()
 
 
         # self.__app_model = AppModel(configuration)
@@ -59,9 +50,47 @@ class TimeDistancePlotBuilder(QMainWindow):
         # self.__time_line_controller = TimeLineController(self.__app_model, self)
         # self.__channel_switch_controller = ChannelSwitchController(self.__app_model, self)
 
-        # centralWidget = QWidget()
-        # centralWidget.setLayout(self.layout)
-        # self.setCentralWidget(centralWidget)
+        centralWidget = QWidget()
+        centralWidget.setLayout(self.layout)
+        self.setCentralWidget(centralWidget)
+
+
+    def __load_solar_frames_for_current_channel(self) -> None:
+        current_channel: int = self.__app_model.current_channel.channel
+
+        self.__loading_popup.show()
+        self.__thread_load_frames = QThread()
+        self.__worker = self.__app_model.solar_frames_storage
+        self.__worker.moveToThread(self.__thread_load_frames)
+
+        self.__worker.progress.connect(self.__loading_popup.update_progress)
+        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
+        self.__worker.finished.connect(self.__thread_load_frames.quit)
+        self.__worker.finished.connect(self.__worker.deleteLater)
+        self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
+        self.__thread_load_frames.finished.connect(self.__create_controllers_if_necessary)
+        self.__thread_load_frames.finished.connect(self.__on_loaded_solar_frames)
+
+        self.__thread_load_frames.start()
+
+    def __create_controllers_if_necessary(self) -> None:
+        if self.__controllers_was_created == True:
+            return
+
+        self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
+        self.__time_distance_plot_debug_controller = TimeDistancePlotExportController(self.__app_model, self)
+        self.__progress_controller = SelectBezierSegmentsController(self.__app_model, self)
+        self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
+        self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
+        self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
+        self.__time_line_controller = TimeLineController(self.__app_model, self)
+        self.__channel_switch_controller = ChannelSwitchController(self.__app_model, self)
+        self.__controllers_was_created = True
+
+    def __on_loaded_solar_frames(self) -> None:
+        self.show()
+        self.__loading_popup.close()
+        pass
 
     def keyPressEvent(self, event):
         event.accept()
@@ -74,7 +103,6 @@ def main():
         path_to_configuration: str = sys.argv[1]
         app = QApplication(sys.argv)
         ex = TimeDistancePlotBuilder(path_to_configuration)
-        # ex.show()
         sys.exit(app.exec_())
 
 if __name__ == "__main__":

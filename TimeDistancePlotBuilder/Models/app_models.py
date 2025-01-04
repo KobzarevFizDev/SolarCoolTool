@@ -17,6 +17,7 @@ from matplotlib.figure import Figure, SubplotParams
 
 import numpy as np
 from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QCoreApplication
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -278,22 +279,179 @@ class SolarFrame:
         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
         return im
 
+
 class NewSolarFramesStorage(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int, str)
     error = pyqtSignal(str)
 
+    def __init__(self, viewport_transform: 'ViewportTransform', configuration_app: 'ConfigurationApp'):
+        super().__init__()
+        self.__viewport_transform = viewport_transform
+        self.__configuration_app = configuration_app
+        self.__current_channel: int = configuration_app.initial_channel
+        self.__path_to_directory: str = configuration_app.path_to_solar_images
+        self.__loaded_channel: List[SolarFrame] = list()
+        self.__initialize_database()
+
+    def __initialize_database(self) -> None:
+        files = self.__get_files_in_directory()
+        channels = self.__get_channels(files)
+        dates = self.__get_dates_of_this_files(files)
+
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        cursor.execute("DROP TABLE IF EXISTS Images")
+        cursor.execute("""
+        CREATE TABLE Images(
+        Id INTEGER PRIMARY KEY,
+        Path TEXT NOT NULL,
+        Channel INTEGER NOT NULL,
+        Date TEXT NOT NULL
+        )
+        """)
+        for i, file in enumerate(files):
+            insert_command = "INSERT INTO Images (Id, Path, Channel, Date) VALUES (?,?,?,?)"
+            insert_data = (i, file, channels[i], dates[i])
+            cursor.execute(insert_command, insert_data)
+        connection.commit()
+        connection.close()
+
+    def __get_files_in_directory(self) -> List[str]:
+        files_in_directory = []
+        for root, dirs, files in os.walk(self.__path_to_directory):
+            for file in files:
+                files_in_directory.append(os.path.join(root, file))
+        files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
+        return files_in_directory
+
+    def __get_channels(self, files) -> List[int]:
+        return [f.split('.')[3] for f in files]
+
+    def __get_dates_of_this_files(self, files) -> List[str]:
+        return [f.split('.')[2][0:10] for f in files]
+
     @pyqtSlot()
-    def process(self):
-        for i in range(100):
-            time.sleep(0.6)
-            name_of_loaded_file: str = self.__get_name_of_loaded_file(i)
-            self.progress.emit(i, name_of_loaded_file)
+    def load_channel(self, channel: int):
+        step = self.__configuration_app.get_step_for_channel(channel)
+        limit = self.__configuration_app.get_limit_for_channel(channel)
+        need_to_skip = step - 1
+        cached_frames = 0
+
+        self.__current_channel = channel
+        self.__loaded_channel.clear()
+
+        files = self.__get_files_in_channel(channel)
+        ids = self.__get_ids_of_frames_in_channel(channel)
+        dates = self.__get_dates_of_files_in_channel(channel)
+
+        for i, path in enumerate(files):
+            if cached_frames > limit:
+                print("Acheve limit")
+                break
+            print(f"caching {cached_frames}/{len(files)}. i = {i}")
+
+            if need_to_skip > 0:
+                print(f"skip {i}")
+                need_to_skip -= 1
+                continue
+
+            cached_frames += 1
+            id = ids[i]
+            date = dates[i]
+            solar_frame = SolarFrame(id, path, channel, date)
+            solar_frame.set_viewport_transform(self.__viewport_transform)
+
+            self.__loaded_channel.append(solar_frame)
+
+            need_to_skip = step - 1
+
+            self.progress.emit(i, "loaded")
+            QCoreApplication.processEvents()
 
         self.finished.emit()
 
+        # for i in range(100):
+        #     time.sleep(0.05)
+        #     name_of_loaded_file: str = self.__get_name_of_loaded_file(i)
+        #     self.progress.emit(i, name_of_loaded_file)
+
+        # self.finished.emit()
+
     def __get_name_of_loaded_file(self, i: int) -> str:
         return f"./SolarFrames/A131/Frame_{i}.FITS"
+    
+    def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
+        res = self.__loaded_channel[index]
+        return res
+
+    def get_number_of_frames_in_current_channel(self) -> int:
+        return len(self.__loaded_channel)
+
+    def __get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
+        connection = sqlite3.connect("my_database.db")
+        cursor = connection.cursor()
+        command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)
+        number_of_images = int(cursor.execute(command).fetchall()[0][0])
+        connection.close()
+        return number_of_images
+    
+    def is_exist_solar_frames_in_channel(self, channel: int) -> bool:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        frames = cursor.execute(command).fetchall()
+        connection.close()
+        return len(frames) > 0
+    
+    def is_exist_solar_frames_in_current_channel(self) -> bool:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(self.__current_channel)
+        frames = cursor.execute(command).fetchall()
+        connection.close()
+        return len(frames) > 0
+
+    def __get_ids_of_frames_in_channel(self, channel: int) -> List[int]:
+        connection = sqlite3.connect("my_database.db")
+        cursor = connection.cursor()
+        command = "SELECT Id FROM Images WHERE Channel = {0}".format(channel)
+        ids = cursor.execute(command).fetchall()
+        ids = [ids[i][0] for i in range(len(ids))]
+        connection.close()
+        return ids
+
+    def __get_files_in_channel(self, channel: int) -> List[str]:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Path FROM Images WHERE Channel = {0}".format(channel)
+        paths_to_files = cursor.execute(command).fetchall()
+        paths_to_files = [paths_to_files[i][0] for i in range(len(paths_to_files))]
+        connection.close()
+        return paths_to_files
+
+    def __get_dates_of_files_in_channel(self, channel: int) -> List[str]:
+        connection = sqlite3.connect('my_database.db')
+        cursor = connection.cursor()
+        command = "SELECT Date FROM Images WHERE Channel = {0}".format(channel)
+        dates = cursor.execute(command).fetchall()
+        dates = [dates[i][0] for i in range(len(dates))]
+        connection.close()
+        return dates
+
+    def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
+        first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
+        x_size = first_frame.pixels_array.shape[1]
+        y_size = first_frame.pixels_array.shape[0]
+        cubedata = Cubedata(x_size, y_size)
+        for index in range(start_index, finish_index):
+            solar_frame: SolarFrame = self.get_solar_frame_by_index_from_current_channel(index)
+            content = solar_frame.pixels_array
+            frame = CubedataFrame(content)
+            cubedata.add_frame(frame)
+        return cubedata
+    
+
 
 # todo: Валидацию на корректное значение channel
 class SolarFramesStorage:
@@ -303,8 +461,8 @@ class SolarFramesStorage:
         self.__current_channel: int = configuration_app.initial_channel
         self.__path_to_directory: str = configuration_app.path_to_solar_images
         self.__loaded_channel: List[SolarFrame] = list()
-        self.__initialize_database()
-        self.cache_channel(configuration_app.initial_channel)
+        # self.__initialize_database()
+        # self.cache_channel(configuration_app.initial_channel)
 
     def __initialize_database(self) -> None:
         files = self.__get_files_in_directory()
@@ -378,6 +536,7 @@ class SolarFramesStorage:
             self.__loaded_channel.append(solar_frame)
 
             need_to_skip = step - 1
+            
 
     # todo: Валидация параметров
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
@@ -886,8 +1045,8 @@ class TimeLine:
     @index_of_current_solar_frame.setter
     def index_of_current_solar_frame(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
-        if new_index >= number_of_solar_frames_in_current_channel:
-            raise Exception(f"Index of current solar frame cannot be >= number of solar frames in current channel. Index = {new_index}")
+        # if new_index >= number_of_solar_frames_in_current_channel:
+        #     raise Exception(f"Index of current solar frame cannot be >= number of solar frames in current channel. Index = {new_index}")
 
         self.__index_of_current_solar_frame = new_index
 
@@ -898,8 +1057,8 @@ class TimeLine:
     @start_frame_to_build_tdp.setter
     def start_frame_to_build_tdp(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
-        if new_index >= number_of_solar_frames_in_current_channel:
-            raise Exception(f"Index of start interval time distance plot cannot be >= number of solar frames in current channel. Index = {new_index}")
+        # if new_index >= number_of_solar_frames_in_current_channel:
+        #     raise Exception(f"Index of start interval time distance plot cannot be >= number of solar frames in current channel. Index = {new_index}")
 
         self.__start_frame_to_build_tdp = new_index
 
@@ -910,8 +1069,8 @@ class TimeLine:
     @finish_interval_of_time_distance_plot.setter
     def finish_interval_of_time_distance_plot(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
-        if new_index >= number_of_solar_frames_in_current_channel:
-            raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
+        # if new_index >= number_of_solar_frames_in_current_channel:
+        #     raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
 
         self.__finish_frame_to_build_tdp = new_index
 
@@ -1348,9 +1507,10 @@ class AppModel:
         self.__path_to_export_result = configuration_app.path_to_export_results
         self.__zone_interesting = ZoneInteresting()
         self.__viewport_transform = ViewportTransform(self.__zone_interesting)
-        self.__solar_frames_storage = SolarFramesStorage(self.__viewport_transform, configuration_app)
-        self.__time_line = TimeLine(self.__solar_frames_storage)
-        self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
+        self.__new_solar_frames_storage = NewSolarFramesStorage(self.__viewport_transform, configuration_app)
+        # self.__solar_frames_storage = SolarFramesStorage(self.__viewport_transform, configuration_app)
+        self.__time_line = TimeLine(self.__new_solar_frames_storage)
+        self.__current_channel = CurrentChannel(self.__new_solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__app_state = CurrentAppState()
@@ -1363,9 +1523,13 @@ class AppModel:
     def path_to_export_result(self) -> str:
         return self.__path_to_export_result
 
+    # @property
+    # def solar_frames_storage(self) -> SolarFramesStorage:
+    #     return self.__solar_frames_storage
+    
     @property
-    def solar_frames_storage(self) -> SolarFramesStorage:
-        return self.__solar_frames_storage
+    def solar_frames_storage(self) -> NewSolarFramesStorage:
+        return self.__new_solar_frames_storage
 
     @property
     def viewport_transform(self) -> ViewportTransform:

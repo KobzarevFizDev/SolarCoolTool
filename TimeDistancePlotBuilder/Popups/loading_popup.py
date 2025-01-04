@@ -8,7 +8,6 @@ class LoadingPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("TimeDistancePlotBuilder")
-        # self.setFixedSize(300, 120)
         self.setModal(True)
 
         current_dir = os.path.dirname(os.path.abspath(__file__))  # Текущая папка
@@ -31,10 +30,6 @@ class LoadingPopup(QDialog):
         self.loaded_files.setFixedHeight(300)
         horizontal_container.addWidget(self.logo_image)
         horizontal_container.addWidget(self.loaded_files) 
-
-
-        # layout.addWidget(self.label)
-
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setRange(0, 100)
