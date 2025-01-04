@@ -35,7 +35,9 @@ class LoadingPopup(QDialog):
         self.progress_bar.setRange(0, 100)
         layout.addWidget(self.progress_bar)
 
-    def update_progress(self, progress: int, loaded_file: str):
-        self.progress_bar.setValue(progress)
+    def update_progress(self, current_loaded_file: int, limit_of_load_files: int, loaded_file: str):
         self.loaded_files.append(loaded_file)
-        print(f"LoadingPopup::update_progress({progress, loaded_file})")
+        progress = int(float(current_loaded_file) / limit_of_load_files * 100)
+        self.progress_bar.setValue(progress)
+        
+        # print(f"LoadingPopup::update_progress({current_loaded_file, loaded_file})")

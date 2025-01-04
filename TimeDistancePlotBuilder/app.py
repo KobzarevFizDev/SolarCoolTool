@@ -13,7 +13,7 @@ from TimeDistancePlotBuilder.Controllers.bezier_mask_controller import BezierMas
 from TimeDistancePlotBuilder.Controllers.select_bezier_segments_controller import SelectBezierSegmentsController
 from TimeDistancePlotBuilder.Controllers.selected_preview_mode_controller import SelectedPreviewModeController
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel, NewSolarFramesStorage
+from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFramesStorage
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
@@ -37,18 +37,6 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.__loading_popup = LoadingPopup(self)
 
         self.__load_solar_frames_for_current_channel()
-
-
-        # self.__app_model = AppModel(configuration)
-
-        # self.__time_distance_controller = TimeDistancePlotController(self.__app_model, self)
-        # self.__time_distance_plot_debug_controller = TimeDistancePlotExportController(self.__app_model, self)
-        # self.__progress_controller = SelectBezierSegmentsController(self.__app_model, self)
-        # self.__selected_preview_mode_controller = SelectedPreviewModeController(self.__app_model, self)
-        # self.__bezier_mask_controller = BezierMaskController(self.__app_model, self)
-        # self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
-        # self.__time_line_controller = TimeLineController(self.__app_model, self)
-        # self.__channel_switch_controller = ChannelSwitchController(self.__app_model, self)
 
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
@@ -85,6 +73,7 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.__solar_viewer_controller = SolarViewportController(self.__app_model, self)
         self.__time_line_controller = TimeLineController(self.__app_model, self)
         self.__channel_switch_controller = ChannelSwitchController(self.__app_model, self)
+        
         self.__controllers_was_created = True
 
     def __on_loaded_solar_frames(self) -> None:
