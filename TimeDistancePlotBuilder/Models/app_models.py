@@ -906,6 +906,12 @@ class TimeLine:
         i = self.__index_of_current_solar_frame
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
+    
+    @property
+    def solar_frame_by_current_tdp_step(self) -> SolarFrame:
+        i = self.__current_tdp_step
+        return (self.__solar_frames_storage
+                .get_solar_frame_by_index_from_current_channel(i))
 
     @property
     def tdp_step(self) -> int:

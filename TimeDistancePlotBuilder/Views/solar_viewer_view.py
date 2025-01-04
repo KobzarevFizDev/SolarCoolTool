@@ -37,6 +37,7 @@ class SolarViewportView:
     def move(self, x, y):
         self.controller.move_solar_image(QPoint(x, y))
 
+    # todo: Убрать лишние обработчики, обращаться сразу к контроллеру
     def on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
         self.controller.set_position_of_zone_interesting_position_anchor(pos_x, pos_y)
 
