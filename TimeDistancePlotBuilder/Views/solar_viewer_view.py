@@ -37,6 +37,7 @@ class SolarViewportView:
     def move(self, x, y):
         self.controller.move_solar_image(QPoint(x, y))
 
+    # todo: Убрать лишние обработчики, обращаться сразу к контроллеру
     def on_changed_position_of_zone_interesting_position_anchor(self, pos_x: int, pos_y: int) -> None:
         self.controller.set_position_of_zone_interesting_position_anchor(pos_x, pos_y)
 
@@ -66,4 +67,3 @@ class SolarViewportView:
         self.widget.update_position_of_zone_interesting_size_anchor(self.model.zone_interesting.top_left_in_view)
         self.widget.set_solar_frame_to_draw(pixmap_of_solar_to_show, offset)
         self.widget.update_widget()
-

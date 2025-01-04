@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QLabel, QWidget,  QGraphicsScene, QGraphicsView, QPushButton
@@ -100,11 +100,23 @@ class BezierMaskWidget(QWidget):
         self.__clear_current_mask()
         self.__update_position_points_widgets(spline.bezier_curve)
 
+        # self.__draw_sections(spline)
+
         for i in range(spline.number_of_segments):
             is_selected: bool = app_model.selected_bezier_segments.status_of_segment(i)
             self.__draw_bezier_segment(spline, i, is_selected)
 
         self.__draw_control_lines(spline.bezier_curve)
+
+    def __draw_sections(self, spline: BezierMask): 
+        sections: List[Tuple[QPoint, QPoint]] = spline.get_slices(15,is_uniformly=True)
+        pen = QPen(Qt.red, 2.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)  
+        for section in sections:
+            bp: QPoint = section[0]
+            tp: QPoint = section[1]
+            line = self.scene.addLine(bp.x(), bp.y(), tp.x(), tp.y(), pen)
+            self.__temps_objects_on_scene.append(line)
+
 
     def __draw_bezier_segment(self, bezier_mask: BezierMask, index: int, is_selected: bool) -> None:
         is_first = index == 0

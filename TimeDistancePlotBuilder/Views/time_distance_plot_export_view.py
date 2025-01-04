@@ -39,7 +39,7 @@ class TimeDistancePlotExportView:
         self.__time_distance_plot_widget.update()
 
     def update_time_distance_plot_current_segment(self, start_border: int, finish_border: int) -> None:
-        self.__time_distance_plot_widget.draw_borders(start_border, finish_border)
+        self.__time_distance_plot_widget.highlight_tdp_step(start_border, finish_border)
         self.__time_distance_plot_widget.update()
 
     def __update_t_value(self) -> None:
@@ -50,7 +50,7 @@ class TimeDistancePlotExportView:
         return self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
 
     def __create_time_distance_plot_widget(self) -> None:
-        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window)
+        self.__time_distance_plot_widget = TimeDistancePlotWidget(self.__parent_window, length_in_px=500, height_in_px=600)
         self.__layout.addWidget(self.__time_distance_plot_widget)
 
     def __create_additional_widgets(self) -> None:

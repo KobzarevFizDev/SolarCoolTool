@@ -1,19 +1,21 @@
 import math
 import os
 import sqlite3
-from typing import List
+from typing import List, Tuple
 from enum import IntEnum, unique
 
 from matplotlib import pyplot as plt
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
+from scipy.integrate import quad
+from scipy.optimize import minimize_scalar
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
 
 import numpy as np
-from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtCore import QPoint, QPointF, QRect
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -58,7 +60,7 @@ class CubedataFrame:
 
 
     @property
-    def frame_content(self) -> npt.NDArray:
+    def content(self) -> npt.NDArray:
         return self.__frame_content
 
     @property
@@ -96,6 +98,10 @@ class Cubedata:
     @property
     def number_of_frames(self) -> int:
         return len(self.__frames)
+    
+    @property
+    def time_step_in_seconds(self) -> int:
+        return 12
 
     def get_frame(self, index: int) -> CubedataFrame:
         if index >= len(self.__frames):
@@ -149,7 +155,7 @@ class TestAnimatedFrame:
         return frame
 
     def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
-        frame_content = self.get_frame_by_t(t).frame_content
+        frame_content = self.get_frame_by_t(t).content
         frame_content = frame_content.astype(np.uint8)
         qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
         return QPixmap.fromImage(qimage)
@@ -414,7 +420,6 @@ class SolarFramesStorage:
         connection.close()
         return dates
 
-    # t = 0 <-> 1
     def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
         first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
         x_size = first_frame.pixels_array.shape[1]
@@ -443,7 +448,7 @@ class BezierCurve:
     def points(self) -> List[QPoint]:
         return [self.__p0, self.__p1, self.__p2, self.__p3]
 
-    def point_at_t(self, t) -> QPoint:
+    def point_at_t(self, t: float) -> QPoint:
         A = (1-t)**3 * self.__p0
         B = 3 * (1-t)**2 * t * self.__p1
         C = 3 * (1-t)*t**2 * self.__p2
@@ -451,17 +456,47 @@ class BezierCurve:
 
         return A + B + C + D
 
-    def tangent_at_t(self, t) -> QPoint:
+    # todo: удалить, оставить только функции которые возвращают нормализованные значения
+    def tangent_at_t(self, t: float) -> QPoint:
         A = 3 * (1-t)**2 * (self.__p1 - self.__p0)
         B = 6 * (1 - t) * t * (self.__p2 - self.__p1)
         C = 3 * t**2 * (self.__p3 - self.__p2)
         return A + B + C
+    
+    def get_normalized_tangent_at_t(self, t: float) -> QPoint:
+        tangent: QPoint = self.tangent_at_t(t)
+        norm: float = math.sqrt(tangent.x() ** 2 + tangent.y() ** 2)
+        return QPoint(tangent.x() / norm, tangent.y() / norm)
 
-    def normal_at_t(self, t) -> QPoint:
+    def normal_at_t(self, t: float) -> QPoint:
         tangent = self.tangent_at_t(t)
         return QPoint(tangent.y(), -tangent.x())
+    
+    def get_normalized_normal_at_t(self, t: float) -> QPointF:
+        normal: QPoint = self.normal_at_t(t)
+        norm = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
+        return QPointF(normal.x() / norm, normal.y() / norm)
+    
+    def arc_length(self, t: float) -> float:
+        integrand = lambda t: (tangent := self.tangent_at_t(t)) and np.linalg.norm([tangent.x(), tangent.y()])
+        length, _ = quad(integrand, 0, t)
+        return length 
+    
+    def find_t_for_equal_distances(self, number_of_points: int) -> List[float]:
+        total_length: float = self.arc_length(1)
+        segment_length: float = total_length / (number_of_points - 1)
+        t_values = [0]
 
-# todo: Написать тесты для проверки границ маски
+        for i in range(1, number_of_points - 1):
+            target_length: float = i * segment_length
+            func = lambda t: abs(self.arc_length(t) - target_length)
+            print('start')
+            result = minimize_scalar(func, bounds=(0, 1), method="bounded", tol=1e-2)
+            print('finish')
+            t_values.append(result.x)
+
+        t_values.append(1)
+        return t_values
 
 class BezierMask:
     def __init__(self,
@@ -486,6 +521,10 @@ class BezierMask:
     @property
     def number_of_segments(self) -> int:
         return self.__number_of_segments
+    
+    @property
+    def length_in_pixels(self) -> float:
+        return self.__bezier_curve.arc_length(1)
 
     def __create_initial_bezier_curve(self) -> BezierCurve:
         bezier_curve = BezierCurve(QPoint(100, 100),
@@ -515,6 +554,23 @@ class BezierMask:
             border_point = self.__bezier_curve.point_at_t(t)
             border_points.append(border_point)
         return border_points
+    
+    def get_slices(self, number_of_slices: int, is_uniformly: bool) -> List[Tuple[QPoint, QPoint]]:
+        t_values: List[float] = self.__get_t_values_for_slices(number_of_slices, is_uniformly)
+        slices = list()
+        for t in t_values:
+            bottom_point: QPointF = QPointF(self.__bezier_curve.point_at_t(t))
+            normal: QPoint = self.__bezier_curve.get_normalized_normal_at_t(t)
+            offset: QPoint = QPoint( int(normal.x() * (self.__width_in_pixels)), int(normal.y() * (self.__width_in_pixels)) )
+            top_point: QPoint = bottom_point + offset
+            slices.append([bottom_point, top_point])
+        return slices
+    
+    def __get_t_values_for_slices(self, number_of_slices: int , is_uniformly: bool) -> List[float]:
+        if is_uniformly:
+            return self.__bezier_curve.find_t_for_equal_distances(number_of_slices)
+        else:
+            return [(0.5 + i) * (1 / number_of_slices) for i in range(number_of_slices)]
 
     def increase_number_of_segments(self) -> None:
         self.__number_of_segments += 1
@@ -698,6 +754,31 @@ class ViewportTransform:
         self.__offset: QPoint = QPoint(0, 0)
 
     @property
+    def dpi_of_bezier_mask_window(self) -> float:
+        widget_size = 600
+        dpi_of_solar_view: float = self.dpi_solar_view_window
+        size_of_zone_interesting_in_image_pixels = dpi_of_solar_view * self.__zone_interesting.size
+        dpi_of_bezier_mask_window = size_of_zone_interesting_in_image_pixels / widget_size
+        return dpi_of_bezier_mask_window
+
+    @property
+    def dpi_solar_view_window(self) -> float:
+        widget_size = 600
+        image_size = 4096
+        dpi_of_solar_view = image_size / (widget_size * self.__zoom)
+        return dpi_of_solar_view
+    
+    @property
+    def bezier_mask_px_size_in_megameters(self) -> float:
+        size_of_px_in_megameters = 400
+        return self.dpi_of_bezier_mask_window * size_of_px_in_megameters
+
+    @property
+    def solar_view_px_size_in_megameters(self) -> float:
+        size_of_px_in_megameters = 400
+        return self.dpi_solar_view_window * size_of_px_in_megameters
+
+    @property
     def zoom(self) -> float:
         return self.__zoom
 
@@ -723,25 +804,17 @@ class ViewportTransform:
         size_of_zone_interesting: int = self.__zone_interesting.size
         widget_size: int = 600
 
-        offset = self.offset
-
-        # print('p* = ({0},{1})'.format(point_in_bezier_mask.x(), point_in_bezier_mask.y()))
-
         point_in_solar_view =  transformations.transform_point_from_bezier_mask_to_solar_view(position_of_zone_interesting, 
                                                                                               point_in_bezier_mask,
                                                                                               size_of_zone_interesting,
                                                                                               widget_size)
         
-        # print('p** = ({0},{1})'.format(point_in_solar_view.x(), point_in_solar_view.y()))
-
         point_in_fits = transformations.transform_point_from_solar_view_to_fits(point_in_solar_view, 
                                                                                 self.offset, 
                                                                                 size_of_fits, 
                                                                                 widget_size, 
                                                                                 self.zoom)
         
-        # print('p*** = ({0},{1})'.format(point_in_fits.x(), point_in_fits.y()))
-
         return point_in_fits
 
     # legacy -----------------------------------
@@ -776,8 +849,17 @@ class TimeLine:
     def __init__(self, solar_frames_storage: SolarFramesStorage):
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__index_of_current_solar_frame: int = 0
-        self.__start_interval_border_of_time_distance_plot: int = 0
-        self.__finish_interval_border_of_time_distance_plot: int = 3
+        self.__start_frame_to_build_tdp: int = 0
+        self.__finish_frame_to_build_tdp: int = 3
+        self.__current_tdp_step: int = 0
+
+    @property
+    def max_index_of_solar_frame_for_debug_tdp(self) -> int:
+        return 400
+
+    @property
+    def max_index_of_solar_frame(self) -> int:
+        return self.__solar_frames_storage.get_number_of_frames_in_current_channel()
 
     @property
     def index_of_current_solar_frame(self) -> int:
@@ -792,20 +874,20 @@ class TimeLine:
         self.__index_of_current_solar_frame = new_index
 
     @property
-    def start_interval_of_time_distance_plot(self) -> int:
-        return self.__start_interval_border_of_time_distance_plot
+    def start_frame_to_build_tdp(self) -> int:
+        return self.__start_frame_to_build_tdp
 
-    @start_interval_of_time_distance_plot.setter
-    def start_interval_of_time_distance_plot(self, new_index) -> None:
+    @start_frame_to_build_tdp.setter
+    def start_frame_to_build_tdp(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception(f"Index of start interval time distance plot cannot be >= number of solar frames in current channel. Index = {new_index}")
 
-        self.__start_interval_border_of_time_distance_plot = new_index
+        self.__start_frame_to_build_tdp = new_index
 
     @property
     def finish_interval_of_time_distance_plot(self) -> int:
-        return self.__finish_interval_border_of_time_distance_plot
+        return self.__finish_frame_to_build_tdp
 
     @finish_interval_of_time_distance_plot.setter
     def finish_interval_of_time_distance_plot(self, new_index) -> None:
@@ -813,7 +895,7 @@ class TimeLine:
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
 
-        self.__finish_interval_border_of_time_distance_plot = new_index
+        self.__finish_frame_to_build_tdp = new_index
 
     @property
     def total_solar_frames(self) -> int:
@@ -824,7 +906,20 @@ class TimeLine:
         i = self.__index_of_current_solar_frame
         return (self.__solar_frames_storage
                 .get_solar_frame_by_index_from_current_channel(i))
+    
+    @property
+    def solar_frame_by_current_tdp_step(self) -> SolarFrame:
+        i = self.__current_tdp_step
+        return (self.__solar_frames_storage
+                .get_solar_frame_by_index_from_current_channel(i))
 
+    @property
+    def tdp_step(self) -> int:
+        return self.__current_tdp_step
+
+    @tdp_step.setter
+    def tdp_step(self, value: int) -> None:
+        self.__current_tdp_step = value
 
 
 @unique
@@ -851,7 +946,173 @@ class CurrentAppState:
     def current_state(self) -> AppStates:
         return self.__state
 
+class TDP:
+    def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
+        self.__bezier_mask = bezier_mask
+        self.__viewport_transform = viewport_transform
 
+        self.__width_of_tdp_step = 3 # Толщина временного шага в пикселях (1 кадр это 3 пикселя в time distance plot)
+        self.__ro = 0.5 # Плотность срезов (чем меньше тем реже срезы)
+        self.__channel: int = -1
+        
+        self.__tdp_array: npt.NDArray = None
+        self.__is_builded: bool = False
+
+    @property
+    def is_builded(self) -> bool:
+        return self.__is_builded
+
+    @property
+    def width_of_tdp_step(self) -> int:
+        return self.__width_of_tdp_step
+    
+    @property
+    def total_tdp_steps(self) -> int:
+        return self.__tdp_array.shape[1] // self.__width_of_tdp_step
+    
+    @property
+    def length_of_tdp_in_px(self) -> int:
+        return self.__tdp_array.shape[1]
+    
+    @property
+    def time_step_in_seconds(self) -> int:
+        if self.__is_builded == False:
+            return 12
+        else:
+            return self.__time_step
+
+    def build(self, cubedata: Cubedata, channel: int) -> None:
+        self.__time_step = cubedata.time_step_in_seconds
+        self.__is_builded = True
+        self.__channel = channel
+
+        number_of_slices: int = self.__get_number_of_slices()
+        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly=False)
+        slices = self.__convert_slices_to_fits_coordinates(slices)
+
+        self.__initialize_tdp_array(cubedata, number_of_slices)
+
+        for index_of_step in range(cubedata.number_of_frames):
+            frame: CubedataFrame = cubedata.get_frame(index_of_step)
+            self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+    def build_test_tdp(self, number_of_frames: int) -> None:
+        self.__time_step = 12
+        self.__is_builded = True
+        self.__channel = 131
+
+        horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
+        vertical_length_of_tdp: int = 500
+        self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+
+        width_of_black_line = 200
+
+        borders_indexes = [i * width_of_black_line for i in range(horizontal_length_of_tdp)]
+
+        for i in range(len(borders_indexes) - 1):
+            if i % 2 == 0:
+                continue
+
+            start_border: int = borders_indexes[i]
+            finish_border: int = borders_indexes[i + 1]
+            self.__tdp_array[:, start_border:finish_border] = 1
+       
+
+    def __get_number_of_slices(self) -> int:        
+        dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
+        l: float = self.__bezier_mask.length_in_pixels
+        number_of_slices = int(dpi * l * self.__ro) 
+        return number_of_slices
+    
+    def __convert_slices_to_fits_coordinates(self, slices: List[Tuple[QPoint, QPoint]]) -> List[Tuple[QPoint, QPoint]]:
+        for i in range(len(slices)):
+            slice: Tuple[QPoint, QPoint] = slices[i]
+            bp_in_bezier_mask_window_coordinates: QPoint = slice[0]
+            tp_in_bezier_mask_window_coordinates: QPoint = slice[1]
+            bp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(bp_in_bezier_mask_window_coordinates) 
+            tp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(tp_in_bezier_mask_window_coordinates)
+            slice[0] = bp_in_fits_coordinates
+            slice[1] = tp_in_fits_coordinates
+            slices[i] = slice
+        return slices
+    
+    def __initialize_tdp_array(self, cubedata: Cubedata, number_of_slices: int) -> None:
+        horizontal_length_of_tdp: int = cubedata.number_of_frames * self.__width_of_tdp_step
+        vertical_length_of_tdp: int = number_of_slices
+        self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+    
+    def __handle_tdp_step(self, 
+                          slices:List[Tuple[QPoint, QPoint]], 
+                          frame: CubedataFrame,
+                          width_of_step_in_pixels: int,
+                          index_of_step: int) -> npt.NDArray:
+        start_column_index = index_of_step * width_of_step_in_pixels
+        finish_column_index = (index_of_step + 1) * width_of_step_in_pixels - 1
+        columns_indexes = [i for i in range(start_column_index, finish_column_index + 1)]
+
+        for i, slice in enumerate(slices):
+            mean_value_of_slice: float = self.__get_mean_value_of_slice(slice, frame)
+            self.__tdp_array[i,columns_indexes] = mean_value_of_slice
+
+    def __get_mean_value_of_slice(self, slice: Tuple[QPoint, QPoint], frame: CubedataFrame) -> float:
+        bp: QPoint = slice[0]
+        tp: QPoint = slice[1]
+
+        x1 = bp.x()
+        y1 = bp.y()
+
+        x2 = tp.x()
+        y2 = tp.y()
+
+        pixels_coordinates: List[QPoint] = get_pixels_of_line(x1, y1, x2, y2)
+
+        count = 0
+        total_sum = 0 
+
+        for pixel_coordinate in pixels_coordinates:
+            pixel_x: int = pixel_coordinate.x()
+            pixel_y: int = pixel_coordinate.y()
+
+            count += 1
+
+            total_sum += frame.content[pixel_y][pixel_x] 
+
+        mean_value = total_sum / count
+        return mean_value
+
+    def __vertical_resize_tdp_array(self, tdp_segment: npt.NDArray, new_vertical_size_in_px: float) -> npt.NDArray:
+        old_vertical_size = tdp_segment.shape[0]
+        vertical_zoom = new_vertical_size_in_px / old_vertical_size
+        return zoom(tdp_segment, (vertical_zoom, 1), order=1)
+
+    def save_as_png(self) -> None:
+        pass
+
+    def save_as_numpy_array(self) -> None:
+        pass
+
+    def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:
+        cm = get_cmap_by_channel(self.__channel)
+        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+        dpi_value = 100
+
+        tdp: npt.NDArray = self.__tdp_array[ : , start_step * self.__width_of_tdp_step : (finish_step - 1) * self.__width_of_tdp_step]
+        tdp = self.__vertical_resize_tdp_array(tdp, vertical_size_in_px)
+
+        l = tdp.shape[1] / dpi_value
+        h = tdp.shape[0] / dpi_value
+        fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
+        canvas = FigureCanvas(fig)
+        axes = fig.add_subplot()
+        axes.set_axis_off()
+        axes.imshow(tdp.astype(np.float32), cmap=cm)
+        canvas.draw()
+        width, height = int(fig.figbbox.width), int(fig.figbbox.height)
+        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+        return QPixmap.fromImage(im)
+
+
+# todo: Легаси
 class TimeDistancePlot:
 
     # TODO: Вынести дополнетельные параметры
@@ -878,7 +1139,7 @@ class TimeDistancePlot:
                                                                             True)
 
         for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).frame_content
+            frame_content = cubedata.get_frame(i).content
 
             line = instance.__get_time_distance_line(frame_content,
                                                      height_time_distance_plot,
@@ -914,7 +1175,7 @@ class TimeDistancePlot:
                                                                             False)
 
         for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).frame_content
+            frame_content = cubedata.get_frame(i).content
 
 
             line = instance.__get_time_distance_line(frame_content,
@@ -1076,6 +1337,7 @@ class AppModel:
         self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__app_state = CurrentAppState()
         self.__selected_bezier_segments = SelectedBezierSegments(10)
+        self.__tdp = TDP(self.__bezier_mask, self.__viewport_transform)
 
         self.__observers = []
 
@@ -1122,6 +1384,10 @@ class AppModel:
     @property
     def selected_bezier_segments(self) -> SelectedBezierSegments:
         return self.__selected_bezier_segments
+    
+    @property
+    def time_distance_plot(self) -> TDP:
+        return self.__tdp
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

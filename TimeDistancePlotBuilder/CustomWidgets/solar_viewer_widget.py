@@ -78,7 +78,7 @@ class SolarViewerWidget(QWidget):
     def paintEvent(self, a0: QtGui.QPaintEvent) -> None:
         self.__clear_temps_objects()
         self.__draw_solar_frame()
-        self.__draw_border_of_zone_interesting()  
+        self.__draw_border_of_zone_interesting() 
 
     def update_position_of_zone_interesting_position_anchor(self, pos: QPoint) -> None:
         self.__zone_interesting_position_anchor.set_pos(pos)
