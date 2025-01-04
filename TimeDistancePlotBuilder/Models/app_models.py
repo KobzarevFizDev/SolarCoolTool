@@ -3,6 +3,7 @@ import os
 import sqlite3
 from typing import List, Tuple
 from enum import IntEnum, unique
+import time
 
 from matplotlib import pyplot as plt
 
@@ -15,7 +16,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
 
 import numpy as np
-from PyQt5.QtCore import QPoint, QPointF, QRect
+from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -276,6 +277,23 @@ class SolarFrame:
         width, height = fig.figbbox.width, fig.figbbox.height
         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
         return im
+
+class NewSolarFramesStorage(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int, str)
+    error = pyqtSignal(str)
+
+    @pyqtSlot()
+    def process(self):
+        for i in range(100):
+            time.sleep(0.6)
+            name_of_loaded_file: str = self.__get_name_of_loaded_file(i)
+            self.progress.emit(i, name_of_loaded_file)
+
+        self.finished.emit()
+
+    def __get_name_of_loaded_file(self, i: int) -> str:
+        return f"./SolarFrames/A131/Frame_{i}.FITS"
 
 # todo: Валидацию на корректное значение channel
 class SolarFramesStorage:
