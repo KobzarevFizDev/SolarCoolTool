@@ -22,7 +22,8 @@ class TimeDistancePlotController:
         self.__model.notify_observers()
 
     def set_smooth_parametr(self, smooth_parametr_slider_value: int) -> None:
-        smooth_parametr_value = smooth_parametr_slider_value / 100
+        smooth_parametr_value = float(smooth_parametr_slider_value) / 100
+        self.__model.time_distance_plot.set_smooth_parametr(smooth_parametr_value)
 
     def set_range_of_tdp_build(self, range) -> None:
         start_frame_index: int = range[0]

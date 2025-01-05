@@ -969,6 +969,8 @@ class TDP:
         self.__tdp_array: npt.NDArray = None
         self.__is_builded: bool = False
 
+        self.__smooth_parametr: float = 0
+
     # todo: проверика на то что channel корректный 
     @property
     def cmap(self) -> Colormap:
@@ -1003,6 +1005,16 @@ class TDP:
     @property
     def tdp_array(self) -> npt.NDArray:
         return self.__tdp_array
+    
+    @property
+    def smooth_parametr(self) -> float:
+        return self.__smooth_parametr
+    
+    def set_smooth_parametr(self, value) -> None:
+        if value < 0:
+            raise Exception("Smooth parametr can not be negative")
+        
+        self.__smooth_parametr = value
 
     def build(self, cubedata: Cubedata, channel: int) -> None:
         self.__time_step = cubedata.time_step_in_seconds
@@ -1018,6 +1030,9 @@ class TDP:
         for index_of_step in range(cubedata.number_of_frames):
             frame: CubedataFrame = cubedata.get_frame(index_of_step)
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
 
     def build_test_tdp(self, number_of_frames: int) -> None:
         self.__time_step = 12
@@ -1039,6 +1054,8 @@ class TDP:
             start_border: int = borders_indexes[i]
             finish_border: int = borders_indexes[i + 1]
             self.__tdp_array[:, start_border:finish_border] = 1
+
+        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
 
     def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
         return np.zeros((height_in_px, width_in_px))

@@ -21,7 +21,6 @@ class TDP_MatplotlibPreviewWidget(FigureCanvas):
         self.__axes = self.__fig.add_subplot()
         super().__init__(self.__fig)
 
-        # Начальная отрисовка
         self.show_time_distance_plot()
 
     def change_tdp(self, new_tdp: npt.NDArray) -> None:
@@ -47,50 +46,7 @@ class TDP_MatplotlibPreviewWidget(FigureCanvas):
         return fig
 
     def update_plot(self) -> None:
-        """Обновляет график с новыми данными."""
-        self.__axes.clear()  # Очистить старый график
-        self.show_time_distance_plot()  # Перерисовать
-        self.draw()  # Перерисовать виджет
+        self.__axes.clear() 
+        self.show_time_distance_plot()
+        self.draw() 
 
-
-
-# class TDP_MatplotlibPreviewWidget(FigureCanvas):
-#     def __init__(self,
-#                  time_distance_plot: npt.NDArray,
-#                  channel: int,
-#                  cmap: Colormap,
-#                  parent=None):
-#         self.__tdp: npt.NDArray = time_distance_plot
-#         self.__channel: int = channel
-#         self.__cmap: Colormap = cmap
-#         self.__axes = None
-
-#         self.__fig: Figure = self.__create_figure_by_tdp()
-
-#         super(TDP_MatplotlibPreviewWidget, self).__init__(self.__fig)
-
-
-#     def change_tdp(self, new_tdp: npt.NDArray) -> None:
-#         self.__tdp = new_tdp
-
-#     def change_channel(self, new_channel: int, new_cmap: Colormap) -> None:
-#         self.__channel = new_channel
-#         self.__cmap = new_cmap
-
-#     def show_time_distance_plot(self) -> None:
-#         if not self.__axes == None:
-#             self.__axes.clear()
-
-#         self.__axes = self.__fig.add_subplot()
-#         self.__axes.set_xlabel("Время, С")
-#         self.__axes.set_ylabel("Дистанция вдоль петли, Mm")
-#         self.__axes.set_title(f"Канал {self.__channel} A")
-#         self.__axes.imshow(self.__tdp, cmap=self.__cmap)
-#         self.draw() 
-
-#     def __create_figure_by_tdp(self) -> Figure:
-#         dpi = 100
-#         height_in_pixels: int = self.__tdp.shape[0]
-#         width_in_pixels: int = self.__tdp.shape[1]
-#         fig = Figure(figsize=(width_in_pixels/dpi, height_in_pixels/dpi), dpi=dpi)
-#         return fig

@@ -56,6 +56,7 @@ class TimeDistancePlotView:
         else:
             self.__hide_all_widgets_in_layout(self.__layout)
 
+        self.__set_title_of_current_smooth_parametr()
         self.__set_title_of_current_tdp_step()
 
     # todo: Ненужно перерисовывать без необходимости
@@ -100,6 +101,10 @@ class TimeDistancePlotView:
     def __set_title_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
         self.__tdp_step_slider_label.setText(f'Step = {current_step}')
+
+    def __set_title_of_current_smooth_parametr(self) -> None:
+        smooth_parametr: float = self.__model.time_distance_plot.smooth_parametr
+        self.__smooth_parametr_label.setText(f'Smooth = {smooth_parametr}')
 
     def __highlight_tdp_step(self) -> None:
         start, finish = self.__controller.get_borders_of_tdp_step()
