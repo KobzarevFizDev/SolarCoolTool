@@ -5,7 +5,6 @@ from typing import List, Tuple
 from enum import IntEnum, unique
 import time
 
-from matplotlib import pyplot as plt
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
@@ -14,6 +13,8 @@ from scipy.optimize import minimize_scalar
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
+from matplotlib import pyplot as plt
+from matplotlib.colors import Colormap
 
 import numpy as np
 from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
@@ -968,8 +969,16 @@ class TDP:
         self.__tdp_array: npt.NDArray = None
         self.__is_builded: bool = False
 
+    # todo: проверика на то что channel корректный 
     @property
-    def is_builded(self) -> bool:
+    def cmap(self) -> Colormap:
+        if self.__channel != -1:
+            return get_cmap_by_channel(self.__channel)
+        else:
+            None
+
+    @property
+    def was_builded(self) -> bool:
         return self.__is_builded
 
     @property
@@ -990,6 +999,10 @@ class TDP:
             return 12
         else:
             return self.__time_step
+        
+    @property
+    def tdp_array(self) -> npt.NDArray:
+        return self.__tdp_array
 
     def build(self, cubedata: Cubedata, channel: int) -> None:
         self.__time_step = cubedata.time_step_in_seconds
@@ -1026,7 +1039,9 @@ class TDP:
             start_border: int = borders_indexes[i]
             finish_border: int = borders_indexes[i + 1]
             self.__tdp_array[:, start_border:finish_border] = 1
-       
+
+    def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
+        return np.zeros((height_in_px, width_in_px))
 
     def __get_number_of_slices(self) -> int:        
         dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 

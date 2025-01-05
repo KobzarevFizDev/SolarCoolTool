@@ -52,15 +52,15 @@ class TimeDistancePlotView:
 
     def model_is_changed(self):
         if self.__is_need_to_show_this_view():
-            self.__show_this_view()
+            self.__show_all_widgets_in_layout(self.__layout)
         else:
-            self.__hide_this_view()
+            self.__hide_all_widgets_in_layout(self.__layout)
 
         self.__set_title_of_current_tdp_step()
 
     # todo: Ненужно перерисовывать без необходимости
 
-        if self.__model.time_distance_plot.is_builded: 
+        if self.__model.time_distance_plot.was_builded: 
             self.__update_pixmap_of_tdp()
             self.__highlight_tdp_step()
             self.__update_time_ruler()
@@ -201,16 +201,20 @@ class TimeDistancePlotView:
         uniformly_build_tdp_button.clicked.connect(self.__controller.build_time_distance_plot)
         return uniformly_build_tdp_button
 
-    def __show_this_view(self):
-        # self.__label_of_t_slider.show()
-        # self.__t_slider.show()
-        # self.__export_button.show()
-        # self.__bake_button.show()
-        self.__time_distance_plot_widget.show()
+    def __show_all_widgets_in_layout(self, layout) -> None:
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.show()
+            elif item.layout():
+                self.__show_all_widgets_in_layout(item.layout())
 
-    def __hide_this_view(self):
-        # self.__label_of_t_slider.hide()
-        # self.__t_slider.hide()
-        # self.__export_button.hide()
-        # self.__bake_button.hide()
-        self.__time_distance_plot_widget.hide()
+    def __hide_all_widgets_in_layout(self, layout) -> None:
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.hide()
+            elif item.layout():
+                self.__hide_all_widgets_in_layout(item.layout())
