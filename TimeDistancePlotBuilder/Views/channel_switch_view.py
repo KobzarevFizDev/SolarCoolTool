@@ -9,7 +9,7 @@ class ChannelSwitchView:
         self.controller = controller
         self.model: AppModel = model
         self.widget = ChannelSwitchWidget(parentWindow)
-        parentWindow.layout.addWidget(self.widget, 2, 0)
+        parentWindow.layout.addWidget(self.widget, 2, 0, 1, 3)
         self.model.add_observer(self)
         self.widget.channelSwitchedSignal.connect(self.switch_channel)
         self.paint_buttons_according_model()

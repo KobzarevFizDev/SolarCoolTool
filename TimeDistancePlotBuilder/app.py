@@ -76,6 +76,8 @@ class TimeDistancePlotBuilder(QMainWindow):
         
         self.__controllers_was_created = True
 
+        self.__app_model.notify_observers()
+
     def __on_loaded_solar_frames(self) -> None:
         self.show()
         self.__loading_popup.close()

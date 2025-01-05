@@ -1,15 +1,15 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout
 from PyQt5.QtCore import pyqtSignal
 
 class ChannelSwitchWidget(QWidget):
     channelSwitchedSignal = pyqtSignal(int)
     def __init__(self, parent):
         super(ChannelSwitchWidget, self).__init__()
-        self.setMinimumSize(200, 300)
-        self.setMaximumSize(200, 300)
+        # self.setMinimumSize(200, 300)
+        # self.setMaximumSize(200, 300)
         self.setMouseTracking(True)
         self.setAutoFillBackground(True)
-        hbox = QVBoxLayout()
+        hbox = QHBoxLayout()
         self.setLayout(hbox)
 
         self.A94_channel_button = QPushButton("A94")
