@@ -32,7 +32,6 @@ class TimeDistancePlotView:
 
         self.__parent_window.layout.addLayout(self.__layout, 1, 2, 1, 1)
 
-        self.model_is_changed()
 
     @property
     def tdp_widget_vertical_size_in_px(self) -> int:
@@ -58,6 +57,7 @@ class TimeDistancePlotView:
 
         self.__set_title_of_current_smooth_parametr()
         self.__set_title_of_current_tdp_step()
+        self.__set_title_of_range_tdp_slider()
 
     # todo: Ненужно перерисовывать без необходимости
 
@@ -94,9 +94,9 @@ class TimeDistancePlotView:
         self.__time_distance_plot_widget.update()
 
     def __set_ranges_of_tdp_step_slider(self) -> None:
-        numbers_of_step: int = self.__model.time_distance_plot.total_tdp_steps
+        number_of_steps: int = self.__model.time_distance_plot.total_tdp_steps
         self.__tdp_step_slider.value = 0
-        self.__tdp_step_slider.setRange(0, numbers_of_step)
+        self.__tdp_step_slider.setRange(0, number_of_steps)
 
     def __set_title_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
@@ -105,6 +105,16 @@ class TimeDistancePlotView:
     def __set_title_of_current_smooth_parametr(self) -> None:
         smooth_parametr: float = self.__model.time_distance_plot.smooth_parametr
         self.__smooth_parametr_label.setText(f'Smooth = {smooth_parametr}')
+
+    def __set_range_tdp_slider(self) -> None:
+        number_of_frames: int = self.__model.time_line.max_index_of_solar_frame
+        self.__range_of_tdp_slider.setRange(0, number_of_frames - 1)
+        self.__range_of_tdp_slider.setValue((0, number_of_frames - 1))
+
+    def __set_title_of_range_tdp_slider(self) -> None:
+        start_frame: int = self.__model.time_line.start_frame_to_build_tdp
+        finish_frame: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        self.__label_of_range_of_tdp_build_slider.setText(f"Range: {start_frame} <-> {finish_frame}")
 
     def __highlight_tdp_step(self) -> None:
         start, finish = self.__controller.get_borders_of_tdp_step()
@@ -185,10 +195,11 @@ class TimeDistancePlotView:
         return QLabel('Range of tdp = [start <-> end]')
 
     def __create_range_of_tdp_build_slider(self) -> QRangeSlider:
+        number_of_frames = self.__model.time_line.max_index_of_solar_frame
         range_of_tdp_slider = QRangeSlider(Qt.Horizontal)
-        range_of_tdp_slider.setRange(0, 500)
-        range_of_tdp_slider.setValue((100, 500))
         range_of_tdp_slider.valueChanged.connect(self.__controller.set_range_of_tdp_build)
+        range_of_tdp_slider.setRange(0, number_of_frames-1)
+        range_of_tdp_slider.setValue((0, number_of_frames-1))
         return range_of_tdp_slider
 
     def __create_debug_build_button(self) -> QPushButton:

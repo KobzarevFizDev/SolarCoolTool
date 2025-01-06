@@ -21,7 +21,6 @@ class TimeLineView:
         self.__layout.addSpacing(10)
         self.__create_time_line_slider()
         self.__layout.setAlignment(Qt.AlignTop)
-        self.model_is_changed()
 
     def model_is_changed(self):
         self.__update_time_line_slider()

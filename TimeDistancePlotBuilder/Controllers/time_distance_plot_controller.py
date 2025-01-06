@@ -16,6 +16,19 @@ class TimeDistancePlotController:
         self.__model: AppModel = model
         self.__view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
 
+    def is_need_to_update_time_ruler(self) -> bool:
+        pass
+
+    def is_need_to_update_distance_ruler(self) -> bool:
+        pass
+
+    def is_need_to_update_pixmap_of_tdp(self) -> bool:
+        pass
+
+    def is_need_to_update_range_tdp_slider(self) -> bool:
+        pass
+
+
 
     def set_current_tdp_step(self, step: int) -> None:
         self.__model.time_line.tdp_step = step
@@ -28,6 +41,9 @@ class TimeDistancePlotController:
     def set_range_of_tdp_build(self, range) -> None:
         start_frame_index: int = range[0]
         finish_frame_index: int = range[1]
+        self.__model.time_line.start_frame_to_build_tdp = start_frame_index
+        self.__model.time_line.finish_interval_of_time_distance_plot = finish_frame_index
+        self.__model.notify_observers()
 
     def build_time_distance_plot(self) -> None:
         start_index: int = self.__model.time_line.start_frame_to_build_tdp

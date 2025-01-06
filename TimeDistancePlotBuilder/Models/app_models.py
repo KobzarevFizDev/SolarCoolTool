@@ -861,7 +861,7 @@ class TimeLine:
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__index_of_current_solar_frame: int = 0
         self.__start_frame_to_build_tdp: int = 0
-        self.__finish_frame_to_build_tdp: int = 3
+        self.__finish_frame_to_build_tdp: int = 0
         self.__current_tdp_step: int = 0
 
     @property

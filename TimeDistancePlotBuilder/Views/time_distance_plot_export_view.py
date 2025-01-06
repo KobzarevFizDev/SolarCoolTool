@@ -24,7 +24,6 @@ class TimeDistancePlotExportView:
         self.__create_tdp_matplotlib_preview()
 
         self.__parent_window.layout.addLayout(self.__layout, 1, 2, 1, 1)
-        self.model_is_changed()
 
     def model_is_changed(self):
         if self.__is_need_to_show_this_view():
