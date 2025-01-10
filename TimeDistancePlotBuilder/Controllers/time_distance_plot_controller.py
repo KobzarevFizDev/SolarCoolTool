@@ -16,19 +16,6 @@ class TimeDistancePlotController:
         self.__model: AppModel = model
         self.__view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
 
-    def is_need_to_update_time_ruler(self) -> bool:
-        pass
-
-    def is_need_to_update_distance_ruler(self) -> bool:
-        pass
-
-    def is_need_to_update_pixmap_of_tdp(self) -> bool:
-        pass
-
-    def is_need_to_update_range_tdp_slider(self) -> bool:
-        pass
-
-
 
     def set_current_tdp_step(self, step: int) -> None:
         self.__model.time_line.tdp_step = step
@@ -95,6 +82,11 @@ class TimeDistancePlotController:
         else:
             return (total_tdp_steps - visible_tdp_segment_in_steps, total_tdp_steps - 1)
     
+    def is_middle_tdp_segment(self) -> bool:
+        current_tdp_step: int = self.__model.time_line.tdp_step
+        visible_tdp_segment_in_steps: int = self.__view.tdp_widget_horizontal_size_in_steps
+        half_visible_tdp_segment_in_steps: int = visible_tdp_segment_in_steps // 2
+        return (half_visible_tdp_segment_in_steps <= current_tdp_step) and (current_tdp_step < self.__model.time_distance_plot.total_tdp_steps - half_visible_tdp_segment_in_steps) 
 
     # todo: Легаси
     def export_time_distance_plot(self) -> None:

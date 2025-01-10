@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TYPE_CHECKING, List, Tuple
 import numpy.typing as npt
 
@@ -17,9 +18,53 @@ if TYPE_CHECKING:
 
 TIME_DISTANCE_PLOT_WIDGET_WIDTH = 570
 
+
+class OptimizationTdpViewController:
+    def __init__(self, controller: TimeDistancePlotController, app_model: AppModel):
+        self.__controller = controller
+        self.__model = app_model
+
+        self.__current_tdp_step: int = -1
+        self.__previous_tdp_step: int = -1
+
+        self.__current_channel: int = -1
+        self.__previous_channel: int = -1
+        self.__tdp_is_new: bool = False
+
+
+
+    def check_model(self) -> None:
+        self.__tdp_is_new = self.__model.time_distance_plot.is_new
+        self.__previous_channel = self.__current_channel
+        self.__current_channel = self.__model.current_channel.channel
+
+
+    @property
+    def need_to_update_tdp_pixmap(self) -> bool:
+        if self.__tdp_is_new:
+            return True
+        else:
+            is_tdp_step_changed = not self.__previous_tdp_step == self.__current_tdp_step
+            return is_tdp_step_changed and self.__controller.is_middle_tdp_segment()
+        
+    @property
+    def need_to_change_tdp_slider_range(self) -> bool:
+        return not self.__current_channel == self.__previous_channel
+    
+    @property
+    def need_to_update_distance_ruler(self) -> bool:
+        pass
+
+    @property
+    def need_to_update_range_of_tdp_slider(self) -> bool:
+        pass
+
+        
+
 class TimeDistancePlotView:
     def __init__(self, controller, model, parent_window):
         self.__controller: TimeDistancePlotController = controller
+        self.__optimization_controller: OptimizationTdpViewController = OptimizationTdpViewController(controller, model)
         self.__model: AppModel = model
         self.__model.add_observer(self)
         self.__parent_window = parent_window
@@ -27,7 +72,7 @@ class TimeDistancePlotView:
 
         self.__create_tdp_step_slider()
         self.__create_time_ruler()
-        self.__create_time_distance_plot_widget()
+        self.__create_tdp_widget()
         self.__create_additional_widgets()
 
         self.__parent_window.layout.addLayout(self.__layout, 1, 2, 1, 1)
@@ -50,23 +95,29 @@ class TimeDistancePlotView:
         return self.tdp_widget_vertical_size_in_px // self.__model.time_distance_plot.width_of_tdp_step
 
     def model_is_changed(self):
+        self.__optimization_controller.check_model()
+
+
         if self.__is_need_to_show_this_view():
             self.__show_all_widgets_in_layout(self.__layout)
         else:
             self.__hide_all_widgets_in_layout(self.__layout)
 
-        self.__set_title_of_current_smooth_parametr()
-        self.__set_title_of_current_tdp_step()
-        self.__set_title_of_range_tdp_slider()
+        self.__update_label_of_smooth_parametr()
+        self.__update_label_of_current_tdp_step()
+        self.__update_label_of_range_tdp_slider()
 
-    # todo: Ненужно перерисовывать без необходимости
+        if self.__optimization_controller.need_to_change_tdp_slider_range:
+            self.__update_range_tdp_slider()
 
         if self.__model.time_distance_plot.was_builded: 
-            self.__update_pixmap_of_tdp()
+            if self.__optimization_controller.need_to_update_tdp_pixmap:
+                self.__update_pixmap_of_tdp()
+                self.__update_time_ruler()
+
             self.__highlight_tdp_step()
-            self.__update_time_ruler()
-            self.__update_time_distance_along_loop_ruler()
-            self.__set_ranges_of_tdp_step_slider()
+            self.__update_distance_ruler()
+            self.__update_range_of_tdp_step_slider()
 
 
     def __update_time_ruler(self) -> None: 
@@ -78,7 +129,7 @@ class TimeDistancePlotView:
         self.__tdp_time_ruler.set_values(start_time_in_seconds, finish_time_in_seconds, step_in_seconds)
         self.__tdp_time_ruler.update()
 
-    def __update_time_distance_along_loop_ruler(self) -> None:
+    def __update_distance_ruler(self) -> None:
         length_of_loop_in_px: float = self.__model.bezier_mask.length_in_pixels
         length_of_loop_in_megameters: float = length_of_loop_in_px * self.__model.viewport_transform.dpi_of_bezier_mask_window
         
@@ -93,25 +144,25 @@ class TimeDistancePlotView:
         self.__time_distance_plot_widget.draw_time_distance_plot(pixmap)
         self.__time_distance_plot_widget.update()
 
-    def __set_ranges_of_tdp_step_slider(self) -> None:
+    def __update_range_of_tdp_step_slider(self) -> None:
         number_of_steps: int = self.__model.time_distance_plot.total_tdp_steps
         self.__tdp_step_slider.value = 0
         self.__tdp_step_slider.setRange(0, number_of_steps)
 
-    def __set_title_of_current_tdp_step(self) -> None:
+    def __update_label_of_current_tdp_step(self) -> None:
         current_step: int = self.__model.time_line.tdp_step
         self.__tdp_step_slider_label.setText(f'Step = {current_step}')
 
-    def __set_title_of_current_smooth_parametr(self) -> None:
+    def __update_label_of_smooth_parametr(self) -> None:
         smooth_parametr: float = self.__model.time_distance_plot.smooth_parametr
         self.__smooth_parametr_label.setText(f'Smooth = {smooth_parametr}')
 
-    def __set_range_tdp_slider(self) -> None:
+    def __update_range_tdp_slider(self) -> None:
         number_of_frames: int = self.__model.time_line.max_index_of_solar_frame
         self.__range_of_tdp_slider.setRange(0, number_of_frames - 1)
         self.__range_of_tdp_slider.setValue((0, number_of_frames - 1))
 
-    def __set_title_of_range_tdp_slider(self) -> None:
+    def __update_label_of_range_tdp_slider(self) -> None:
         start_frame: int = self.__model.time_line.start_frame_to_build_tdp
         finish_frame: int = self.__model.time_line.finish_interval_of_time_distance_plot
         self.__label_of_range_of_tdp_build_slider.setText(f"Range: {start_frame} <-> {finish_frame}")
@@ -125,7 +176,7 @@ class TimeDistancePlotView:
     def __is_need_to_show_this_view(self) -> bool:
         return self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
 
-    def __create_time_distance_plot_widget(self) -> None:
+    def __create_tdp_widget(self) -> None:
         container = QHBoxLayout()
         self.__time_distance_along_loop_ruler = TdpRulerWidget.create_distance_along_loop_ruler(self.__parent_window)
         self.__time_distance_along_loop_ruler.set_values(start=0, finish=600, step=100)
@@ -198,8 +249,8 @@ class TimeDistancePlotView:
         number_of_frames = self.__model.time_line.max_index_of_solar_frame
         range_of_tdp_slider = QRangeSlider(Qt.Horizontal)
         range_of_tdp_slider.valueChanged.connect(self.__controller.set_range_of_tdp_build)
-        range_of_tdp_slider.setRange(0, number_of_frames-1)
-        range_of_tdp_slider.setValue((0, number_of_frames-1))
+        # range_of_tdp_slider.setRange(0, number_of_frames-1)
+        # range_of_tdp_slider.setValue((0, number_of_frames-1))
         return range_of_tdp_slider
 
     def __create_debug_build_button(self) -> QPushButton:

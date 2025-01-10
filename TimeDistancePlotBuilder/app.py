@@ -76,6 +76,7 @@ class TimeDistancePlotBuilder(QMainWindow):
         
         self.__controllers_was_created = True
 
+        self.__app_model.time_line.set_finish_index_of_build_tdp_as_maximum()
         self.__app_model.notify_observers()
 
     def __on_loaded_solar_frames(self) -> None:

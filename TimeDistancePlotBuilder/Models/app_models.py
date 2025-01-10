@@ -932,6 +932,9 @@ class TimeLine:
     def tdp_step(self, value: int) -> None:
         self.__current_tdp_step = value
 
+    def set_finish_index_of_build_tdp_as_maximum(self) -> None:
+        self.finish_interval_of_time_distance_plot = self.max_index_of_solar_frame - 1
+
 
 @unique
 class AppStates(IntEnum):
@@ -970,6 +973,14 @@ class TDP:
         self.__is_builded: bool = False
 
         self.__smooth_parametr: float = 0
+
+        self.__is_new: bool = False
+
+    @property
+    def is_new(self) -> bool:
+        result = self.__is_new
+        self.__is_new = False
+        return result
 
     # todo: проверика на то что channel корректный 
     @property
@@ -1033,6 +1044,8 @@ class TDP:
 
         self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
 
+        self.__is_new = True
+
 
     def build_test_tdp(self, number_of_frames: int) -> None:
         self.__time_step = 12
@@ -1056,6 +1069,8 @@ class TDP:
             self.__tdp_array[:, start_border:finish_border] = 1
 
         self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__is_new = True
 
     def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
         return np.zeros((height_in_px, width_in_px))
