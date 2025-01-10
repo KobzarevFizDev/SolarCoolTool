@@ -45,8 +45,10 @@ class BezierMaskView:
         self.__widget.update_background(pixmap_of_interesting_solar_region)
 
     def __get_solar_frame_for_render(self) -> SolarFrame:
-        return self.__model.time_line.current_solar_frame 
-        # if self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE:
-        #     return self.__model.time_line.solar_frame_by_current_tdp_step
-        # else:
-        #     return self.__model.time_line.current_solar_frame
+        if self.__model.app_state.current_state == AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE:
+            if self.__model.time_distance_plot.is_test:
+                return self.__model.time_line.current_solar_frame
+            else:
+                return self.__model.time_line.solar_frame_by_current_tdp_step
+        else:
+            return self.__model.time_line.current_solar_frame

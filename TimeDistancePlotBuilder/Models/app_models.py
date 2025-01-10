@@ -975,12 +975,17 @@ class TDP:
         self.__smooth_parametr: float = 0
 
         self.__is_new: bool = False
+        self.__is_test: bool = False
 
     @property
     def is_new(self) -> bool:
         result = self.__is_new
         self.__is_new = False
         return result
+    
+    @property
+    def is_test(self) -> bool:
+        return self.__is_test
 
     # todo: проверика на то что channel корректный 
     @property
@@ -1030,6 +1035,7 @@ class TDP:
     def build(self, cubedata: Cubedata, channel: int) -> None:
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
+        self.__is_test = False
         self.__channel = channel
 
         number_of_slices: int = self.__get_number_of_slices()
@@ -1050,6 +1056,7 @@ class TDP:
     def build_test_tdp(self, number_of_frames: int) -> None:
         self.__time_step = 12
         self.__is_builded = True
+        self.__is_test = True
         self.__channel = 131
 
         horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
