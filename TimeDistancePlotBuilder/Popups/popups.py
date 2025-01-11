@@ -1,6 +1,7 @@
 import os
+from typing import Optional
 
-from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 
@@ -46,23 +47,59 @@ class ExportImagePopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("TimeDistancePlotBuilder")
-        self.setModal(True)
+        # self.setModal(True)
+
+        self.__image_for_save: Optional[QPixmap] = None 
+        self.__path_to_save: Optional[str] = None
 
         png_export_file_container = QHBoxLayout()
 
-        self.png_filename_label = QLabel()
-        self.png_filename_input = QLineEdit()        
-        png_export_file_container.addWidget(self.png_filename_label)
-        png_export_file_container.addWidget(self.png_filename_input)
-
+        self.__preivew_image_for_export = QLabel()
+        self.__image_filename_label = QLabel()
+        self.__image_filename_input = QLineEdit()   
+     
+        png_export_file_container.addWidget(self.__image_filename_label)
+        png_export_file_container.addWidget(self.__image_filename_input)
 
         container = QVBoxLayout()
+        container.addWidget(self.__preivew_image_for_export)
         container.addLayout(png_export_file_container)
+
+        buttons_container = QHBoxLayout()
+
+        self.__cancel_button = QPushButton("Cancel")
+        self.__export_button = QPushButton("Export")
+
+        self.__export_button.clicked.connect(self.__export_image)
+        self.__cancel_button.clicked.connect(self.__cancel)
+
+        buttons_container.addWidget(self.__cancel_button)
+        buttons_container.addWidget(self.__export_button)
+        
+        container.addLayout(buttons_container)
 
         self.setLayout(container)
 
-    def activate(image_for_save: QPixmap, path_to_save: str) -> None:
-        pass
+    def activate(self, image_for_save: QPixmap, path_to_save: str) -> None:
+        self.__image_for_save: QPixmap = image_for_save
+        self.__path_to_save: str = path_to_save
+        preview_image = image_for_save.scaled(300, 300)
+        self.__preivew_image_for_export.setPixmap(preview_image)
+        self.__image_filename_label.setText(f"{path_to_save}\\")
+        self.show()
+
+    def __path_is_valid(self, path: str) -> bool:
+        return len(path) > 0 
+
+    def __export_image(self) -> None:
+        path_to_export = f"{self.__path_to_save}\\{self.__image_filename_input.text()}"
+        if (not self.__image_for_save == None) and self.__path_is_valid(path_to_export):
+            self.__image_for_save.save(path_to_export)
+        
+        self.__cancel()
+
+    def __cancel(self) -> None:
+        self.close()
    
 
 class PopupManager:

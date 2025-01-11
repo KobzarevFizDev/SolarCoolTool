@@ -21,6 +21,11 @@ from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
 
 class TimeDistancePlotBuilder(QMainWindow):
+    
+    @property
+    def popup_manager(self) -> PopupManager:
+        return self.__popup_manager
+
     def __init__(self, path_to_configuration: str):
         super().__init__()
 
