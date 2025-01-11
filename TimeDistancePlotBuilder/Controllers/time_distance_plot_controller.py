@@ -6,16 +6,18 @@ import os
 from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot, TDP
 from TimeDistancePlotBuilder.Views.time_distance_plot_view import TimeDistancePlotView
 
+from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QPixmap
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import Cubedata
+    from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
 class TimeDistancePlotController:
     def __init__(self, model, mainAppWindow):
         self.__model: AppModel = model
         self.__view: TimeDistancePlotView = TimeDistancePlotView(self, model, mainAppWindow)
-
+        self.__popup_manager: PopupManager = mainAppWindow.popup_manager 
 
     def set_current_tdp_step(self, step: int) -> None:
         self.__model.time_line.tdp_step = step
@@ -37,8 +39,46 @@ class TimeDistancePlotController:
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
-        self.__model.time_distance_plot.build(cubedata, channel)
-        self.__model.notify_observers()
+
+        build_thread = QThread()
+        worker = self.__model.time_distance_plot
+        worker.moveToThread(build_thread)
+
+        # Подключаем сигнал прогресса к обновлению QProgressDialog
+        # worker.progress.connect(lambda progress_value: self.__popup_manager.process_popup.setValue(progress_value))
+
+        # Создаем сигнал для вызова метода build в потоке
+        # build_thread.started.connect(lambda: worker.build(cubedata, channel))
+        # build_thread.started.connect(lambda: worker.buildRequested.emit(cubedata, channel))
+
+
+        # Подключаем завершение работы потока
+        worker.finished.connect(build_thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        build_thread.finished.connect(build_thread.deleteLater)
+        build_thread.finished.connect(self.__model.notify_observers)
+
+        # Запускаем поток
+        build_thread.start()
+
+        # todo: Показ успешного сообщения
+        # worker.finished.connect(lambda : self.fini)
+
+        # self.__worker.progress.connect(self.__popup_manager.loading_program_popup.update_progress)
+        # self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
+        # self.__worker.finished.connect(self.__thread_load_frames.quit)
+        # self.__worker.finished.connect(self.__worker.deleteLater)
+        # self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
+        # self.__thread_load_frames.finished.connect(self.__on_loaded_solar_frames)
+
+        # self.__thread_load_frames.start()
+
+        # start_index: int = self.__model.time_line.start_frame_to_build_tdp
+        # finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        # cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
+        # channel: int = self.__model.current_channel.channel
+        # self.__model.time_distance_plot.build(cubedata, channel)
+        # self.__model.notify_observers()
 
     def debug_build_time_distance_plot(self) -> None:
         number_of_frames = self.__model.time_line.max_index_of_solar_frame_for_debug_tdp

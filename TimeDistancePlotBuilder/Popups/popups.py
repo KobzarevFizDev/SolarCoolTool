@@ -1,14 +1,14 @@
 import os
 from typing import Optional
 
-from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QDialog, QProgressDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
 
 from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport
 
-class LoadingPopup(QDialog):
+class LoadingProgramPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("TimeDistancePlotBuilder")
@@ -115,10 +115,11 @@ class ExportImagePopup(QDialog):
 
 class PopupManager:
     def __init__(self, parent_window = None):
-        self.__loading_popup = LoadingPopup(parent_window)
+        self.__loading_program_popup = LoadingProgramPopup(parent_window)
         self.__export_image_popup = ExportImagePopup(parent_window)
 
         self.__exception_popup: QMessageBox = self.__create_exception_popup(parent_window)
+        self.__process_popup: QProgressDialog = self.__create_process_popup(parent_window)
 
         self.__export_image_popup.exception_occured.connect(self.__on_handle_exception)
 
@@ -128,15 +129,25 @@ class PopupManager:
         exception_popup.setWindowTitle("Error")
         exception_popup.setInformativeText("An error occured")
         return exception_popup
-
+    
+    def __create_process_popup(self, parent_window) -> QProgressDialog:
+        popup = QProgressDialog("Processing...", "Cancel", 0, 100, parent_window)
+        popup.setMinimumDuration(0)  # Убедимся, что не отображается автоматически
+        popup.setWindowModality(Qt.NonModal)
+        popup.hide()
+        return popup
 
     @property
-    def loading_popup(self) -> LoadingPopup:
-        return self.__loading_popup
+    def loading_program_popup(self) -> LoadingProgramPopup:
+        return self.__loading_program_popup
 
     @property
     def export_image_popup(self) -> ExportImagePopup:
         return self.__export_image_popup
+    
+    @property
+    def process_popup(self) -> QProgressDialog:
+        return self.__process_popup
     
     def __on_handle_exception(self, exception: Exception) -> None:
         self.__exception_popup.setInformativeText(str(exception))

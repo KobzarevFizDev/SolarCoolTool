@@ -53,13 +53,13 @@ class TimeDistancePlotBuilder(QMainWindow):
     def __load_solar_frames_for_current_channel(self) -> None:
         current_channel: int = self.__app_model.current_channel.channel
 
-        self.__popup_manager.loading_popup.show()
+        self.__popup_manager.loading_program_popup.show()
         
         self.__thread_load_frames = QThread()
         self.__worker = self.__app_model.solar_frames_storage
         self.__worker.moveToThread(self.__thread_load_frames)
 
-        self.__worker.progress.connect(self.__popup_manager.loading_popup.update_progress)
+        self.__worker.progress.connect(self.__popup_manager.loading_program_popup.update_progress)
         self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
         self.__worker.finished.connect(self.__thread_load_frames.quit)
         self.__worker.finished.connect(self.__worker.deleteLater)
@@ -90,7 +90,7 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.__create_controllers_if_necessary()
 
         self.show()
-        self.__popup_manager.loading_popup.close()
+        self.__popup_manager.loading_program_popup.close()
 
     def keyPressEvent(self, event):
         event.accept()

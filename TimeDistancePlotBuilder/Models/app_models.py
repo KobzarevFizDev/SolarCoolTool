@@ -960,8 +960,228 @@ class CurrentAppState:
     def current_state(self) -> AppStates:
         return self.__state
 
-class TDP:
+# class TDP:
+    # def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
+    #     self.__bezier_mask = bezier_mask
+    #     self.__viewport_transform = viewport_transform
+
+    #     self.__width_of_tdp_step = 3 # Толщина временного шага в пикселях (1 кадр это 3 пикселя в time distance plot)
+    #     self.__ro = 0.5 # Плотность срезов (чем меньше тем реже срезы)
+    #     self.__channel: int = -1
+        
+    #     self.__tdp_array: npt.NDArray = None
+    #     self.__is_builded: bool = False
+
+    #     self.__smooth_parametr: float = 0
+
+    #     self.__is_new: bool = False
+    #     self.__is_test: bool = False
+
+    # @property
+    # def is_new(self) -> bool:
+    #     result = self.__is_new
+    #     self.__is_new = False
+    #     return result
+    
+    # @property
+    # def is_test(self) -> bool:
+    #     return self.__is_test
+
+    # # todo: проверика на то что channel корректный 
+    # @property
+    # def cmap(self) -> Colormap:
+    #     if self.__channel != -1:
+    #         return get_cmap_by_channel(self.__channel)
+    #     else:
+    #         None
+
+    # @property
+    # def was_builded(self) -> bool:
+    #     return self.__is_builded
+
+    # @property
+    # def width_of_tdp_step(self) -> int:
+    #     return self.__width_of_tdp_step
+    
+    # @property
+    # def total_tdp_steps(self) -> int:
+    #     return self.__tdp_array.shape[1] // self.__width_of_tdp_step
+    
+    # @property
+    # def length_of_tdp_in_px(self) -> int:
+    #     return self.__tdp_array.shape[1]
+    
+    # @property
+    # def time_step_in_seconds(self) -> int:
+    #     if self.__is_builded == False:
+    #         return 12
+    #     else:
+    #         return self.__time_step
+        
+    # @property
+    # def tdp_array(self) -> npt.NDArray:
+    #     return self.__tdp_array
+    
+    # @property
+    # def smooth_parametr(self) -> float:
+    #     return self.__smooth_parametr
+    
+    # def set_smooth_parametr(self, value) -> None:
+    #     if value < 0:
+    #         raise Exception("Smooth parametr can not be negative")
+        
+    #     self.__smooth_parametr = value
+
+    # def build(self, cubedata: Cubedata, channel: int) -> None:
+    #     self.__time_step = cubedata.time_step_in_seconds
+    #     self.__is_builded = True
+    #     self.__is_test = False
+    #     self.__channel = channel
+
+    #     number_of_slices: int = self.__get_number_of_slices()
+    #     slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly=False)
+    #     slices = self.__convert_slices_to_fits_coordinates(slices)
+
+    #     self.__initialize_tdp_array(cubedata, number_of_slices)
+
+    #     for index_of_step in range(cubedata.number_of_frames):
+    #         frame: CubedataFrame = cubedata.get_frame(index_of_step)
+    #         self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+    #     self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+    #     self.__is_new = True
+
+
+    # def build_test_tdp(self, number_of_frames: int) -> None:
+    #     self.__time_step = 12
+    #     self.__is_builded = True
+    #     self.__is_test = True
+    #     self.__channel = 131
+
+    #     horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
+    #     vertical_length_of_tdp: int = 500
+    #     self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+
+    #     width_of_black_line = 200
+
+    #     borders_indexes = [i * width_of_black_line for i in range(horizontal_length_of_tdp)]
+
+    #     for i in range(len(borders_indexes) - 1):
+    #         if i % 2 == 0:
+    #             continue
+
+    #         start_border: int = borders_indexes[i]
+    #         finish_border: int = borders_indexes[i + 1]
+    #         self.__tdp_array[:, start_border:finish_border] = 1
+
+    #     self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+    #     self.__is_new = True
+
+    # def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
+    #     return np.zeros((height_in_px, width_in_px))
+
+    # def __get_number_of_slices(self) -> int:        
+    #     dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
+    #     l: float = self.__bezier_mask.length_in_pixels
+    #     number_of_slices = int(dpi * l * self.__ro) 
+    #     return number_of_slices
+    
+    # def __convert_slices_to_fits_coordinates(self, slices: List[Tuple[QPoint, QPoint]]) -> List[Tuple[QPoint, QPoint]]:
+    #     for i in range(len(slices)):
+    #         slice: Tuple[QPoint, QPoint] = slices[i]
+    #         bp_in_bezier_mask_window_coordinates: QPoint = slice[0]
+    #         tp_in_bezier_mask_window_coordinates: QPoint = slice[1]
+    #         bp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(bp_in_bezier_mask_window_coordinates) 
+    #         tp_in_fits_coordinates: QPoint = self.__viewport_transform.transform_point_from_bezier_mask_widget_to_fits(tp_in_bezier_mask_window_coordinates)
+    #         slice[0] = bp_in_fits_coordinates
+    #         slice[1] = tp_in_fits_coordinates
+    #         slices[i] = slice
+    #     return slices
+    
+    # def __initialize_tdp_array(self, cubedata: Cubedata, number_of_slices: int) -> None:
+    #     horizontal_length_of_tdp: int = cubedata.number_of_frames * self.__width_of_tdp_step
+    #     vertical_length_of_tdp: int = number_of_slices
+    #     self.__tdp_array = np.zeros((vertical_length_of_tdp, horizontal_length_of_tdp))
+    
+    # def __handle_tdp_step(self, 
+    #                       slices:List[Tuple[QPoint, QPoint]], 
+    #                       frame: CubedataFrame,
+    #                       width_of_step_in_pixels: int,
+    #                       index_of_step: int) -> npt.NDArray:
+    #     start_column_index = index_of_step * width_of_step_in_pixels
+    #     finish_column_index = (index_of_step + 1) * width_of_step_in_pixels - 1
+    #     columns_indexes = [i for i in range(start_column_index, finish_column_index + 1)]
+
+    #     for i, slice in enumerate(slices):
+    #         mean_value_of_slice: float = self.__get_mean_value_of_slice(slice, frame)
+    #         self.__tdp_array[i,columns_indexes] = mean_value_of_slice
+
+    # def __get_mean_value_of_slice(self, slice: Tuple[QPoint, QPoint], frame: CubedataFrame) -> float:
+    #     bp: QPoint = slice[0]
+    #     tp: QPoint = slice[1]
+
+    #     x1 = bp.x()
+    #     y1 = bp.y()
+
+    #     x2 = tp.x()
+    #     y2 = tp.y()
+
+    #     pixels_coordinates: List[QPoint] = get_pixels_of_line(x1, y1, x2, y2)
+
+    #     count = 0
+    #     total_sum = 0 
+
+    #     for pixel_coordinate in pixels_coordinates:
+    #         pixel_x: int = pixel_coordinate.x()
+    #         pixel_y: int = pixel_coordinate.y()
+
+    #         count += 1
+
+    #         total_sum += frame.content[pixel_y][pixel_x] 
+
+    #     mean_value = total_sum / count
+    #     return mean_value
+
+    # def __vertical_resize_tdp_array(self, tdp_segment: npt.NDArray, new_vertical_size_in_px: float) -> npt.NDArray:
+    #     old_vertical_size = tdp_segment.shape[0]
+    #     vertical_zoom = new_vertical_size_in_px / old_vertical_size
+    #     return zoom(tdp_segment, (vertical_zoom, 1), order=1)
+
+    # def save_as_png(self) -> None:
+    #     pass
+
+    # def save_as_numpy_array(self) -> None:
+    #     pass
+
+    # def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:
+    #     cm = get_cmap_by_channel(self.__channel)
+    #     sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+    #     dpi_value = 100
+
+    #     tdp: npt.NDArray = self.__tdp_array[ : , start_step * self.__width_of_tdp_step : (finish_step - 1) * self.__width_of_tdp_step]
+    #     tdp = self.__vertical_resize_tdp_array(tdp, vertical_size_in_px)
+
+    #     l = tdp.shape[1] / dpi_value
+    #     h = tdp.shape[0] / dpi_value
+    #     fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
+    #     canvas = FigureCanvas(fig)
+    #     axes = fig.add_subplot()
+    #     axes.set_axis_off()
+    #     axes.imshow(tdp.astype(np.float32), cmap=cm)
+    #     canvas.draw()
+    #     width, height = int(fig.figbbox.width), int(fig.figbbox.height)
+    #     im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
+    #     return QPixmap.fromImage(im)
+
+class TDP(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int, int, str)
+    error = pyqtSignal(str)
+
     def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
+        super().__init__()
         self.__bezier_mask = bezier_mask
         self.__viewport_transform = viewport_transform
 
@@ -1032,7 +1252,9 @@ class TDP:
         
         self.__smooth_parametr = value
 
+    @pyqtSlot()
     def build(self, cubedata: Cubedata, channel: int) -> None:
+        print("ok")
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
         self.__is_test = False
@@ -1051,6 +1273,8 @@ class TDP:
         self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
+
+        self.finished.emit()
 
 
     def build_test_tdp(self, number_of_frames: int) -> None:
