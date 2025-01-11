@@ -1,9 +1,12 @@
 import os
 from typing import Optional
 
-from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
+
+
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport
 
 class LoadingPopup(QDialog):
     def __init__(self, parent=None):
@@ -41,9 +44,9 @@ class LoadingPopup(QDialog):
         progress = int(float(current_loaded_file) / limit_of_load_files * 100)
         self.progress_bar.setValue(progress)
 
-
-
 class ExportImagePopup(QDialog):
+    exception_occured = pyqtSignal(Exception)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("TimeDistancePlotBuilder")
@@ -92,11 +95,19 @@ class ExportImagePopup(QDialog):
         return len(path) > 0 
 
     def __export_image(self) -> None:
-        path_to_export = f"{self.__path_to_save}\\{self.__image_filename_input.text()}"
-        if (not self.__image_for_save == None) and self.__path_is_valid(path_to_export):
-            self.__image_for_save.save(path_to_export)
+        try:
+            file_name: str = self.__image_filename_input.text()
+            path_to_export = f"{self.__path_to_save}\\{file_name}"
+            if (not self.__image_for_save == None) and self.__path_is_valid(file_name):
+                self.__image_for_save.save(path_to_export)
+            else:
+                raise IncorrectPathForExport(path_to_export)
         
-        self.__cancel()
+        except Exception as e:
+            self.exception_occured.emit(e)
+        
+        finally:    
+            self.__cancel()
 
     def __cancel(self) -> None:
         self.close()
@@ -107,6 +118,17 @@ class PopupManager:
         self.__loading_popup = LoadingPopup(parent_window)
         self.__export_image_popup = ExportImagePopup(parent_window)
 
+        self.__exception_popup: QMessageBox = self.__create_exception_popup(parent_window)
+
+        self.__export_image_popup.exception_occured.connect(self.__on_handle_exception)
+
+    def __create_exception_popup(self, parent_window) -> QMessageBox:
+        exception_popup = QMessageBox(parent_window)
+        exception_popup.setIcon(QMessageBox.Critical)
+        exception_popup.setWindowTitle("Error")
+        exception_popup.setInformativeText("An error occured")
+        return exception_popup
+
 
     @property
     def loading_popup(self) -> LoadingPopup:
@@ -115,3 +137,7 @@ class PopupManager:
     @property
     def export_image_popup(self) -> ExportImagePopup:
         return self.__export_image_popup
+    
+    def __on_handle_exception(self, exception: Exception) -> None:
+        self.__exception_popup.setInformativeText(str(exception))
+        self.__exception_popup.show()

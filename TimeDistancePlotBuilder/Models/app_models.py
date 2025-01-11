@@ -30,7 +30,7 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Exceptions.Exceptions import IncorrectZoneInterestingSize
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
