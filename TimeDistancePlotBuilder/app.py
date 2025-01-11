@@ -17,7 +17,7 @@ from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFramesStora
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Popups.loading_popup import LoadingPopup
+from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
 
 class TimeDistancePlotBuilder(QMainWindow):
@@ -25,6 +25,8 @@ class TimeDistancePlotBuilder(QMainWindow):
         super().__init__()
 
         self.__controllers_was_created: bool = False
+        self.__popups_was_created: bool = False
+
 
         self.setWindowTitle("TimeDistancePlotBuilder")
         self.setGeometry(200, 200, 1200, 600)
@@ -34,7 +36,7 @@ class TimeDistancePlotBuilder(QMainWindow):
         configuration: ConfigurationApp = ConfigurationApp(path_to_configuration)
         self.__app_model = AppModel(configuration)
 
-        self.__loading_popup = LoadingPopup(self)
+        self.__popup_manager = PopupManager(self)
 
         self.__load_solar_frames_for_current_channel()
 
@@ -46,17 +48,17 @@ class TimeDistancePlotBuilder(QMainWindow):
     def __load_solar_frames_for_current_channel(self) -> None:
         current_channel: int = self.__app_model.current_channel.channel
 
-        self.__loading_popup.show()
+        self.__popup_manager.loading_popup.show()
+        
         self.__thread_load_frames = QThread()
         self.__worker = self.__app_model.solar_frames_storage
         self.__worker.moveToThread(self.__thread_load_frames)
 
-        self.__worker.progress.connect(self.__loading_popup.update_progress)
+        self.__worker.progress.connect(self.__popup_manager.loading_popup.update_progress)
         self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
         self.__worker.finished.connect(self.__thread_load_frames.quit)
         self.__worker.finished.connect(self.__worker.deleteLater)
         self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
-        self.__thread_load_frames.finished.connect(self.__create_controllers_if_necessary)
         self.__thread_load_frames.finished.connect(self.__on_loaded_solar_frames)
 
         self.__thread_load_frames.start()
@@ -80,9 +82,10 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.__app_model.notify_observers()
 
     def __on_loaded_solar_frames(self) -> None:
+        self.__create_controllers_if_necessary()
+
         self.show()
-        self.__loading_popup.close()
-        pass
+        self.__popup_manager.loading_popup.close()
 
     def keyPressEvent(self, event):
         event.accept()
