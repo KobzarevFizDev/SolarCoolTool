@@ -40,38 +40,35 @@ class TimeDistancePlotController:
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
 
-        build_thread = QThread()
-        worker = self.__model.time_distance_plot
-        worker.moveToThread(build_thread)
+        self.__popup_manager.process_popup.activate(process_description="Time distance plot is building")
 
-        # Подключаем сигнал прогресса к обновлению QProgressDialog
-        # worker.progress.connect(lambda progress_value: self.__popup_manager.process_popup.setValue(progress_value))
+        self.build_thread = QThread()
+        self.worker = self.__model.time_distance_plot
+        self.worker.moveToThread(self.build_thread)
 
-        # Создаем сигнал для вызова метода build в потоке
-        # build_thread.started.connect(lambda: worker.build(cubedata, channel))
-        # build_thread.started.connect(lambda: worker.buildRequested.emit(cubedata, channel))
+        self.build_thread.started.connect(lambda: self.worker.build(cubedata, channel))
+        self.worker.finished.connect(self.build_thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.build_thread.finished.connect(self.build_thread.deleteLater)
+        self.build_thread.finished.connect(self.__model.notify_observers)
+        self.build_thread.finished.connect(self.__popup_manager.process_popup.close)
+        self.worker.progress.connect(lambda step, max_step: self.__popup_manager.process_popup.update_progress(int(step/max_step * 100)))
+        self.worker.progress.connect(lambda step, max_step: print(f"Progress: {step}/{max_step} = {int(step/max_step * 100)}"))
 
+        self.build_thread.start()
 
-        # Подключаем завершение работы потока
-        worker.finished.connect(build_thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        build_thread.finished.connect(build_thread.deleteLater)
-        build_thread.finished.connect(self.__model.notify_observers)
+        # self.build_thread = QThread()
+        # self.worker = WorkerStub()
+        # self.worker.moveToThread(self.build_thread)
 
-        # Запускаем поток
-        build_thread.start()
+        # self.build_thread.started.connect(self.worker.run)
+        # self.worker.finished.connect(self.build_thread.quit)
+        # self.worker.finished.connect(self.worker.deleteLater)
+        # self.build_thread.finished.connect(self.build_thread.deleteLater)
+        # self.worker.progress.connect(lambda value: print(f"Progress: {value}"))
 
-        # todo: Показ успешного сообщения
-        # worker.finished.connect(lambda : self.fini)
+        # self.build_thread.start()
 
-        # self.__worker.progress.connect(self.__popup_manager.loading_program_popup.update_progress)
-        # self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
-        # self.__worker.finished.connect(self.__thread_load_frames.quit)
-        # self.__worker.finished.connect(self.__worker.deleteLater)
-        # self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
-        # self.__thread_load_frames.finished.connect(self.__on_loaded_solar_frames)
-
-        # self.__thread_load_frames.start()
 
         # start_index: int = self.__model.time_line.start_frame_to_build_tdp
         # finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot

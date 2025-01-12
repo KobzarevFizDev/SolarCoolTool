@@ -1175,9 +1175,10 @@ class CurrentAppState:
     #     im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
     #     return QPixmap.fromImage(im)
 
+
 class TDP(QObject):
     finished = pyqtSignal()
-    progress = pyqtSignal(int, int, str)
+    progress = pyqtSignal(int, int)
     error = pyqtSignal(str)
 
     def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
@@ -1254,7 +1255,6 @@ class TDP(QObject):
 
     @pyqtSlot()
     def build(self, cubedata: Cubedata, channel: int) -> None:
-        print("ok")
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
         self.__is_test = False
@@ -1269,6 +1269,10 @@ class TDP(QObject):
         for index_of_step in range(cubedata.number_of_frames):
             frame: CubedataFrame = cubedata.get_frame(index_of_step)
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
+
+            self.progress.emit(index_of_step, cubedata.number_of_frames - 1)
+            QCoreApplication.processEvents()
+
 
         self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
 

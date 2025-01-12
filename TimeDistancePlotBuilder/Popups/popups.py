@@ -28,21 +28,46 @@ class LoadingProgramPopup(QDialog):
         self.logo_image = QLabel(self)
         self.logo_image.setPixmap(logo_pixmap)
 
-        self.loaded_files = QTextEdit(self)
-        self.loaded_files.setReadOnly(True)
-        self.loaded_files.setFixedWidth(200)
-        self.loaded_files.setFixedHeight(300)
+        self.__loaded_files = QTextEdit(self)
+        self.__loaded_files.setReadOnly(True)
+        self.__loaded_files.setFixedWidth(200)
+        self.__loaded_files.setFixedHeight(300)
         horizontal_container.addWidget(self.logo_image)
-        horizontal_container.addWidget(self.loaded_files) 
+        horizontal_container.addWidget(self.__loaded_files) 
 
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setRange(0, 100)
-        layout.addWidget(self.progress_bar)
+        self.__progress_bar = QProgressBar(self)
+        self.__progress_bar.setRange(0, 100)
+        layout.addWidget(self.__progress_bar)
 
     def update_progress(self, current_loaded_file: int, limit_of_load_files: int, loaded_file: str):
-        self.loaded_files.append(loaded_file)
+        self.__loaded_files.append(loaded_file)
         progress = int(float(current_loaded_file) / limit_of_load_files * 100)
-        self.progress_bar.setValue(progress)
+        self.__progress_bar.setValue(progress)
+
+class ProcessPopup(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Please wait!")
+        self.setModal(True)
+
+        container = QVBoxLayout()
+
+        self.__process_description_label = QLabel("Building time distance plot")
+        self.__progress_bar = QProgressBar(self)
+        self.__progress_bar.setRange(0, 100)
+        
+        container.addWidget(self.__process_description_label)
+        container.addWidget(self.__progress_bar)
+
+        self.setLayout(container)
+
+    def activate(self, process_description: str) -> None:
+        self.__progress_bar.setValue(0)
+        self.__process_description_label.setText(process_description)
+
+    def update_progress(self, progress: int) -> None:
+        self.__progress_bar.setValue(progress)
+
 
 class ExportImagePopup(QDialog):
     exception_occured = pyqtSignal(Exception)
@@ -117,10 +142,9 @@ class PopupManager:
     def __init__(self, parent_window = None):
         self.__loading_program_popup = LoadingProgramPopup(parent_window)
         self.__export_image_popup = ExportImagePopup(parent_window)
+        self.__process_popup = ProcessPopup(parent_window)
 
         self.__exception_popup: QMessageBox = self.__create_exception_popup(parent_window)
-        self.__process_popup: QProgressDialog = self.__create_process_popup(parent_window)
-
         self.__export_image_popup.exception_occured.connect(self.__on_handle_exception)
 
     def __create_exception_popup(self, parent_window) -> QMessageBox:
@@ -129,13 +153,6 @@ class PopupManager:
         exception_popup.setWindowTitle("Error")
         exception_popup.setInformativeText("An error occured")
         return exception_popup
-    
-    def __create_process_popup(self, parent_window) -> QProgressDialog:
-        popup = QProgressDialog("Processing...", "Cancel", 0, 100, parent_window)
-        popup.setMinimumDuration(0)  # Убедимся, что не отображается автоматически
-        popup.setWindowModality(Qt.NonModal)
-        popup.hide()
-        return popup
 
     @property
     def loading_program_popup(self) -> LoadingProgramPopup:
@@ -146,7 +163,7 @@ class PopupManager:
         return self.__export_image_popup
     
     @property
-    def process_popup(self) -> QProgressDialog:
+    def process_popup(self) -> ProcessPopup:
         return self.__process_popup
     
     def __on_handle_exception(self, exception: Exception) -> None:
