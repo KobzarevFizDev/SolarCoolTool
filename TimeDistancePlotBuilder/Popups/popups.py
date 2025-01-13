@@ -1,12 +1,15 @@
 import os
 from typing import Optional
 
+import numpy.typing as npt
+import numpy as np
+
 from PyQt5.QtWidgets import QDialog, QProgressDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
 
-from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport, FileNameIsEmpty
 
 class LoadingProgramPopup(QDialog):
     def __init__(self, parent=None):
@@ -69,6 +72,129 @@ class ProcessPopup(QDialog):
     def update_progress(self, progress: int) -> None:
         self.__progress_bar.setValue(progress)
 
+# todo: Вынести базовый класс
+class ExportTdpPopup(QDialog):
+    exception_occured = pyqtSignal(Exception)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Export result")
+        self.setModal(True)
+
+        self.__path_to_save: Optional[str] = None
+        self.__tdp_as_numpy: Optional[npt.NDArray] = None
+        self.__tdp_as_png: Optional[QPixmap] = None
+
+        container = QVBoxLayout()
+
+        export_as_png_container: QVBoxLayout = self.__create_export_as_png_container()
+        export_as_numpy_container: QVBoxLayout = self.__create_export_as_numpy_array()
+        buttons_container: QHBoxLayout = self.__create_buttons()
+
+        container.addLayout(export_as_png_container)
+        container.addLayout(export_as_numpy_container)
+        container.addLayout(buttons_container)
+
+        self.setLayout(container)
+
+    
+    def __create_export_as_png_container(self) -> QVBoxLayout:
+        export_as_png_container = QVBoxLayout()
+        path_to_save_as_png_container = QHBoxLayout()
+        
+        self.__tdp_as_png_preview = QLabel()
+        self.__path_to_export_tdp_as_png = QLabel()
+        self.__input_file_name_to_export_tdp_as_png = QLineEdit()
+
+        self.__tdp_as_png_preview.setMaximumSize(400, 100)
+
+        export_as_png_container.addWidget(self.__tdp_as_png_preview)
+        export_as_png_container.addLayout(path_to_save_as_png_container)
+
+        path_to_save_as_png_container.addWidget(self.__path_to_export_tdp_as_png)
+        path_to_save_as_png_container.addWidget(self.__input_file_name_to_export_tdp_as_png)
+
+        return export_as_png_container
+    
+    def __create_export_as_numpy_array(self) -> QVBoxLayout:
+        export_as_numpy_container = QVBoxLayout()
+        path_to_save_as_numpy_container = QHBoxLayout()
+
+        self.__tdp_as_numpy_preview = QLabel()
+        self.__path_to_export_tdp_as_numpy = QLabel()
+        self.__input_file_name_to_export_tdp_as_numpy = QLineEdit()
+
+        export_as_numpy_container.addWidget(self.__tdp_as_numpy_preview)
+        export_as_numpy_container.addLayout(path_to_save_as_numpy_container)
+
+        path_to_save_as_numpy_container.addWidget(self.__path_to_export_tdp_as_numpy)
+        path_to_save_as_numpy_container.addWidget(self.__input_file_name_to_export_tdp_as_numpy)
+
+        return export_as_numpy_container
+    
+    def __create_buttons(self) -> QHBoxLayout:
+        container = QHBoxLayout()
+        
+        self.__cancel_button = QPushButton("Cancel")
+        self.__export_button = QPushButton("Export")
+
+        self.__cancel_button.clicked.connect(self.close)
+        self.__export_button.clicked.connect(self.__export)
+
+        container.addWidget(self.__cancel_button)
+        container.addWidget(self.__export_button)
+
+        return container
+
+
+    def activate(self, 
+                 tdp_as_numpy_array: npt.NDArray, 
+                 tdp_as_image: QPixmap,
+                 path_to_save: str) -> None:
+        self.__path_to_save = path_to_save
+        self.__tdp_as_png = tdp_as_image
+        self.__tdp_as_numpy = tdp_as_numpy_array
+
+        self.__path_to_export_tdp_as_png.setText(f"{path_to_save}\\")
+        self.__path_to_export_tdp_as_numpy.setText(f"{path_to_save}\\")
+        self.__tdp_as_png_preview.setPixmap(self.__tdp_as_png)
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.join(current_dir, "../Resources/numpy_logo.png") 
+        logo_pixmap = QPixmap(logo_path)
+        
+        self.__tdp_as_numpy_preview.setPixmap(logo_pixmap)
+
+        self.show()
+
+    def __export(self) -> None:
+        try:
+            png_filename: str = self.__input_file_name_to_export_tdp_as_png.text()
+            numpy_filename: str = self.__input_file_name_to_export_tdp_as_numpy.text()
+
+            self.__save_tdp_as_numpy_array(numpy_filename)
+            self.__save_tdp_as_image(png_filename)
+        except Exception as e:
+            self.exception_occured.emit(e)
+        finally:
+            self.close()
+
+    def __save_tdp_as_numpy_array(self, filename: str) -> None:
+        if self.__tdp_as_numpy is not None and len(filename) > 0:
+            path_to_save: str = f"{self.__path_to_save}\\{filename}"
+            np.save(path_to_save, self.__tdp_as_numpy)
+        else:
+            raise FileNameIsEmpty()
+
+
+    def __save_tdp_as_image(self, filename: str) -> None:
+        if (not self.__tdp_as_png == None) and len(filename) > 0:
+            path_to_save: str = f"{self.__path_to_save}\\{filename}"
+            self.__tdp_as_png.save(path_to_save)
+        else:
+            raise FileNameIsEmpty()
+
+
 
 class ExportImagePopup(QDialog):
     exception_occured = pyqtSignal(Exception)
@@ -76,7 +202,7 @@ class ExportImagePopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("TimeDistancePlotBuilder")
-        # self.setModal(True)
+        self.setModal(True)
 
         self.__image_for_save: Optional[QPixmap] = None 
         self.__path_to_save: Optional[str] = None
@@ -144,6 +270,7 @@ class PopupManager:
         self.__loading_program_popup = LoadingProgramPopup(parent_window)
         self.__export_image_popup = ExportImagePopup(parent_window)
         self.__process_popup = ProcessPopup(parent_window)
+        self.__export_tdp_popup = ExportTdpPopup(parent_window)
 
         self.__exception_popup: QMessageBox = self.__create_exception_popup(parent_window)
         self.__export_image_popup.exception_occured.connect(self.__on_handle_exception)
@@ -166,6 +293,10 @@ class PopupManager:
     @property
     def process_popup(self) -> ProcessPopup:
         return self.__process_popup
+    
+    @property
+    def export_tdp_popup(self) -> ExportTdpPopup:
+        return self.__export_tdp_popup
     
     def __on_handle_exception(self, exception: Exception) -> None:
         self.__exception_popup.setInformativeText(str(exception))

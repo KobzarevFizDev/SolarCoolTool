@@ -21,3 +21,10 @@ class IncorrectPathForExport(Exception):
 
     def __str__(self) -> str:
         return "Incorrect path for export. Path = {0}".format(self.__path)
+    
+class FileNameIsEmpty(Exception):
+    def __init__(self) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "Filename is empty"

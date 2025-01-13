@@ -57,16 +57,13 @@ class TdpRulerWidget(QWidget):
         number_of_steps = (self.__finish - self.__start) // self.__step
         step_size_px = ruler_length // number_of_steps
 
-    
         for i in range(self.__start, self.__finish):
             x_pos = int((i - self.__start) / self.__step * step_size_px)
             if i % self.__step == 0:
-                print(f"Большой штрих. step = {i}")
                 text = f"{i}, {self.__unit_of_measurement}"
                 painter.drawText(x_pos - text_width // 2, ruler_width - text_offset, text_width, text_height, Qt.AlignRight, text)
                 painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.6) )
             elif i % (self.__step // 5) == 0:
-                print(f"Малый штрих. step = {i}")
                 painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.8) )
 
     def __draw_vertical_ruler(self, painter: QPainter) -> None:

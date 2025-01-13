@@ -226,9 +226,12 @@ class TimeDistancePlotView:
         self.__debug_build_button: QPushButton = self.__create_debug_build_button()
         self.__build_button: QPushButton = self.__create_build_button()
         self.__uniformly_build_button: QPushButton = self.__create_uniformly_build_button()
+        self.__export_button: QPushButton = self.__create_export_tdp_button()
+
         build_buttons_container.addWidget(self.__debug_build_button)
         build_buttons_container.addWidget(self.__build_button)
         build_buttons_container.addWidget(self.__uniformly_build_button)
+        build_buttons_container.addWidget(self.__export_button)
         
         self.__layout.addLayout(smooth_parametr_container)
         self.__layout.addLayout(range_slider_container)
@@ -266,6 +269,11 @@ class TimeDistancePlotView:
         uniformly_build_tdp_button = QPushButton("Uniformly build")
         uniformly_build_tdp_button.clicked.connect(lambda: self.__controller.build_time_distance_plot(is_uniformly=True))
         return uniformly_build_tdp_button
+    
+    def __create_export_tdp_button(self) -> QPushButton:
+        export_button = QPushButton("Export")
+        export_button.clicked.connect(self.__controller.export_tdp)
+        return export_button
 
     def __show_all_widgets_in_layout(self, layout) -> None:
         for i in range(layout.count()):
