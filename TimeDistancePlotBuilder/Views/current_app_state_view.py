@@ -20,8 +20,6 @@ class CurrentAppStateView:
         self.__distance_plot_button = self.__create_distance_plot_preview_button()
         self.__distance_plot_debug_button = self.__create_export_data_button()
 
-        self.model_is_changed()
-
     def model_is_changed(self):
         current_state = self.model.app_state.current_state
         self.__show_current_selected_state(current_state)

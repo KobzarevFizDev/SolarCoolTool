@@ -3,8 +3,8 @@ import os
 import sqlite3
 from typing import List, Tuple
 from enum import IntEnum, unique
+import time
 
-from matplotlib import pyplot as plt
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
@@ -13,9 +13,12 @@ from scipy.optimize import minimize_scalar
 
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure, SubplotParams
+from matplotlib import pyplot as plt
+from matplotlib.colors import Colormap
 
 import numpy as np
-from PyQt5.QtCore import QPoint, QPointF, QRect
+from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QCoreApplication
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
@@ -27,7 +30,7 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Exceptions.Exceptions import IncorrectZoneInterestingSize
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
@@ -277,16 +280,20 @@ class SolarFrame:
         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
         return im
 
-# todo: Валидацию на корректное значение channel
-class SolarFramesStorage:
+
+class SolarFramesStorage(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int, int, str)
+    error = pyqtSignal(str)
+
     def __init__(self, viewport_transform: 'ViewportTransform', configuration_app: 'ConfigurationApp'):
+        super().__init__()
         self.__viewport_transform = viewport_transform
-        self.__configuration_app: 'ConfigurationApp' = configuration_app
+        self.__configuration_app = configuration_app
         self.__current_channel: int = configuration_app.initial_channel
         self.__path_to_directory: str = configuration_app.path_to_solar_images
         self.__loaded_channel: List[SolarFrame] = list()
         self.__initialize_database()
-        self.cache_channel(configuration_app.initial_channel)
 
     def __initialize_database(self) -> None:
         files = self.__get_files_in_directory()
@@ -319,19 +326,18 @@ class SolarFramesStorage:
         files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
         return files_in_directory
 
-
     def __get_channels(self, files) -> List[int]:
         return [f.split('.')[3] for f in files]
 
     def __get_dates_of_this_files(self, files) -> List[str]:
         return [f.split('.')[2][0:10] for f in files]
 
-    # todo: Дублирование кода с методом __load_channel
-    def cache_channel(self, channel: int) -> None:
+    @pyqtSlot()
+    def load_channel(self, channel: int):
         step = self.__configuration_app.get_step_for_channel(channel)
         limit = self.__configuration_app.get_limit_for_channel(channel)
         need_to_skip = step - 1
-        cached_frames = 0
+        number_of_cached_frames = 0
 
         self.__current_channel = channel
         self.__loaded_channel.clear()
@@ -341,17 +347,17 @@ class SolarFramesStorage:
         dates = self.__get_dates_of_files_in_channel(channel)
 
         for i, path in enumerate(files):
-            if cached_frames > limit:
+            if number_of_cached_frames > limit:
                 print("Acheve limit")
                 break
-            print(f"caching {cached_frames}/{len(files)}. i = {i}")
+            print(f"caching {number_of_cached_frames}/{len(files)}. i = {i}")
 
             if need_to_skip > 0:
                 print(f"skip {i}")
                 need_to_skip -= 1
                 continue
 
-            cached_frames += 1
+            number_of_cached_frames += 1
             id = ids[i]
             date = dates[i]
             solar_frame = SolarFrame(id, path, channel, date)
@@ -361,7 +367,11 @@ class SolarFramesStorage:
 
             need_to_skip = step - 1
 
-    # todo: Валидация параметров
+            self.progress.emit(number_of_cached_frames, limit, path)
+            QCoreApplication.processEvents()
+
+        self.finished.emit()
+
     def get_solar_frame_by_index_from_current_channel(self, index: int) -> SolarFrame:
         res = self.__loaded_channel[index]
         return res
@@ -431,6 +441,7 @@ class SolarFramesStorage:
             frame = CubedataFrame(content)
             cubedata.add_frame(frame)
         return cubedata
+    
 
 
 class BezierCurve:
@@ -850,7 +861,7 @@ class TimeLine:
         self.__solar_frames_storage: SolarFramesStorage = solar_frames_storage
         self.__index_of_current_solar_frame: int = 0
         self.__start_frame_to_build_tdp: int = 0
-        self.__finish_frame_to_build_tdp: int = 3
+        self.__finish_frame_to_build_tdp: int = 0
         self.__current_tdp_step: int = 0
 
     @property
@@ -921,6 +932,9 @@ class TimeLine:
     def tdp_step(self, value: int) -> None:
         self.__current_tdp_step = value
 
+    def set_finish_index_of_build_tdp_as_maximum(self) -> None:
+        self.finish_interval_of_time_distance_plot = self.max_index_of_solar_frame - 1
+
 
 @unique
 class AppStates(IntEnum):
@@ -946,8 +960,13 @@ class CurrentAppState:
     def current_state(self) -> AppStates:
         return self.__state
 
-class TDP:
+class TDP(QObject):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int, int)
+    error = pyqtSignal(str)
+
     def __init__(self, bezier_mask: BezierMask, viewport_transform: ViewportTransform):
+        super().__init__()
         self.__bezier_mask = bezier_mask
         self.__viewport_transform = viewport_transform
 
@@ -958,8 +977,31 @@ class TDP:
         self.__tdp_array: npt.NDArray = None
         self.__is_builded: bool = False
 
+        self.__smooth_parametr: float = 0
+
+        self.__is_new: bool = False
+        self.__is_test: bool = False
+
     @property
-    def is_builded(self) -> bool:
+    def is_new(self) -> bool:
+        result = self.__is_new
+        self.__is_new = False
+        return result
+    
+    @property
+    def is_test(self) -> bool:
+        return self.__is_test
+
+    # todo: проверика на то что channel корректный 
+    @property
+    def cmap(self) -> Colormap:
+        if self.__channel != -1:
+            return get_cmap_by_channel(self.__channel)
+        else:
+            None
+
+    @property
+    def was_builded(self) -> bool:
         return self.__is_builded
 
     @property
@@ -980,14 +1022,30 @@ class TDP:
             return 12
         else:
             return self.__time_step
+        
+    @property
+    def tdp_array(self) -> npt.NDArray:
+        return self.__tdp_array
+    
+    @property
+    def smooth_parametr(self) -> float:
+        return self.__smooth_parametr
+    
+    def set_smooth_parametr(self, value) -> None:
+        if value < 0:
+            raise Exception("Smooth parametr can not be negative")
+        
+        self.__smooth_parametr = value
 
-    def build(self, cubedata: Cubedata, channel: int) -> None:
+    @pyqtSlot()
+    def build(self, cubedata: Cubedata, channel: int, is_uniformly: bool) -> None:
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
+        self.__is_test = False
         self.__channel = channel
 
         number_of_slices: int = self.__get_number_of_slices()
-        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly=False)
+        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly)
         slices = self.__convert_slices_to_fits_coordinates(slices)
 
         self.__initialize_tdp_array(cubedata, number_of_slices)
@@ -996,9 +1054,21 @@ class TDP:
             frame: CubedataFrame = cubedata.get_frame(index_of_step)
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
 
+            self.progress.emit(index_of_step, cubedata.number_of_frames - 1)
+            QCoreApplication.processEvents()
+
+
+        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__is_new = True
+
+        self.finished.emit()
+
+
     def build_test_tdp(self, number_of_frames: int) -> None:
         self.__time_step = 12
         self.__is_builded = True
+        self.__is_test = True
         self.__channel = 131
 
         horizontal_length_of_tdp: int = number_of_frames * self.__width_of_tdp_step
@@ -1016,7 +1086,13 @@ class TDP:
             start_border: int = borders_indexes[i]
             finish_border: int = borders_indexes[i + 1]
             self.__tdp_array[:, start_border:finish_border] = 1
-       
+
+        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__is_new = True
+
+    def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
+        return np.zeros((height_in_px, width_in_px))
 
     def __get_number_of_slices(self) -> int:        
         dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
@@ -1090,6 +1166,9 @@ class TDP:
 
     def save_as_numpy_array(self) -> None:
         pass
+
+    def get_full_pixmap(self, vertcal_size_in_px: int) -> QPixmap:
+        return self.convert_to_qpixmap(0, self.total_tdp_steps - 1, vertical_size_in_px=self.__tdp_array.shape[0])
 
     def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:
         cm = get_cmap_by_channel(self.__channel)

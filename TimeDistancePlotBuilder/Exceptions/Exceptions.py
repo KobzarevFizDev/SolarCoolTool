@@ -13,3 +13,18 @@ class IncorrectZoneInterestingSize(Exception):
 
     def __str__(self) -> str:
         return "Incorrect zone interesting size. Size = {0}".format(self.__size)
+    
+
+class IncorrectPathForExport(Exception):
+    def __init__(self, path: str) -> None:
+        self.__path = path
+
+    def __str__(self) -> str:
+        return "Incorrect path for export. Path = {0}".format(self.__path)
+    
+class FileNameIsEmpty(Exception):
+    def __init__(self) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "Filename is empty"

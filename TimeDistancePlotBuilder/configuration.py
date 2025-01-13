@@ -1,4 +1,4 @@
-from TimeDistancePlotBuilder.Exceptions.Exceptions import NotFoundConfigurationPropertyWithName
+from TimeDistancePlotBuilder.Exceptions.exceptions import NotFoundConfigurationPropertyWithName
 
 
 STEP_FOR_A94_PROPERTY_NAME = "STEP_FOR_A94"
