@@ -1254,14 +1254,14 @@ class TDP(QObject):
         self.__smooth_parametr = value
 
     @pyqtSlot()
-    def build(self, cubedata: Cubedata, channel: int) -> None:
+    def build(self, cubedata: Cubedata, channel: int, is_uniformly: bool) -> None:
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
         self.__is_test = False
         self.__channel = channel
 
         number_of_slices: int = self.__get_number_of_slices()
-        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly=False)
+        slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly)
         slices = self.__convert_slices_to_fits_coordinates(slices)
 
         self.__initialize_tdp_array(cubedata, number_of_slices)

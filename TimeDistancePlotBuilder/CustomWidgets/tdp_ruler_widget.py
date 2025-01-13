@@ -51,52 +51,23 @@ class TdpRulerWidget(QWidget):
         text_width = 40
         text_height = 20
         text_offset = 25
-
-        # Основная линия линейки
+ 
         painter.drawLine(0, ruler_width, ruler_length, ruler_width)
 
-        # Число шагов на линейке
         number_of_steps = (self.__finish - self.__start) // self.__step
-        step_size_px = ruler_length / (self.__finish - self.__start)
+        step_size_px = ruler_length // number_of_steps
 
-        for i in range(self.__start, self.__finish + 1):  # +1, чтобы включить последний шаг
-            x_pos = int((i - self.__start) * step_size_px)
-
-            if i % self.__step == 0:  # Основные деления
+    
+        for i in range(self.__start, self.__finish):
+            x_pos = int((i - self.__start) / self.__step * step_size_px)
+            if i % self.__step == 0:
+                print(f"Большой штрих. step = {i}")
                 text = f"{i}, {self.__unit_of_measurement}"
-                painter.drawText(
-                    x_pos - text_width // 2, 
-                    ruler_width - text_offset, 
-                    text_width, 
-                    text_height, 
-                    Qt.AlignCenter, 
-                    text
-                )
-                painter.drawLine(x_pos, ruler_width, x_pos, int(ruler_width * 0.6))
-            elif i % (self.__step // 5) == 0:  # Промежуточные деления
-                painter.drawLine(x_pos, ruler_width, x_pos, int(ruler_width * 0.8))
-
-    # def __draw_horizontal_ruler(self, painter: QPainter) -> None:
-    #     ruler_length: int = self.width()
-    #     ruler_width: int = self.height()
-
-    #     text_width = 40
-    #     text_height = 20
-    #     text_offset = 25
- 
-    #     painter.drawLine(0, ruler_width, ruler_length, ruler_width)
-
-    #     number_of_steps = (self.__finish - self.__start) // self.__step
-    #     step_size_px = ruler_length // number_of_steps
-
-    #     for i in range(self.__start, self.__finish):
-    #         x_pos = int((i - self.__start) / self.__step * step_size_px)
-    #         if i % self.__step == 0:
-    #             text = f"{i}, {self.__unit_of_measurement}"
-    #             painter.drawText(x_pos - text_width // 2, ruler_width - text_offset, text_width, text_height, Qt.AlignRight, text)
-    #             painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.6) )
-    #         elif i % (self.__step // 5) == 0:
-    #             painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.8) )
+                painter.drawText(x_pos - text_width // 2, ruler_width - text_offset, text_width, text_height, Qt.AlignRight, text)
+                painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.6) )
+            elif i % (self.__step // 5) == 0:
+                print(f"Малый штрих. step = {i}")
+                painter.drawLine(x_pos, ruler_width, x_pos, int( ruler_width * 0.8) )
 
     def __draw_vertical_ruler(self, painter: QPainter) -> None:
         ruler_length: int = self.height()

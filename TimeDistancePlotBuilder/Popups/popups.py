@@ -62,6 +62,7 @@ class ProcessPopup(QDialog):
         self.setLayout(container)
 
     def activate(self, process_description: str) -> None:
+        self.show()
         self.__progress_bar.setValue(0)
         self.__process_description_label.setText(process_description)
 

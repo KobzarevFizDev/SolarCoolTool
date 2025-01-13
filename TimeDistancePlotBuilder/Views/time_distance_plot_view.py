@@ -259,12 +259,12 @@ class TimeDistancePlotView:
 
     def __create_build_button(self) -> QPushButton:
         build_tdp_button = QPushButton("Build")
-        build_tdp_button.clicked.connect(self.__controller.build_time_distance_plot)
+        build_tdp_button.clicked.connect(lambda: self.__controller.build_time_distance_plot(is_uniformly=False))
         return build_tdp_button
 
     def __create_uniformly_build_button(self) -> QPushButton:
         uniformly_build_tdp_button = QPushButton("Uniformly build")
-        uniformly_build_tdp_button.clicked.connect(self.__controller.build_time_distance_plot)
+        uniformly_build_tdp_button.clicked.connect(lambda: self.__controller.build_time_distance_plot(is_uniformly=True))
         return uniformly_build_tdp_button
 
     def __show_all_widgets_in_layout(self, layout) -> None:

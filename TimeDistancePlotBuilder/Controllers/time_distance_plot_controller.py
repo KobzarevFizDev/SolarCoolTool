@@ -34,7 +34,7 @@ class TimeDistancePlotController:
         self.__model.time_line.finish_interval_of_time_distance_plot = finish_frame_index
         self.__model.notify_observers()
 
-    def build_time_distance_plot(self) -> None:
+    def build_time_distance_plot(self, is_uniformly: bool) -> None:
         start_index: int = self.__model.time_line.start_frame_to_build_tdp
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
@@ -46,36 +46,15 @@ class TimeDistancePlotController:
         self.worker = self.__model.time_distance_plot
         self.worker.moveToThread(self.build_thread)
 
-        self.build_thread.started.connect(lambda: self.worker.build(cubedata, channel))
+        self.build_thread.started.connect(lambda: self.worker.build(cubedata, channel, is_uniformly))
         self.worker.finished.connect(self.build_thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.build_thread.finished.connect(self.build_thread.deleteLater)
         self.build_thread.finished.connect(self.__model.notify_observers)
         self.build_thread.finished.connect(self.__popup_manager.process_popup.close)
         self.worker.progress.connect(lambda step, max_step: self.__popup_manager.process_popup.update_progress(int(step/max_step * 100)))
-        self.worker.progress.connect(lambda step, max_step: print(f"Progress: {step}/{max_step} = {int(step/max_step * 100)}"))
 
         self.build_thread.start()
-
-        # self.build_thread = QThread()
-        # self.worker = WorkerStub()
-        # self.worker.moveToThread(self.build_thread)
-
-        # self.build_thread.started.connect(self.worker.run)
-        # self.worker.finished.connect(self.build_thread.quit)
-        # self.worker.finished.connect(self.worker.deleteLater)
-        # self.build_thread.finished.connect(self.build_thread.deleteLater)
-        # self.worker.progress.connect(lambda value: print(f"Progress: {value}"))
-
-        # self.build_thread.start()
-
-
-        # start_index: int = self.__model.time_line.start_frame_to_build_tdp
-        # finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
-        # cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
-        # channel: int = self.__model.current_channel.channel
-        # self.__model.time_distance_plot.build(cubedata, channel)
-        # self.__model.notify_observers()
 
     def debug_build_time_distance_plot(self) -> None:
         number_of_frames = self.__model.time_line.max_index_of_solar_frame_for_debug_tdp
