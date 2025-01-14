@@ -5,8 +5,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
 
-
-
 class TDP_MatplotlibPreviewWidget(FigureCanvas):
     def __init__(self,
                  time_distance_plot: npt.NDArray,

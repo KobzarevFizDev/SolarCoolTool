@@ -40,6 +40,7 @@ class TimeDistancePlotController:
         finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
+        number_of_skip_frames: int = self.__model.configuration.get_step_for_channel(channel)
 
         self.__popup_manager.process_popup.activate(process_description="Time distance plot is building")
 
@@ -47,7 +48,7 @@ class TimeDistancePlotController:
         self.worker = self.__model.time_distance_plot
         self.worker.moveToThread(self.build_thread)
 
-        self.build_thread.started.connect(lambda: self.worker.build(cubedata, channel, is_uniformly))
+        self.build_thread.started.connect(lambda: self.worker.build(number_of_skip_frames, cubedata, channel, is_uniformly))
         self.worker.finished.connect(self.build_thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.build_thread.finished.connect(self.build_thread.deleteLater)
@@ -107,7 +108,7 @@ class TimeDistancePlotController:
 
 
     def export_tdp(self) -> None:
-        tdp_as_pixmap: QPixmap = self.__model.time_distance_plot.get_full_pixmap(100)
+        tdp_as_pixmap: QPixmap = self.__model.time_distance_plot.get_full_pixmap()
         tdp_as_numpy: npt.NDArray = self.__model.time_distance_plot.tdp_array
         path_to_save: str = self.__model.configuration.path_to_export_results
         self.__popup_manager.export_tdp_popup.activate(tdp_as_numpy, tdp_as_pixmap, path_to_save)

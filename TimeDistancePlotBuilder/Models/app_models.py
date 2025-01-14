@@ -998,7 +998,7 @@ class TDP(QObject):
         if self.__channel != -1:
             return get_cmap_by_channel(self.__channel)
         else:
-            None
+            return get_cmap_by_channel(131)
 
     @property
     def was_builded(self) -> bool:
@@ -1019,7 +1019,7 @@ class TDP(QObject):
     @property
     def time_step_in_seconds(self) -> int:
         if self.__is_builded == False:
-            return 12
+            return 12 * self.__skip_frames
         else:
             return self.__time_step
         
@@ -1038,11 +1038,12 @@ class TDP(QObject):
         self.__smooth_parametr = value
 
     @pyqtSlot()
-    def build(self, cubedata: Cubedata, channel: int, is_uniformly: bool) -> None:
+    def build(self, skip_frames: int, cubedata: Cubedata, channel: int, is_uniformly: bool) -> None:
         self.__time_step = cubedata.time_step_in_seconds
         self.__is_builded = True
         self.__is_test = False
         self.__channel = channel
+        self.__skip_frames = skip_frames
 
         number_of_slices: int = self.__get_number_of_slices()
         slices: List[Tuple[QPoint, QPoint]] = self.__bezier_mask.get_slices(number_of_slices, is_uniformly)
@@ -1161,13 +1162,7 @@ class TDP(QObject):
         vertical_zoom = new_vertical_size_in_px / old_vertical_size
         return zoom(tdp_segment, (vertical_zoom, 1), order=1)
 
-    def save_as_png(self) -> None:
-        pass
-
-    def save_as_numpy_array(self) -> None:
-        pass
-
-    def get_full_pixmap(self, vertcal_size_in_px: int) -> QPixmap:
+    def get_full_pixmap(self) -> QPixmap:
         return self.convert_to_qpixmap(0, self.total_tdp_steps - 1, vertical_size_in_px=self.__tdp_array.shape[0])
 
     def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:

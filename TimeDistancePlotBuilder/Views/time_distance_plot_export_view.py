@@ -21,7 +21,9 @@ class TimeDistancePlotExportView:
         self.__model.add_observer(self)
         self.__parent_window = parent_window
         self.__layout = QVBoxLayout()
+
         self.__create_tdp_matplotlib_preview()
+        self.__create_export_tdp_plot_button()
 
         self.__parent_window.layout.addLayout(self.__layout, 1, 2, 1, 1)
 
@@ -56,8 +58,10 @@ class TimeDistancePlotExportView:
         self.__tdp_matplotlib_preview.change_channel(channel, cmap)
         self.__tdp_matplotlib_preview.show_time_distance_plot()
 
-    def __create_export_plot_button(self) -> None:
-        pass 
+    def __create_export_tdp_plot_button(self) -> None:
+        self.__export_tdp_plot_button = QPushButton("Export")
+        self.__export_tdp_plot_button.clicked.connect(lambda: self.__controller.export_tdp_as_matplotlib_plot(self.__tdp_matplotlib_preview))
+        self.__layout.addWidget(self.__export_tdp_plot_button)
 
     def __show_all_widgets_in_layout(self, layout) -> None:
         for i in range(layout.count()):
