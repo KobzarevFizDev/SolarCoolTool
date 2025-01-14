@@ -6,6 +6,7 @@
 
 - [Введение](#введение)
 - [Предназначение и использование программы](#предназначение-и-использование-программы)
+- [Пример использования программы](#пример-использования-программы)
 - [Примеры полученных результатов](#примеры-полученных-результатов)
 
 ## Введение
@@ -35,6 +36,37 @@
 7. Выделить корональную петлю на левой панели
 8. Переключиться на вкладу DISTANCE PLOT и нажать кнопку bake
 9. Итоговый результат будет лежать по пути указанном в файле конфигурации
+
+## Пример использования программы
+
+Загрузка программы
+
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Loading.png)
+
+Начальное состояние программы после загрузки для изображений в канале 131
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface.png)
+
+Начальное состояние программы после загрузки для изображений в канале 171
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface2.png)
+
+Выделенный участок в короне солнца
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface3.png)
+
+Построенный ПВДИ по выделенной петле
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface4.png)
+
+Построенный и оформленный график 
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface5.png)
+
+Окошко экспорта графика
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface7.png)
+
+Окошко экспорта данных (изображение и массив numpy для дальнейшей обработки)
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface6.png)
+
+Окошко экспорта изображения
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/ExportPopup.png)
+
 
 ## Примеры полученных результатов
 
