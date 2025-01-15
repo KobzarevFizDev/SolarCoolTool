@@ -2,11 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='TimeDistancePlotBuilder', 
-    version='0.6.4',
+    version='0.6.10',
     packages=find_packages(include=['TimeDistancePlotBuilder*']),
     install_requires=open('requirements.txt').read().splitlines(),
+    include_package_data=True,
+    package_data={
+        "TimeDistancePlotBuilder":["Resources/*"],
+    },
     entry_points={
-        'gui_scripts': [
+        'console_scripts': [
             'tdpb = TimeDistancePlotBuilder.app:main',
         ],
     },

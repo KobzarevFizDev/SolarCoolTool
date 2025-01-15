@@ -1,10 +1,11 @@
-import os
 from typing import Optional
+
+import importlib.resources as resources
 
 import numpy.typing as npt
 import numpy as np
 
-from PyQt5.QtWidgets import QDialog, QProgressDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -17,19 +18,17 @@ class LoadingProgramPopup(QDialog):
         self.setWindowTitle("TimeDistancePlotBuilder")
         self.setModal(True)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "../Resources/tdpb_logo.png") 
-        
         layout = QVBoxLayout(self)
 
         horizontal_container = QHBoxLayout()
         layout.addLayout(horizontal_container)
 
-        logo_pixmap = QPixmap(logo_path)
-        logo_pixmap = logo_pixmap.scaled(500, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        
-        self.logo_image = QLabel(self)
-        self.logo_image.setPixmap(logo_pixmap)
+        with resources.path("TimeDistancePlotBuilder.Resources", "tdpb_logo.png") as logo_path:
+            logo_pixmap = QPixmap(str(logo_path))
+            logo_pixmap = logo_pixmap.scaled(500, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            
+            self.logo_image = QLabel(self)
+            self.logo_image.setPixmap(logo_pixmap)
 
         self.__loaded_files = QTextEdit(self)
         self.__loaded_files.setReadOnly(True)
@@ -159,12 +158,10 @@ class ExportTdpPopup(QDialog):
         self.__path_to_export_tdp_as_numpy.setText(f"{path_to_save}\\")
         self.__tdp_as_png_preview.setPixmap(self.__tdp_as_png)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "../Resources/numpy_logo.png") 
-        logo_pixmap = QPixmap(logo_path)
-        
-        self.__tdp_as_numpy_preview.setPixmap(logo_pixmap)
-
+        with resources.path("TimeDistancePlotBuilder.Resources", "numpy_logo.png") as numpy_path:
+            numpy_pixmap = QPixmap(str(numpy_path))
+            self.__tdp_as_numpy_preview.setPixmap(numpy_pixmap)
+            
         self.show()
 
     def __export(self) -> None:
