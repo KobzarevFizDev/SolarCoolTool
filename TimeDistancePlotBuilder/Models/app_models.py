@@ -1,7 +1,8 @@
 import math
 import os
+import glob
 import sqlite3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from enum import IntEnum, unique
 import time
 
@@ -30,7 +31,8 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize, NotFoundDataForExport, DataForExportNotValid
+
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
@@ -1240,8 +1242,8 @@ class TimeDistancePlot:
 
         number_of_slices_along_loop = 400
         width_of_one_step_on_result_time_distance_plot = 3
-        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot # 300
-        height_time_distance_plot = number_of_slices_along_loop #560
+        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot
+        height_time_distance_plot = number_of_slices_along_loop
         time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
 
         coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
@@ -1397,6 +1399,51 @@ class SelectedBezierSegments:
     def number_of_bizer_segments(self) -> int:
         return self.__number_of_segments
 
+class Export:
+    def __init__(self, directory_with_export: str):
+        self.__directory_with_export: str = directory_with_export
+
+    def __find_file_with_extenstion(self, extension: str) -> List[str]:
+        return glob.glob(os.path.join(self.__directory_with_export, extension))
+
+    @property
+    def path_to_png_file(self) -> str:
+        png_files = self.__find_file_with_extenstion('.png')
+        if len(png_files) == 1:
+            raise DataForExportNotValid()
+
+    @property
+    def path_to_numpy_file(self) -> str:
+        numpy_files = self.__find_file_with_extenstion('.npy')
+        if len(numpy_files) == 1:
+            raise DataForExportNotValid()
+    
+    @property
+    def path_to_animation_loop_file(self) -> str:
+        animation_files = self.__find_file_with_extenstion('.mp4')
+        if len(animation_files) == 1:
+            raise DataForExportNotValid()
+
+class LastExport:
+    def __init__(self, path_to_export_result: str):
+        self.__path_to_export_result = path_to_export_result
+
+    def __get_directory_with_latest_export(self) -> Optional[str]:
+        directories = [d for d in glob.glob(os.path.join(self.__path_to_export_result, '*')) if os.path.isdir(d)]
+        directories.sort(key=os.path.getctime, reverse=True)
+        if directories:
+            directories[0]
+        else:
+            None
+
+    @property
+    def last_export(self) -> Export:
+        directory_with_last_save: str = self.__get_directory_with_latest_export()
+        if directory_with_last_save == None:
+            raise NotFoundDataForExport()
+        else:
+            return Export(directory_with_last_save)
+    
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):

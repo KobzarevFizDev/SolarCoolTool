@@ -1,6 +1,9 @@
 from typing import TYPE_CHECKING
 from typing import Tuple, List
 import numpy.typing as npt
+from datetime import datetime
+
+import os
 
 import numpy as np
 
@@ -110,12 +113,25 @@ class TimeDistancePlotController:
     def export_tdp(self) -> None:
         tdp_as_pixmap: QPixmap = self.__model.time_distance_plot.get_full_pixmap()
         tdp_as_numpy: npt.NDArray = self.__model.time_distance_plot.tdp_array
-        path_to_save: str = self.__model.configuration.path_to_export_results
 
         frames_for_create_mp4: List[npt.NDArray] = self.__create_frames_for_mp4()
 
-        self.__popup_manager.export_tdp_popup.activate(tdp_as_numpy, tdp_as_pixmap, frames_for_create_mp4, path_to_save)
+        path_to_export: str = self.__create_directory_for_export()
 
+        self.__popup_manager.export_tdp_popup.activate(tdp_as_numpy, tdp_as_pixmap, frames_for_create_mp4, path_to_export)
+
+    def __create_directory_for_export(self) -> str:
+        now = datetime.now()
+        year:int = now.year
+        month: int = now.month
+        day: int = now.day
+        hour: int = now.hour
+        minutes: int = now.minute
+        second: int = now.second
+        new_directory_name = f"Export_Data_{year}_{month}_{day}_{hour}_{minutes}_{second}"
+        path_to_export = os.path.join(self.__model.configuration.path_to_export_results, new_directory_name)
+        os.mkdir(path_to_export)
+        return path_to_export
 
     # todo: Вынести в отдельный поток, вынести в модель
     def __create_frames_for_mp4(self) -> List[SolarFrame]:

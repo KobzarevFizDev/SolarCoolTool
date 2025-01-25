@@ -209,15 +209,15 @@ class ExportTdpPopup(QDialog):
                  tdp_as_numpy_array: npt.NDArray, 
                  tdp_as_image: QPixmap,
                  frames_for_mp4: List[npt.NDArray],
-                 path_to_save: str) -> None:
-        self.__path_to_save = path_to_save
+                 path_to_export: str) -> None:
+        self.__path_to_save = path_to_export
         self.__tdp_as_png = tdp_as_image
         self.__frames_for_mp4 = frames_for_mp4
         self.__tdp_as_numpy = tdp_as_numpy_array
 
-        self.__path_to_export_as_png.setText(f"{path_to_save}\\")
-        self.__path_to_export_as_numpy.setText(f"{path_to_save}\\")
-        self.__path_to_export_as_video.setText(f"{path_to_save}\\")
+        self.__path_to_export_as_png.setText(f"{path_to_export}\\")
+        self.__path_to_export_as_numpy.setText(f"{path_to_export}\\")
+        self.__path_to_export_as_video.setText(f"{path_to_export}\\")
         self.__tdp_as_png_preview.setPixmap(self.__tdp_as_png)
 
         with resources.path("TimeDistancePlotBuilder.Resources", "numpy_logo.png") as path_to_numpy_logo:
@@ -244,6 +244,7 @@ class ExportTdpPopup(QDialog):
             self.exception_occured.emit(e)
         finally:
             self.close()
+ 
 
     # todo: Обработка ошибок. 
     def __export_as_numpy(self) -> None:
