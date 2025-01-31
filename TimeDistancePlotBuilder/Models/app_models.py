@@ -1,7 +1,8 @@
 import math
 import os
+import glob
 import sqlite3
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from enum import IntEnum, unique
 import time
 
@@ -18,11 +19,11 @@ from matplotlib.colors import Colormap
 
 import numpy as np
 from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
-from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import QCoreApplication, QRect
 import sunpy.map
 import sunpy.data.sample
 import sunpy.visualization.colormaps.cm
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 from astropy.io import fits
 import numpy.typing as npt
 
@@ -30,7 +31,8 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize, NotFoundDataForExport, DataForExportNotValid
+
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
 
@@ -897,11 +899,11 @@ class TimeLine:
         self.__start_frame_to_build_tdp = new_index
 
     @property
-    def finish_interval_of_time_distance_plot(self) -> int:
+    def finish_frame_to_build_tdp(self) -> int:
         return self.__finish_frame_to_build_tdp
 
-    @finish_interval_of_time_distance_plot.setter
-    def finish_interval_of_time_distance_plot(self, new_index) -> None:
+    @finish_frame_to_build_tdp.setter
+    def finish_frame_to_build_tdp(self, new_index) -> None:
         number_of_solar_frames_in_current_channel = self.__solar_frames_storage.get_number_of_frames_in_current_channel()
         if new_index >= number_of_solar_frames_in_current_channel:
             raise Exception("Index of finish interval time distance plot cannot be >= number of solar frames in current channel")
@@ -933,7 +935,7 @@ class TimeLine:
         self.__current_tdp_step = value
 
     def set_finish_index_of_build_tdp_as_maximum(self) -> None:
-        self.finish_interval_of_time_distance_plot = self.max_index_of_solar_frame - 1
+        self.finish_frame_to_build_tdp = self.max_index_of_solar_frame - 1
 
 
 @unique
@@ -1240,8 +1242,8 @@ class TimeDistancePlot:
 
         number_of_slices_along_loop = 400
         width_of_one_step_on_result_time_distance_plot = 3
-        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot # 300
-        height_time_distance_plot = number_of_slices_along_loop #560
+        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot
+        height_time_distance_plot = number_of_slices_along_loop
         time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
 
         coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
@@ -1397,6 +1399,168 @@ class SelectedBezierSegments:
     def number_of_bizer_segments(self) -> int:
         return self.__number_of_segments
 
+class Export:
+    def __init__(self, directory_with_export: str):
+        self.__directory_with_export: str = directory_with_export
+
+    def __find_file_with_extenstion(self, extension: str) -> List[str]:
+        return glob.glob(os.path.join(self.__directory_with_export, extension))
+
+    @property
+    def path_to_png_file(self) -> str:
+        png_files = self.__find_file_with_extenstion('.png')
+        if len(png_files) == 1:
+            raise DataForExportNotValid()
+
+    @property
+    def path_to_numpy_file(self) -> str:
+        numpy_files = self.__find_file_with_extenstion('.npy')
+        if len(numpy_files) == 1:
+            raise DataForExportNotValid()
+    
+    @property
+    def path_to_animation_loop_file(self) -> str:
+        animation_files = self.__find_file_with_extenstion('.mp4')
+        if len(animation_files) == 1:
+            raise DataForExportNotValid()
+
+class LastExport:
+    def __init__(self, path_to_export_result: str):
+        self.__path_to_export_result = path_to_export_result
+
+    def __get_directory_with_latest_export(self) -> Optional[str]:
+        directories = [d for d in glob.glob(os.path.join(self.__path_to_export_result, '*')) if os.path.isdir(d)]
+        directories.sort(key=os.path.getctime, reverse=True)
+        if directories:
+            directories[0]
+        else:
+            None
+
+    @property
+    def last_export(self) -> Export:
+        directory_with_last_save: str = self.__get_directory_with_latest_export()
+        if directory_with_last_save == None:
+            raise NotFoundDataForExport()
+        else:
+            return Export(directory_with_last_save)
+    
+
+class LoopAnimation:
+    def __init__(self, 
+                 bezier_mask: BezierMask, 
+                 time_line: TimeLine, 
+                 solar_frame_storage: SolarFramesStorage,
+                 zone_interesting: ZoneInteresting):
+        self.__bezier_mask = bezier_mask
+        self.__time_line = time_line
+        self.__solar_frame_storage = solar_frame_storage
+        self.__zone_interesting = zone_interesting
+
+    def get_frames_for_animation(self) -> List[npt.NDArray]:
+        frames = list()
+        pixmapes: List[QPixmap] = self.__get_pixmapes_for_animation()
+        for pixmap in pixmapes:
+            image = pixmap.toImage()
+            width, height = image.width(), image.height()
+            width, height = image.width(), image.height()
+            buffer = image.bits().asstring(image.byteCount())  
+            arr = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4)) 
+            frames.append(arr[:, :, [2,1,0]])
+            # frames.append(arr[:, :, :3]) 
+        return frames 
+
+    def __get_pixmapes_for_animation(self) -> List[QPixmap]:
+        pixmapes = list()
+        top_right: QPoint = self.__zone_interesting.top_right_in_view
+        bottom_left: QPoint = self.__zone_interesting.bottom_left_in_view
+        for i in range(self.__time_line.start_frame_to_build_tdp, self.__time_line.finish_frame_to_build_tdp):
+            solar_frame: SolarFrame = self.__solar_frame_storage.get_solar_frame_by_index_from_current_channel(i)
+            pixmap: QPixmap = solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
+            pixmapes.append(pixmap)
+
+        pixmapes = self.__draw_loop_selection(pixmapes)
+
+        pixmapes = self.__get_croped_frames(pixmapes)
+
+        pixmapes[-1].save("D:\\ExportData\\3.png")
+        return pixmapes
+
+    
+    def __draw_loop_selection(self, frames: List[QPixmap]) -> List[QPixmap]:
+        pen = QPen(QColor(255, 0, 0))
+        pen.setWidth(4)
+        for frame in frames:
+            painter = QPainter(frame)
+            painter.setPen(pen)
+            
+            bottom_border_points: List[QPoint] = self.__bezier_mask.get_bottom_border()
+            top_border_points: List[QPoint] = self.__bezier_mask.get_top_border()
+
+            previous: Optional[QPoint] = None
+
+            for current in bottom_border_points:
+                if previous != None:
+                    painter.drawLine(previous.x(), previous.y(), current.x(), current.y())
+                
+                previous = current
+
+            previous = None
+            for current in top_border_points:
+                if previous != None:
+                    painter.drawLine(previous.x(), previous.y(), current.x(), current.y())
+                
+                previous = current
+
+            painter.drawLine(bottom_border_points[0].x(), bottom_border_points[0].y(), top_border_points[0].x(), top_border_points[0].y())
+            painter.drawLine(bottom_border_points[-1].x(), bottom_border_points[-1].y(), top_border_points[-1].x(), top_border_points[-1].y())
+            painter.end()
+
+        return frames
+
+    def __get_croped_frames(self, frames: List[QPixmap]) -> List[QPixmap]:
+        croped_frames = []
+
+        rect = self.__get_bounding_points()
+
+        for frame in frames: 
+            croped_frame: QPixmap = frame.copy(rect)
+            croped_frames.append(croped_frame)
+        return croped_frames
+
+    def __get_bounding_points(self) -> QRect:
+        offset = self.__bezier_mask.width_in_pixels
+
+        top_border_points: List[QPoint] = self.__bezier_mask.get_top_border()
+        max_y: int = max([p.y() for p in top_border_points])
+        max_x: int = max([p.x() for p in top_border_points])
+
+        min_y: int = min([p.y() for p in top_border_points])
+        min_x: int = min([p.x() for p in top_border_points])
+
+        bl = QPoint(min_x, max_y)
+        tl = QPoint(min_x, min_y)
+
+        br = QPoint(max_x, max_y)
+        tr = QPoint(max_x, min_y)
+
+        center_x = QPoint((bl + br)).x() // 2
+        center_y = QPoint((tl + bl)).y() // 2
+ 
+        width: int = br.x() - bl.x()
+        height: int = br.y() - tr.y()
+        max_side = max(width, height)
+
+        center = QPoint(center_x, center_y)
+
+        bl = QPoint(center.x() - max_side // 2 - offset, center.y() - max_side // 2 - offset)
+        br = QPoint(center.x() + max_side // 2 + offset, center.y() - max_side // 2 - offset)
+
+        tl = QPoint(center.x() - max_side // 2 - offset, center.y() + max_side // 2 + offset)
+        tr = QPoint(center.x() + max_side // 2 + offset, center.y() + max_side // 2 + offset)
+
+        rect = QRect(bl.x(), bl.y(), max_side + 2 * offset, max_side + 2 * offset)
+
+        return rect 
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
@@ -1412,6 +1576,8 @@ class AppModel:
         self.__app_state = CurrentAppState()
         self.__selected_bezier_segments = SelectedBezierSegments(10)
         self.__tdp = TDP(self.__bezier_mask, self.__viewport_transform)
+
+        self.__loop_animation = LoopAnimation(self.__bezier_mask, self.__time_line, self.__solar_frames_storage, self.__zone_interesting)
 
         self.__observers = []
 
@@ -1462,6 +1628,10 @@ class AppModel:
     @property
     def time_distance_plot(self) -> TDP:
         return self.__tdp
+    
+    @property
+    def loop_animation(self) -> LoopAnimation:
+        return self.__loop_animation
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)

@@ -166,7 +166,7 @@ class TimeDistancePlotView:
 
     def __update_label_of_range_tdp_slider(self) -> None:
         start_frame: int = self.__model.time_line.start_frame_to_build_tdp
-        finish_frame: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        finish_frame: int = self.__model.time_line.finish_frame_to_build_tdp
         self.__label_of_range_of_tdp_build_slider.setText(f"Range: {start_frame} <-> {finish_frame}")
 
     def __highlight_tdp_step(self) -> None:

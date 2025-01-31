@@ -1,4 +1,5 @@
 import sys
+import logging
 
 from TimeDistancePlotBuilder.Controllers.channel_switch_controller import ChannelSwitchController
 from TimeDistancePlotBuilder.Controllers.time_line_controller import TimeLineController
@@ -97,9 +98,10 @@ class TimeDistancePlotBuilder(QMainWindow):
 
 def main():
     if len(sys.argv) < 2:
-        print("You need to give me path to file configuration.txt")
+        print("You need to give me path to configuration.txt")
         exit()
     else:  
+        print("Please wait!")
         path_to_configuration: str = sys.argv[1]
         app = QApplication(sys.argv)
         ex = TimeDistancePlotBuilder(path_to_configuration)

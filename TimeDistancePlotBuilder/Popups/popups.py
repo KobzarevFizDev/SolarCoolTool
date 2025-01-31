@@ -1,15 +1,20 @@
-import os
 from typing import Optional
+
+import importlib.resources as resources
 
 import numpy.typing as npt
 import numpy as np
+import imageio
 
-from PyQt5.QtWidgets import QDialog, QProgressDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox
+from typing import List
+
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QTextEdit, QPushButton, QMessageBox, QSpacerItem
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
-
 from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport, FileNameIsEmpty
+
+from TimeDistancePlotBuilder.Models.app_models import SolarFrame
 
 class LoadingProgramPopup(QDialog):
     def __init__(self, parent=None):
@@ -17,19 +22,17 @@ class LoadingProgramPopup(QDialog):
         self.setWindowTitle("TimeDistancePlotBuilder")
         self.setModal(True)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "../Resources/tdpb_logo.png") 
-        
         layout = QVBoxLayout(self)
 
         horizontal_container = QHBoxLayout()
         layout.addLayout(horizontal_container)
 
-        logo_pixmap = QPixmap(logo_path)
-        logo_pixmap = logo_pixmap.scaled(500, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        
-        self.logo_image = QLabel(self)
-        self.logo_image.setPixmap(logo_pixmap)
+        with resources.path("TimeDistancePlotBuilder.Resources", "tdpb_logo.png") as logo_path:
+            logo_pixmap = QPixmap(str(logo_path))
+            logo_pixmap = logo_pixmap.scaled(500, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            
+            self.logo_image = QLabel(self)
+            self.logo_image.setPixmap(logo_pixmap)
 
         self.__loaded_files = QTextEdit(self)
         self.__loaded_files.setReadOnly(True)
@@ -83,36 +86,68 @@ class ExportTdpPopup(QDialog):
 
         self.__path_to_save: Optional[str] = None
         self.__tdp_as_numpy: Optional[npt.NDArray] = None
+        self.__frames_for_mp4: Optional[SolarFrame] = None
         self.__tdp_as_png: Optional[QPixmap] = None
 
         container = QVBoxLayout()
 
+        input_filename_container: QVBoxLayout = self.__create_input_filename_container()
         export_as_png_container: QVBoxLayout = self.__create_export_as_png_container()
         export_as_numpy_container: QVBoxLayout = self.__create_export_as_numpy_array()
+        export_video_container: QVBoxLayout = self.__create_export_video_as_mp4()
         buttons_container: QHBoxLayout = self.__create_buttons()
 
+        container.addLayout(input_filename_container)
         container.addLayout(export_as_png_container)
         container.addLayout(export_as_numpy_container)
+        container.addLayout(export_video_container)
         container.addLayout(buttons_container)
 
         self.setLayout(container)
 
+    def __create_input_filename_container(self) -> QVBoxLayout:
+        container = QVBoxLayout()
+        title_label = QLabel("Input name for save: ")
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold;")
+        horizontal_container = QHBoxLayout()
+        self.__base_path_label = QLabel("/base_path/")
+        self.__input_name_for_save = QLineEdit("example")
+
+        self.__input_name_for_save.textChanged.connect(self.__update_paths_for_export_files)
+
+        horizontal_container.addWidget(self.__base_path_label)
+        horizontal_container.addWidget(self.__input_name_for_save)
+
+        container.addWidget(title_label)
+        container.addLayout(horizontal_container)
+        return container
     
+    def __update_paths_for_export_files(self, name: str) -> None:
+        numpy_filename = f"{self.__path_to_save}\\{name}.npy"
+        png_filename = f"{self.__path_to_save}\\{name}.png"
+        mp4_filename = f"{self.__path_to_save}\\{name}.mp4"
+
+        self.__path_to_export_as_png.setText(png_filename)
+        self.__path_to_export_as_numpy.setText(numpy_filename)
+        self.__path_to_export_as_video.setText(mp4_filename)
+
     def __create_export_as_png_container(self) -> QVBoxLayout:
         export_as_png_container = QVBoxLayout()
         path_to_save_as_png_container = QHBoxLayout()
         
+        title = QLabel("TDP as png image")
+        title.setStyleSheet("font-size: 16px; font-weight: bold;")
+        
         self.__tdp_as_png_preview = QLabel()
-        self.__path_to_export_tdp_as_png = QLabel()
-        self.__input_file_name_to_export_tdp_as_png = QLineEdit()
+        self.__path_to_export_as_png = QLabel()
 
         self.__tdp_as_png_preview.setMaximumSize(400, 100)
 
+        export_as_png_container.addWidget(title)
         export_as_png_container.addWidget(self.__tdp_as_png_preview)
         export_as_png_container.addLayout(path_to_save_as_png_container)
 
-        path_to_save_as_png_container.addWidget(self.__path_to_export_tdp_as_png)
-        path_to_save_as_png_container.addWidget(self.__input_file_name_to_export_tdp_as_png)
+        path_to_save_as_png_container.addWidget(self.__path_to_export_as_png)
 
         return export_as_png_container
     
@@ -120,17 +155,40 @@ class ExportTdpPopup(QDialog):
         export_as_numpy_container = QVBoxLayout()
         path_to_save_as_numpy_container = QHBoxLayout()
 
-        self.__tdp_as_numpy_preview = QLabel()
-        self.__path_to_export_tdp_as_numpy = QLabel()
-        self.__input_file_name_to_export_tdp_as_numpy = QLineEdit()
+        title = QLabel("TDP as numpy array")
+        title.setStyleSheet("font-size: 16px; font-weight: bold;")
 
+        self.__tdp_as_numpy_preview = QLabel()
+        self.__path_to_export_as_numpy = QLabel()
+
+        export_as_numpy_container.addWidget(title)
         export_as_numpy_container.addWidget(self.__tdp_as_numpy_preview)
         export_as_numpy_container.addLayout(path_to_save_as_numpy_container)
 
-        path_to_save_as_numpy_container.addWidget(self.__path_to_export_tdp_as_numpy)
-        path_to_save_as_numpy_container.addWidget(self.__input_file_name_to_export_tdp_as_numpy)
+        path_to_save_as_numpy_container.addWidget(self.__path_to_export_as_numpy)
 
         return export_as_numpy_container
+    
+
+    def __create_export_video_as_mp4(self) -> QVBoxLayout:
+        export_as_video_container = QVBoxLayout()
+        path_to_save_as_video_container = QHBoxLayout()
+
+        title = QLabel("Animation of loop as mp4")
+        title.setStyleSheet("font-size: 16px; font-weight: bold;")
+        
+        self.__tdp_as_video_preview = QLabel()
+        self.__path_to_export_as_video = QLabel()
+
+        self.__tdp_as_video_preview.setMaximumSize(400, 100)
+
+        export_as_video_container.addWidget(title)
+        export_as_video_container.addWidget(self.__tdp_as_video_preview)
+        export_as_video_container.addLayout(path_to_save_as_video_container)
+
+        path_to_save_as_video_container.addWidget(self.__path_to_export_as_video)
+
+        return export_as_video_container
     
     def __create_buttons(self) -> QHBoxLayout:
         container = QHBoxLayout()
@@ -150,50 +208,60 @@ class ExportTdpPopup(QDialog):
     def activate(self, 
                  tdp_as_numpy_array: npt.NDArray, 
                  tdp_as_image: QPixmap,
-                 path_to_save: str) -> None:
-        self.__path_to_save = path_to_save
+                 frames_for_mp4: List[npt.NDArray],
+                 path_to_export: str) -> None:
+        self.__path_to_save = path_to_export
         self.__tdp_as_png = tdp_as_image
+        self.__frames_for_mp4 = frames_for_mp4
         self.__tdp_as_numpy = tdp_as_numpy_array
 
-        self.__path_to_export_tdp_as_png.setText(f"{path_to_save}\\")
-        self.__path_to_export_tdp_as_numpy.setText(f"{path_to_save}\\")
+        self.__path_to_export_as_png.setText(f"{path_to_export}\\")
+        self.__path_to_export_as_numpy.setText(f"{path_to_export}\\")
+        self.__path_to_export_as_video.setText(f"{path_to_export}\\")
         self.__tdp_as_png_preview.setPixmap(self.__tdp_as_png)
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "../Resources/numpy_logo.png") 
-        logo_pixmap = QPixmap(logo_path)
-        
-        self.__tdp_as_numpy_preview.setPixmap(logo_pixmap)
+        with resources.path("TimeDistancePlotBuilder.Resources", "numpy_logo.png") as path_to_numpy_logo:
+            numpy_logo_pixmap = QPixmap(str(path_to_numpy_logo))
+            self.__tdp_as_numpy_preview.setPixmap(numpy_logo_pixmap)
 
+        with resources.path("TimeDistancePlotBuilder.Resources", "mp4_logo.jpg") as path_to_mp4_logo:
+            mp4_logo_pixmap = QPixmap(str(path_to_mp4_logo))
+            mp4_logo_pixmap = mp4_logo_pixmap.scaled(400, 100)
+            self.__tdp_as_video_preview.setPixmap(mp4_logo_pixmap)
+            
         self.show()
+
+        self.__update_paths_for_export_files(self.__input_name_for_save.text())
+
 
     def __export(self) -> None:
         try:
-            png_filename: str = self.__input_file_name_to_export_tdp_as_png.text()
-            numpy_filename: str = self.__input_file_name_to_export_tdp_as_numpy.text()
-
-            self.__save_tdp_as_numpy_array(numpy_filename)
-            self.__save_tdp_as_image(png_filename)
+            self.__export_as_numpy()
+            self.__export_as_png()
+            self.__export_animation_loop_as_mp4()
+            
         except Exception as e:
             self.exception_occured.emit(e)
         finally:
             self.close()
+ 
 
-    def __save_tdp_as_numpy_array(self, filename: str) -> None:
-        if self.__tdp_as_numpy is not None and len(filename) > 0:
-            path_to_save: str = f"{self.__path_to_save}\\{filename}"
-            np.save(path_to_save, self.__tdp_as_numpy)
-        else:
-            raise FileNameIsEmpty()
+    # todo: Обработка ошибок. 
+    def __export_as_numpy(self) -> None:
+        path: str = self.__path_to_export_as_numpy.text()
+        np.save(path, self.__tdp_as_numpy)
+
+    def __export_as_png(self) -> None:
+        path: str = self.__path_to_export_as_png.text()
+        self.__tdp_as_png.save(path)
 
 
-    def __save_tdp_as_image(self, filename: str) -> None:
-        if (not self.__tdp_as_png == None) and len(filename) > 0:
-            path_to_save: str = f"{self.__path_to_save}\\{filename}"
-            self.__tdp_as_png.save(path_to_save)
-        else:
-            raise FileNameIsEmpty()
+    def __export_animation_loop_as_mp4(self) -> None:
+        path: str = self.__path_to_export_as_video.text()
 
+        with imageio.get_writer(path, fps=5) as writer:
+            for frame in self.__frames_for_mp4:
+                writer.append_data(frame)
 
 
 class ExportImagePopup(QDialog):

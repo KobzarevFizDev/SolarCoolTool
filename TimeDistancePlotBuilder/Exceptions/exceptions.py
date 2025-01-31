@@ -28,3 +28,18 @@ class FileNameIsEmpty(Exception):
 
     def __str__(self) -> str:
         return "Filename is empty"
+    
+class NotFoundDataForExport(Exception):
+    def __init__(self) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "Not found data for export"
+
+class DataForExportNotValid(Exception):
+    def __init__(self) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "Data for export is not valid"
+    
