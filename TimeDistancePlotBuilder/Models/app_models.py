@@ -1482,7 +1482,7 @@ class LoopAnimation:
 
         frames_of_animation[-1].save("D:\\ExportData\\1.png")
 
-        bl, tr, tl, br = self.__get_bounding_points()
+        bl, tr, tl, br, center, rect = self.__get_bounding_points()
         f = frames_of_animation[-1]
         painter = QPainter(f)
         pen = QPen(QColor("green"))
@@ -1492,6 +1492,7 @@ class LoopAnimation:
         painter.drawPoint(tr)
         painter.drawPoint(tl)
         painter.drawPoint(br)
+        painter.drawPoint(center)
         painter.end()
 
         f.save("D:\\ExportData\\2.png")
@@ -1537,9 +1538,9 @@ class LoopAnimation:
     def get_croped_frames(self, frames: List[QPixmap]) -> List[QPixmap]:
         croped_frames = []
 
-        bl, tr, tl, br = self.__get_bounding_points()
+        bl, tr, tl, br, center, rect = self.__get_bounding_points()
 
-        rect = QRect(tl.x(), tl.y(), 200, 200)
+        # rect = QRect(tl.x(), tl.y(), 200, 200)
 
         for frame in frames: 
             croped_frame: QPixmap = frame.copy(rect)
@@ -1547,6 +1548,8 @@ class LoopAnimation:
         return croped_frames
 
     def __get_bounding_points(self):
+        offset = self.__bezier_mask.width_in_pixels
+
         top_border_points: List[QPoint] = self.__bezier_mask.get_top_border()
         max_y: int = max([p.y() for p in top_border_points])
         max_x: int = max([p.x() for p in top_border_points])
@@ -1559,8 +1562,25 @@ class LoopAnimation:
 
         br = QPoint(max_x, max_y)
         tr = QPoint(max_x, min_y)
-        
-        return bl, tr, tl, br
+
+        center_x = QPoint((bl + br)).x() // 2
+        center_y = QPoint((tl + bl)).y() // 2
+ 
+        width: int = br.x() - bl.x()
+        height: int = br.y() - tr.y()
+        max_side = max(width, height)
+
+        center = QPoint(center_x, center_y)
+
+        bl = QPoint(center.x() - max_side // 2 - offset, center.y() - max_side // 2 - offset)
+        br = QPoint(center.x() + max_side // 2 + offset, center.y() - max_side // 2 - offset)
+
+        tl = QPoint(center.x() - max_side // 2 - offset, center.y() + max_side // 2 + offset)
+        tr = QPoint(center.x() + max_side // 2 + offset, center.y() + max_side // 2 + offset)
+
+        rect = QRect(bl.x(), bl.y(), max_side + 2 * offset, max_side + 2 * offset)
+
+        return bl, tr, tl, br, center, rect
 
 
 class AppModel:
