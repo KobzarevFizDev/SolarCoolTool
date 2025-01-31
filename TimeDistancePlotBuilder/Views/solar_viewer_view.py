@@ -48,7 +48,7 @@ class SolarViewportView:
         if self.model.app_state.current_state == AppStates.SOLAR_PREVIEW_STATE:
             self.__show_view()
             self.__handle_view()
-        elif self.model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE:
+        elif self.model.app_state.current_state == AppStates.PREVIEW_PLOT_STATE:
             pass
         else:
             self.__hide_view()

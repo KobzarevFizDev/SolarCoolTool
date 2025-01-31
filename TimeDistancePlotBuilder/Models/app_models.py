@@ -941,9 +941,9 @@ class TimeLine:
 @unique
 class AppStates(IntEnum):
     SOLAR_PREVIEW_STATE = 1
-    TIME_DISTANCE_PLOT_PREVIEW_STATE = 2
-    EXPORT_TIME_DISTANCE_PLOT_STATE = 3
-
+    BUILD_TDP_STATE = 2
+    PREVIEW_PLOT_STATE = 3
+    PUBLISH_TDP_STATE = 4
 
 class CurrentAppState:
     def __init__(self):
@@ -952,11 +952,14 @@ class CurrentAppState:
     def set_solar_preview_mode_state(self):
         self.__state = AppStates.SOLAR_PREVIEW_STATE
 
-    def set_time_distance_mode_state(self):
-        self.__state = AppStates.TIME_DISTANCE_PLOT_PREVIEW_STATE
+    def set_build_tdp_state(self):
+        self.__state = AppStates.BUILD_TDP_STATE
 
-    def set_time_distance_plot_export_state(self):
-        self.__state = AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
+    def set_preview_plot_state(self):
+        self.__state = AppStates.PREVIEW_PLOT_STATE
+
+    def set_publish_tdp_state(self):
+        self.__state = AppStates.PUBLISH_TDP_STATE
 
     @property
     def current_state(self) -> AppStates:
@@ -1466,7 +1469,6 @@ class LoopAnimation:
             buffer = image.bits().asstring(image.byteCount())  
             arr = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4)) 
             frames.append(arr[:, :, [2,1,0]])
-            # frames.append(arr[:, :, :3]) 
         return frames 
 
     def __get_pixmapes_for_animation(self) -> List[QPixmap]:
@@ -1482,7 +1484,6 @@ class LoopAnimation:
 
         pixmapes = self.__get_croped_frames(pixmapes)
 
-        pixmapes[-1].save("D:\\ExportData\\3.png")
         return pixmapes
 
     
