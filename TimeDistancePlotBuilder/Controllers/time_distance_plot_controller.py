@@ -35,12 +35,12 @@ class TimeDistancePlotController:
         start_frame_index: int = range[0]
         finish_frame_index: int = range[1]
         self.__model.time_line.start_frame_to_build_tdp = start_frame_index
-        self.__model.time_line.finish_interval_of_time_distance_plot = finish_frame_index
+        self.__model.time_line.finish_frame_to_build_tdp = finish_frame_index
         self.__model.notify_observers()
 
     def build_time_distance_plot(self, is_uniformly: bool) -> None:
         start_index: int = self.__model.time_line.start_frame_to_build_tdp
-        finish_index: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        finish_index: int = self.__model.time_line.finish_frame_to_build_tdp
         cubedata: Cubedata = self.__model.solar_frames_storage.get_cubedata_by_interval(start_index, finish_index)
         channel: int = self.__model.current_channel.channel
         number_of_skip_frames: int = self.__model.configuration.get_step_for_channel(channel)
@@ -116,6 +116,11 @@ class TimeDistancePlotController:
 
         frames_for_create_mp4: List[npt.NDArray] = self.__create_frames_for_mp4()
 
+        # self.__model.loop_animation.save_test_image()
+
+        self.__model.loop_animation.get_frames_for_animation()
+
+
         path_to_export: str = self.__create_directory_for_export()
 
         self.__popup_manager.export_tdp_popup.activate(tdp_as_numpy, tdp_as_pixmap, frames_for_create_mp4, path_to_export)
@@ -152,7 +157,7 @@ class TimeDistancePlotController:
 
 
         start: int = self.__model.time_line.start_frame_to_build_tdp
-        finish: int = self.__model.time_line.finish_interval_of_time_distance_plot
+        finish: int = self.__model.time_line.finish_frame_to_build_tdp
 
         frames = []
 
