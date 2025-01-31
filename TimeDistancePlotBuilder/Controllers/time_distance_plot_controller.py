@@ -114,11 +114,8 @@ class TimeDistancePlotController:
         tdp_as_pixmap: QPixmap = self.__model.time_distance_plot.get_full_pixmap()
         tdp_as_numpy: npt.NDArray = self.__model.time_distance_plot.tdp_array
 
-        frames_for_create_mp4: List[npt.NDArray] = self.__create_frames_for_mp4()
-
-        # self.__model.loop_animation.save_test_image()
-
-        self.__model.loop_animation.get_frames_for_animation()
+        frames_for_create_mp4: List[npt.NDArray] = self.__model.loop_animation.get_frames_for_animation()
+        #self.__create_frames_for_mp4()
 
 
         path_to_export: str = self.__create_directory_for_export()

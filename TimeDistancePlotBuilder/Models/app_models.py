@@ -1456,55 +1456,37 @@ class LoopAnimation:
         self.__solar_frame_storage = solar_frame_storage
         self.__zone_interesting = zone_interesting
 
+    def get_frames_for_animation(self) -> List[npt.NDArray]:
+        frames = list()
+        pixmapes: List[QPixmap] = self.__get_pixmapes_for_animation()
+        for pixmap in pixmapes:
+            image = pixmap.toImage()
+            width, height = image.width(), image.height()
+            width, height = image.width(), image.height()
+            buffer = image.bits().asstring(image.byteCount())  
+            arr = np.frombuffer(buffer, dtype=np.uint8).reshape((height, width, 4)) 
+            frames.append(arr[:, :, [2,1,0]])
+            # frames.append(arr[:, :, :3]) 
+        return frames 
 
-    # def save_test_image(self) -> None:
-    #     top_right: QPoint = self.__zone_interesting.top_right_in_view
-    #     bottom_left: QPoint = self.__zone_interesting.bottom_left_in_view
-    #     solar_frame:SolarFrame = self.__solar_frame_storage.get_solar_frame_by_index_from_current_channel(1)
-    #     test_frame = solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
-
-    #     a = list()
-    #     a.append(test_frame)
-    #     draw = self.draw_loop_selection(a)
-    #     draw[0].save("D:\\ExportData\\2.png")
-
-
-    def get_frames_for_animation(self) -> List[QPixmap]:
-        frames_of_animation = list()
+    def __get_pixmapes_for_animation(self) -> List[QPixmap]:
+        pixmapes = list()
         top_right: QPoint = self.__zone_interesting.top_right_in_view
         bottom_left: QPoint = self.__zone_interesting.bottom_left_in_view
         for i in range(self.__time_line.start_frame_to_build_tdp, self.__time_line.finish_frame_to_build_tdp):
             solar_frame: SolarFrame = self.__solar_frame_storage.get_solar_frame_by_index_from_current_channel(i)
             pixmap: QPixmap = solar_frame.get_pixmap_of_solar_region(bottom_left, top_right)
-            frames_of_animation.append(pixmap)
+            pixmapes.append(pixmap)
 
-        frames_of_animation = self.draw_loop_selection(frames_of_animation)
+        pixmapes = self.__draw_loop_selection(pixmapes)
 
-        frames_of_animation[-1].save("D:\\ExportData\\1.png")
+        pixmapes = self.__get_croped_frames(pixmapes)
 
-        bl, tr, tl, br, center, rect = self.__get_bounding_points()
-        f = frames_of_animation[-1]
-        painter = QPainter(f)
-        pen = QPen(QColor("green"))
-        pen.setWidth(20)
-        painter.setPen(pen)
-        painter.drawPoint(bl)
-        painter.drawPoint(tr)
-        painter.drawPoint(tl)
-        painter.drawPoint(br)
-        painter.drawPoint(center)
-        painter.end()
-
-        f.save("D:\\ExportData\\2.png")
-
-
-        frames_of_animation = self.get_croped_frames(frames_of_animation)
-
-        frames_of_animation[-1].save("D:\\ExportData\\3.png")
-
+        pixmapes[-1].save("D:\\ExportData\\3.png")
+        return pixmapes
 
     
-    def draw_loop_selection(self, frames: List[QPixmap]) -> List[QPixmap]:
+    def __draw_loop_selection(self, frames: List[QPixmap]) -> List[QPixmap]:
         pen = QPen(QColor(255, 0, 0))
         pen.setWidth(4)
         for frame in frames:
@@ -1535,19 +1517,17 @@ class LoopAnimation:
 
         return frames
 
-    def get_croped_frames(self, frames: List[QPixmap]) -> List[QPixmap]:
+    def __get_croped_frames(self, frames: List[QPixmap]) -> List[QPixmap]:
         croped_frames = []
 
-        bl, tr, tl, br, center, rect = self.__get_bounding_points()
-
-        # rect = QRect(tl.x(), tl.y(), 200, 200)
+        rect = self.__get_bounding_points()
 
         for frame in frames: 
             croped_frame: QPixmap = frame.copy(rect)
             croped_frames.append(croped_frame)
         return croped_frames
 
-    def __get_bounding_points(self):
+    def __get_bounding_points(self) -> QRect:
         offset = self.__bezier_mask.width_in_pixels
 
         top_border_points: List[QPoint] = self.__bezier_mask.get_top_border()
@@ -1580,8 +1560,7 @@ class LoopAnimation:
 
         rect = QRect(bl.x(), bl.y(), max_side + 2 * offset, max_side + 2 * offset)
 
-        return bl, tr, tl, br, center, rect
-
+        return rect 
 
 class AppModel:
     def __init__(self, configuration_app: 'ConfigurationApp'):
