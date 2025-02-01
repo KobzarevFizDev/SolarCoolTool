@@ -11,15 +11,18 @@ class AppStateController:
         self.__model: AppModel = model
         self.__view = CurrentAppStateView(self, model, mainAppWindow)
 
-    
-    def select_solar_preview_state(self):
+    def set_solar_preview_state(self):
         self.__model.app_state.set_solar_preview_mode_state()
         self.__model.notify_observers()
 
-    def select_build_tdp_state(self):
+    def set_build_tdp_state(self):
         self.__model.app_state.set_build_tdp_state()
         self.__model.notify_observers()
 
-    def select_plot_state(self):
+    def set_plot_state(self):
         self.__model.app_state.set_preview_plot_state()
+        self.__model.notify_observers()
+
+    def set_publish_state(self):
+        self.__model.app_state.set_publish_tdp_state()
         self.__model.notify_observers()

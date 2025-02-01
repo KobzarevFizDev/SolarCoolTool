@@ -20,6 +20,7 @@ class CurrentAppStateView:
         self.__solar_preview_button = self.__create_solar_preview_button()
         self.__tdp_build_button = self.__create_tdp_build_button()
         self.__plot_button = self.__create_plot_button()
+        self.__publish_button = self.__create_publish_button()
 
     def model_is_changed(self):
         current_state = self.__model.app_state.current_state
@@ -28,7 +29,8 @@ class CurrentAppStateView:
     def __show_current_selected_state(self, current_state: AppStates):
         buttons = {AppStates.SOLAR_PREVIEW_STATE : self.__solar_preview_button,
                   AppStates.BUILD_TDP_STATE : self.__tdp_build_button,
-                  AppStates.PREVIEW_PLOT_STATE : self.__plot_button}
+                  AppStates.PREVIEW_PLOT_STATE : self.__plot_button,
+                  AppStates.PUBLISH_TDP_STATE : self.__publish_button}
         
         for unselected_button in buttons.values():
             unselected_button.setStyleSheet("background-color: gray; color: white;")
@@ -37,35 +39,24 @@ class CurrentAppStateView:
 
     def __create_solar_preview_button(self) -> QPushButton:
         button = QPushButton("SOLAR")
-        button.clicked.connect(self.__controller.select_solar_preview_state)
-        # button.clicked.connect(self.__on_selected_solar_preview_state)
+        button.clicked.connect(self.__controller.set_solar_preview_state)
         self.__layout.addWidget(button)
         return button
 
     def __create_tdp_build_button(self) -> QPushButton:
         button = QPushButton("BUILD TDP")
-        button.clicked.connect(self.__controller.select_build_tdp_state)
-        # button.clicked.connect(self.__on_selected_build_tdp_state)
+        button.clicked.connect(self.__controller.set_build_tdp_state)
         self.__layout.addWidget(button)
         return button
 
     def __create_plot_button(self) -> QPushButton:
         button = QPushButton("PLOT")
-        button.clicked.connect(self.__controller.select_plot_state)
-        # button.clicked.connect(self.__on_selected_plot_state)
+        button.clicked.connect(self.__controller.set_plot_state)
         self.__layout.addWidget(button)
         return button
     
-
-
-    # def __on_selected_solar_preview_state(self):
-    #     self.__model.app_state.set_solar_preview_mode_state()
-    #     self.__model.notify_observers()
-
-    # def __on_selected_build_tdp_state(self):
-    #     self.__model.app_state.set_build_tdp_state()
-    #     self.__model.notify_observers()
-
-    # def __on_selected_plot_state(self):
-    #     self.__model.app_state.set_preview_plot_state()
-    #     self.__model.notify_observers()
+    def __create_publish_button(self) -> QPushButton:
+        button = QPushButton("PUBLISH TDP")
+        button.clicked.connect(self.__controller.set_publish_state)
+        self.__layout.addWidget(button)
+        return button
