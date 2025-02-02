@@ -7,4 +7,11 @@ class PublishTdpController:
         self.__model: AppModel = model
         self.__view: PusblishTdpView = PusblishTdpView(self, model, mainAppWindow)
 
-        
+    def publish_tdp_to_cloud(self) -> None:
+        pass
+
+    def delete_tdp_from_cloud(self) -> None:
+        pass
+
+    def update_tdp_in_cloud(self) -> None:
+        pass
