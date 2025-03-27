@@ -39,6 +39,11 @@ class PusblishTdpView:
         else:
             self.__hide_all_widgets_in_layout(self.__layout)
 
+
+    def __update_path_to_export(self) -> None:
+        path: str = self.__model.last_export.path_to_directory_with_data
+        self.__save_input.setText(path)
+
     def __create_title(self) -> None:
         title = QLabel("TDPB.Magazine")
         title.setStyleSheet("font-size: 24px; color: blue; font-weight: bold;")

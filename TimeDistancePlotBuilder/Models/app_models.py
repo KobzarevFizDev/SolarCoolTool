@@ -1410,6 +1410,10 @@ class Export:
         return glob.glob(os.path.join(self.__directory_with_export, extension))
 
     @property
+    def path_to_directory_with_data(self) -> str:
+        return self.__directory_with_export
+
+    @property
     def path_to_png_file(self) -> str:
         png_files = self.__find_file_with_extenstion('.png')
         if len(png_files) == 1:
@@ -1440,7 +1444,7 @@ class LastExport:
             None
 
     @property
-    def last_export(self) -> Export:
+    def export_object(self) -> Export:
         directory_with_last_save: str = self.__get_directory_with_latest_export()
         if directory_with_last_save == None:
             raise NotFoundDataForExport()
@@ -1577,8 +1581,8 @@ class AppModel:
         self.__app_state = CurrentAppState()
         self.__selected_bezier_segments = SelectedBezierSegments(10)
         self.__tdp = TDP(self.__bezier_mask, self.__viewport_transform)
-
         self.__loop_animation = LoopAnimation(self.__bezier_mask, self.__time_line, self.__solar_frames_storage, self.__zone_interesting)
+        self.__last_export = LastExport(configuration_app.path_to_export_results)
 
         self.__observers = []
 
@@ -1633,6 +1637,10 @@ class AppModel:
     @property
     def loop_animation(self) -> LoopAnimation:
         return self.__loop_animation
+    
+    @property
+    def last_export(self) -> Export:
+        return self.__last_export.export_object
 
     def add_observer(self, in_observer):
         self.__observers.append(in_observer)
