@@ -6,6 +6,7 @@ from typing import List, Tuple, Optional
 from enum import IntEnum, unique
 import time
 
+from pympler import asizeof
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
@@ -113,107 +114,79 @@ class Cubedata:
             raise Exception("CubeData::get_frame() index out")
         return self.__frames[index]
 
-    @classmethod
-    def create_from_debug_data(cls, number_of_frames: int):
-        cubedata = cls(600, 600)
-        animated_frame = TestAnimatedFrame("horizontal", 30, 600)
-        number_of_steps = 100
-        t_values = [i/number_of_steps for i in range(number_of_frames)]
-        for t in t_values:
-            frame = animated_frame.get_frame_by_t(t)
-            cubedata.add_frame(frame)
-        return cubedata
 
 
-class TestAnimatedFrame:
-    def __init__(self,
-                 direction: str,
-                 width_line: int,
-                 size: int):
-        self.__direction = direction
-        self.__width_line = width_line
-        self.__size = size
-        self.__t = 0
-        self.__frame = self.get_frame_by_t(0)
+# class SolarFrame:
+#     def __init__(self,
+#                  id: int,
+#                  path_to_fits_file: str,
+#                  channel: int,
+#                  date: str):
+#         self.__id: int = id
+#         self.__path_to_fits_file: str = path_to_fits_file
+#         self.__channel: int = channel
+#         self.__date: str = date
+#         self.__viewport_transform: ViewportTransform = None
+        
+#         # Ленивая инициализация тяжелых атрибутов
+#         self.__map = None
+#         self.__pixels_array = None
+#         self.__qimage = None
 
+#     @property
+#     def id(self) -> int:
+#         return self.__id
 
-    @property
-    def current_t(self) -> float:
-        return self.__t
+#     @property
+#     def channel(self) -> int:
+#         return self.__channel
 
-    @current_t.setter
-    def current_t(self, value) -> None:
-        self.__t = self.__validate_t_value(value)
+#     @property
+#     def pixels_array(self) -> npt.NDArray:
+#         if self.__pixels_array is None:
+#             self.__pixels_array = self.__get_pixels_array()
+#         return self.__pixels_array
 
-    def animate_frame(self, delta_t: float):
-        self.__t += delta_t
-        self.__t = self.__validate_t_value(self.__t)
-        self.__frame = self.__create_content_frame()
-        self.__draw_line(self.__t, self.__frame)
+#     @property
+#     def qtimage(self) -> QImage:
+#         if self.__qimage is None:
+#             self.__qimage = self.__get_qtimage()
+#         return self.__qimage
 
-    def get_frame_by_t(self, t: float) -> CubedataFrame:
-        t = self.__validate_t_value(t)
-        content_frame = self.__create_content_frame()
-        start_border, finish_border = self.__draw_line(t, content_frame)
-        frame = CubedataFrame(content_frame)
-        frame.set_border_of_time_distance_plot_line(start_border, finish_border)
-        return frame
+#     def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
+#         self.__viewport_transform = viewport_transform
 
-    def get_frame_by_t_as_qpixmap(self, t: float) -> QPixmap:
-        frame_content = self.get_frame_by_t(t).content
-        frame_content = frame_content.astype(np.uint8)
-        qimage = QImage(frame_content, self.__size, self.__size, self.__size, QImage.Format_Grayscale8)
-        return QPixmap.fromImage(qimage)
+#     def get_pixmap_of_solar_region(self,
+#                                  top_left_in_view: QPoint,
+#                                  bottom_right_in_view: QPoint) -> QPixmap:
+#         if self.__viewport_transform is None:
+#             raise ValueError("Viewport transform not set")
+            
+#         top_left_in_image = self.__viewport_transform.transform_from_viewport_pixel_to_image_pixel(top_left_in_view)
+#         bottom_right_in_image = self.__viewport_transform.transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view)
+#         rect = QRect(top_left_in_image, bottom_right_in_image)
+#         pixmap_from_origin_frame = QPixmap.fromImage(self.qtimage.copy(rect))
+#         return pixmap_from_origin_frame.scaled(600, 600)
 
-    def __validate_t_value(self, t: float) -> float:
-        if t < 0:
-            return 0
-        elif t > 1:
-            return 1
-        else:
-            return t
+#     def __get_pixels_array(self) -> npt.NDArray:
+#         return self.__get_map().data
 
-    def __draw_line(self, t, frame):
-        if self.__direction == "horizontal":
-            return self.__draw_horizontal_line(t, frame)
-        elif self.__direction == "vertical":
-            return self.__draw_vertical_line(t, frame)
+#     def __get_map(self):
+#         if self.__map is None:
+#             self.__map = sunpy.map.Map(self.__path_to_fits_file)
+#             self.__map.data[np.isnan(self.__map.data)] = 0
+#         return self.__map
 
-    def __draw_horizontal_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-
-        for i in range(start_border, end_border):
-            frame[i] = 0
-
-        return start_border, end_border
-
-    def __draw_vertical_line(self, t, frame):
-        start_border, end_border = self.__get_line_border_of_line(t)
-        for i in range(start_border, end_border):
-            frame.T[i] = 0
-
-    def __create_content_frame(self):
-        return np.ones((self.__size, self.__size)) * 255
-
-    def __get_line_border_of_line(self, t: float) -> [int, int]:
-        line_position = self.__get_line_pixel_position(t)
-        start_border = int(line_position - self.__width_line / 2)
-        end_border = int(line_position + self.__width_line / 2)
-
-        if start_border < 0:
-            start_border = 0
-
-        if end_border > self.__size:
-            end_border = self.__size
-
-        return start_border, end_border
-
-    def __get_line_pixel_position(self, t: float) -> int:
-        return int(self.__lininterp(0, self.__size, t))
-
-    def __lininterp(self, p0: int, p1: int, t: float) -> float:
-        return (1 - t) * p0 + t * p1
-
+#     def __get_qtimage(self) -> QImage:
+#         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+#         fig = Figure((40.96, 40.96), subplotpars=sp)
+#         canvas = FigureCanvas(fig)
+#         ax = fig.add_subplot(projection=self.__get_map())
+#         self.__get_map().plot(axes=ax)
+#         ax.set_axis_off()
+#         canvas.draw()
+#         width, height = fig.figbbox.width, fig.figbbox.height
+#         return QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
 
 class SolarFrame:
     def __init__(self,
@@ -348,14 +321,15 @@ class SolarFramesStorage(QObject):
         ids = self.__get_ids_of_frames_in_channel(channel)
         dates = self.__get_dates_of_files_in_channel(channel)
 
+
         for i, path in enumerate(files):
             if number_of_cached_frames > limit:
-                print("Acheve limit")
+                # print("Acheve limit")
                 break
             print(f"caching {number_of_cached_frames}/{len(files)}. i = {i}")
 
             if need_to_skip > 0:
-                print(f"skip {i}")
+                # print(f"skip {i}")
                 need_to_skip -= 1
                 continue
 
@@ -365,6 +339,7 @@ class SolarFramesStorage(QObject):
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
 
+            print(asizeof.asized(solar_frame))
             self.__loaded_channel.append(solar_frame)
 
             need_to_skip = step - 1
@@ -1191,199 +1166,6 @@ class TDP(QObject):
         return QPixmap.fromImage(im)
 
 
-# todo: Легаси
-class TimeDistancePlot:
-
-    # TODO: Вынести дополнетельные параметры
-    @classmethod
-    def create_distance_plot_from_real_data(cls,
-                                            bezier_mask: BezierMask,
-                                            viewport_transform: ViewportTransform,
-                                            cubedata: Cubedata):
-        instance = TimeDistancePlot()
-        number_of_slices_along_loop = 400
-        width_of_one_step_on_result_time_distance_plot = 3
-        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot # 300
-        height_time_distance_plot = number_of_slices_along_loop #560
-        time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
-
-        setattr(instance, "__viewport_transform", viewport_transform)
-        setattr(instance, "__cubedata", cubedata)
-        setattr(instance, "__width_one_step_time_distance_plot", width_of_one_step_on_result_time_distance_plot)
-        setattr(instance, "__width_time_distance_plot", length_time_distance_plot)
-        setattr(instance, "__height_time_distance_plot", height_time_distance_plot)
-
-        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
-                                                                            number_of_slices_along_loop,
-                                                                            True)
-
-        for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).content
-
-            line = instance.__get_time_distance_line(frame_content,
-                                                     height_time_distance_plot,
-                                                     width_of_one_step_on_result_time_distance_plot,
-                                                     coordinates,
-                                                     False)
-
-            start_index = i * width_of_one_step_on_result_time_distance_plot
-            finish_index = (i + 1) * width_of_one_step_on_result_time_distance_plot
-            time_distance_plot_array.T[start_index:finish_index] = line.T
-
-        # todo: надо ли ?
-        time_distance_plot_array = gaussian_filter(time_distance_plot_array, sigma=3)
-        setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
-
-        return instance
-
-    @classmethod
-    def create_debug_distance_plot(cls,
-                                   bezier_mask: BezierMask,
-                                   number_of_frames_need_to_use_for_create_time_distance_plot: int = 100):
-        instance = TimeDistancePlot()
-        cubedata: Cubedata = Cubedata.create_from_debug_data(number_of_frames_need_to_use_for_create_time_distance_plot)
-
-        number_of_slices_along_loop = 400
-        width_of_one_step_on_result_time_distance_plot = 3
-        length_time_distance_plot = cubedata.number_of_frames * width_of_one_step_on_result_time_distance_plot
-        height_time_distance_plot = number_of_slices_along_loop
-        time_distance_plot_array = np.zeros((height_time_distance_plot, length_time_distance_plot))
-
-        coordinates = instance.__get_coordinates_of_pixels_from_bezier_mask(bezier_mask,
-                                                                            number_of_slices_along_loop,
-                                                                            False)
-
-        for i in range(cubedata.number_of_frames):
-            frame_content = cubedata.get_frame(i).content
-
-
-            line = instance.__get_time_distance_line(frame_content,
-                                                     height_time_distance_plot,
-                                                     width_of_one_step_on_result_time_distance_plot,
-                                                     coordinates,
-                                                     True)
-
-            start_index = i * width_of_one_step_on_result_time_distance_plot
-            finish_index = (i + 1) * width_of_one_step_on_result_time_distance_plot
-            time_distance_plot_array.T[start_index:finish_index] = line.T
-
-        time_distance_plot_array = gaussian_filter(time_distance_plot_array, sigma=3)
-
-        setattr(instance, "__cubedata", cubedata)
-        setattr(instance, "__width_one_step_time_distance_plot", width_of_one_step_on_result_time_distance_plot)
-        setattr(instance, "__width_time_distance_plot", length_time_distance_plot)
-        setattr(instance, "__height_time_distance_plot", height_time_distance_plot)
-        setattr(instance, "__time_distance_plot_array", time_distance_plot_array)
-        return instance
-
-    def __get_time_distance_line(self,
-                                 frame: npt.NDArray,
-                                 height_time_distance_plot,
-                                 width_of_one_step_on_result_time_distance_plot,
-                                 pixels_coordinates: List[List[QPoint]],
-                                 is_debug: bool) -> npt.NDArray:
-        number_of_slices = len(pixels_coordinates)
-        time_distance_line = np.zeros((number_of_slices, width_of_one_step_on_result_time_distance_plot))
-
-        for i, coordinates_of_pixels_of_one_slice in enumerate(pixels_coordinates):
-            value: int = self.__get_mean_value_of_cross_slice(frame, coordinates_of_pixels_of_one_slice, is_debug)
-            time_distance_line[i] = value
-
-        return time_distance_line
-
-    def __get_mean_value_of_cross_slice(self,
-                                        frame: npt.NDArray,
-                                        coordinates_of_pixels_of_one_slice: List[QPoint],
-                                        is_debug: bool) -> int:
-        accumulator = 0
-
-        for coordinate_of_pixel in coordinates_of_pixels_of_one_slice:
-            pixel_x_coordinate = coordinate_of_pixel.x()
-            pixel_y_coordinate = coordinate_of_pixel.y()
-            pixel_value = frame[pixel_y_coordinate][pixel_x_coordinate]
-            accumulator += pixel_value
-
-        return int(accumulator / len(coordinates_of_pixels_of_one_slice))
-    
-    def __get_coordinates_of_pixels_from_bezier_mask(self,
-                                                     bezier_mask: BezierMask,
-                                                     number_of_slices_along_loop: int,
-                                                     need_to_transform_for_viewport_to_image: bool) -> List[List[QPoint]]:
-        coordinates: List[List[QPoint]] = list()
-        bottom_points: List[QPoint] = bezier_mask.get_bottom_border(number_of_slices_along_loop)
-        top_points: List[QPoint] = bezier_mask.get_top_border(number_of_slices_along_loop)
-        for i in range(number_of_slices_along_loop):
-            bottom_point: QPoint = bottom_points[i]
-            top_point: QPoint = top_points[i]
-
-            if need_to_transform_for_viewport_to_image:
-                viewport_transform: ViewportTransform = getattr(self, "__viewport_transform")
-                bottom_point = viewport_transform.transform_point_from_bezier_mask_widget_to_fits(bottom_point)
-                top_point = viewport_transform.transform_point_from_bezier_mask_widget_to_fits(top_point)
-
-            pixels_coordinates = get_pixels_of_line(bottom_point.x(),
-                                                    bottom_point.y(),
-                                                    top_point.x(),
-                                                    top_point.y())
-            coordinates.append(pixels_coordinates)
-        return coordinates
-
-    def get_time_distance_plot_as_qpixmap_in_grayscale(self) -> QPixmap:
-        frame = getattr(self, "__time_distance_plot_array")
-        width = getattr(self, "__width_time_distance_plot")
-        height = getattr(self, "__height_time_distance_plot")
-
-        data = frame.astype(np.uint8)
-        qimage = QImage(data, width, height, QImage.Format_Grayscale8)
-        return QPixmap.fromImage(qimage)
-
-    def get_time_distance_plot_as_qpixmap_using_cmap_of_channel(self, channel: int):
-        cm = get_cmap_by_channel(channel)
-
-        frame = getattr(self, "__time_distance_plot_array")
-
-        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-        l = frame.shape[1] / 100
-        h = frame.shape[0] / 100
-        fig = Figure(figsize=(l, h), dpi=100, subplotpars=sp)
-        canvas = FigureCanvas(fig)
-        axes = fig.add_subplot()
-        axes.set_axis_off()
-        axes.imshow(frame, cmap=cm)
-        axes.imshow(frame.astype(np.float32), cmap=cm)
-        canvas.draw()
-        width, height = int(fig.figbbox.width), int(fig.figbbox.height)
-        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
-        return QPixmap.fromImage(im)
-
-    def get_border_of_time_distance_slice(self, t: float) -> [int, int]:
-        width_one_step = getattr(self, "__width_one_step_time_distance_plot")
-        cubedata: Cubedata = getattr(self, "__cubedata")
-        i = int(t * cubedata.number_of_frames)
-        start_index = i * width_one_step
-        finish_index = (i + 1) * width_one_step
-        return start_index, finish_index
-
-    def save_as_png(self, path_to_save: str, current_channel: int):
-        cm = get_cmap_by_channel(current_channel)
-        frame = getattr(self, "__time_distance_plot_array")
-        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-        l = frame.shape[1] / 100
-        h = frame.shape[0] / 100
-        fig = Figure(figsize=(l, h), dpi=100, subplotpars=sp)
-        canvas = FigureCanvas(fig)
-        axes = fig.add_subplot()
-        axes.set_axis_off()
-        axes.imshow(frame, cmap=cm)
-        axes.imshow(frame.astype(np.float32), cmap=cm)
-        canvas.draw()
-        fig.savefig(path_to_save)
-
-    def save_numpy_array(self, path_to_save: str):
-        frame: npt.NDArray = getattr(self, "__time_distance_plot_array")
-        np.save(path_to_save, frame)
-
-
 class SelectedBezierSegments:
     def __init__(self, number_of_bizer_segments: int):
         self.__number_of_segments: int = number_of_bizer_segments
@@ -1577,7 +1359,6 @@ class AppModel:
         self.__time_line = TimeLine(self.__solar_frames_storage)
         self.__current_channel = CurrentChannel(self.__solar_frames_storage, configuration_app.initial_channel)
         self.__bezier_mask = BezierMask()
-        self.__test_animated_frame = TestAnimatedFrame("horizontal", 30, 600)
         self.__app_state = CurrentAppState()
         self.__selected_bezier_segments = SelectedBezierSegments(10)
         self.__tdp = TDP(self.__bezier_mask, self.__viewport_transform)
@@ -1617,10 +1398,6 @@ class AppModel:
     @property
     def configuration(self) -> ConfigurationApp:
         return self.__configuration
-
-    @property
-    def test_animated_frame(self) -> TestAnimatedFrame:
-        return self.__test_animated_frame
 
     @property
     def app_state(self) -> CurrentAppState:

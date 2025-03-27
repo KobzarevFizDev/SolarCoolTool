@@ -4,7 +4,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap
 
 from TimeDistancePlotBuilder.CustomWidgets.bezier_mask_widget import BezierMaskWidget
-from TimeDistancePlotBuilder.Models.app_models import AppStates, TimeDistancePlot, Cubedata
+from TimeDistancePlotBuilder.Models.app_models import AppStates, Cubedata
 from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFrame
 
 if TYPE_CHECKING:

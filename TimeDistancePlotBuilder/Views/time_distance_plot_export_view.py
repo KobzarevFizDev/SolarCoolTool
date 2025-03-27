@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QLabel, QSlider, QVBoxLayout, QPushButton, QHBoxLayo
 
 from TimeDistancePlotBuilder.CustomWidgets.time_distance_plot_widget import TimeDistancePlotWidget
 from TimeDistancePlotBuilder.CustomWidgets.tdp_matplotlib_preview_widget import TDP_MatplotlibPreviewWidget
-from TimeDistancePlotBuilder.Models.app_models import AppStates, TimeDistancePlot
+from TimeDistancePlotBuilder.Models.app_models import AppStates
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import AppModel
