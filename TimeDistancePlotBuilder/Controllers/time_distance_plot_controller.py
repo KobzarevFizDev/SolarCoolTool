@@ -5,13 +5,12 @@ from datetime import datetime
 
 import os
 
-import numpy as np
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot, TDP, SolarFrame
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 from TimeDistancePlotBuilder.Views.time_distance_plot_view import TimeDistancePlotView
 
-from PyQt5.QtCore import QThread, QPoint
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import QThread
+from PyQt5.QtGui import QPixmap
 
 if TYPE_CHECKING:
     from TimeDistancePlotBuilder.Models.app_models import Cubedata
@@ -115,9 +114,6 @@ class TimeDistancePlotController:
         tdp_as_numpy: npt.NDArray = self.__model.time_distance_plot.tdp_array
 
         frames_for_create_mp4: List[npt.NDArray] = self.__model.loop_animation.get_frames_for_animation()
-        #self.__create_frames_for_mp4()
-
-
         path_to_export: str = self.__create_directory_for_export()
 
         self.__popup_manager.export_tdp_popup.activate(tdp_as_numpy, tdp_as_pixmap, frames_for_create_mp4, path_to_export)
@@ -135,44 +131,6 @@ class TimeDistancePlotController:
         os.mkdir(path_to_export)
         return path_to_export
 
-    # todo: Вынести в отдельный поток, вынести в модель
-    def __create_frames_for_mp4(self) -> List[SolarFrame]:
-        # frames = []
-
-        # for i in range(100):
-        #     pixmap = QPixmap(640, 480)
-        #     pixmap.fill()
-        #     image = pixmap.toImage()
-        #     image = image.convertToFormat(QImage.Format_RGB888)
-        #     ptr = image.bits()
-        #     ptr.setsize(image.byteCount())
-        #     numpy_image = np.array(ptr).reshape(image.height(), image.width(), 3) 
-        #     print(numpy_image.shape)  # Должно быть (height, width, 3)
-        #     print(numpy_image.dtype) 
-        #     frames.append(numpy_image)
-        # return frames
-
-
-        start: int = self.__model.time_line.start_frame_to_build_tdp
-        finish: int = self.__model.time_line.finish_frame_to_build_tdp
-
-        frames = []
-
-        for i in range(start, finish):
-            frame: SolarFrame = self.__model.solar_frames_storage.get_solar_frame_by_index_from_current_channel(i)
-            top_right: QPoint = self.__model.zone_interesting.top_right_in_view
-            bottom_left: QPoint = self.__model.zone_interesting.bottom_left_in_view
-            pixmap = frame.get_pixmap_of_solar_region(bottom_left, top_right)
-            image: QImage = pixmap.toImage()
-
-            image = image.convertToFormat(QImage.Format_RGB888)
-            ptr = image.bits()
-            ptr.setsize(image.byteCount())
-            numpy_image = np.array(ptr).reshape(image.height(), image.width(), 3) 
-            frames.append(numpy_image)
-            
-
-        return frames
 
     # todo: Легаси
     # def export_time_distance_plot(self) -> None:

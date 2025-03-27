@@ -38,7 +38,7 @@ class TimeDistancePlotExportView:
 
     # todo: Вынести в контроллер ?
     def __is_need_to_show_this_view(self) -> bool:
-        return self.__model.app_state.current_state == AppStates.EXPORT_TIME_DISTANCE_PLOT_STATE
+        return self.__model.app_state.current_state == AppStates.PREVIEW_PLOT_STATE
 
     def __create_tdp_matplotlib_preview(self) -> None:
         placeholder_tdp: npt.NDArray = self.__model.time_distance_plot.get_placeholder(width_in_px=900, height_in_px=300)
