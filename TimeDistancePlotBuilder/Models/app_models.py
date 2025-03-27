@@ -65,14 +65,6 @@ class CubedataFrame:
         self.__width_of_frame: int = solar_frame.width
         self.__height_of_frame: int = solar_frame.height
 
-        # self.__get_size()
-
-    # def __get_size(self) -> None:
-    #     m = sunpy.map.Map(self.__path_to_fits_file)
-    #     self.__width_of_frame = m.data.shape[1]
-    #     self.__height_of_frame = m.data.shape[0]
-    #     m = None
-
     def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
         self.__start_border_of_line = start_border
         self.__finish_border_of_line = finish_border
@@ -84,7 +76,7 @@ class CubedataFrame:
         self.__pixels = np.nan_to_num(self.__pixels, copy=False, nan=0.0)
         self.__is_loaded = True
 
-    # возможно стоит высвобождать ресурсы не у одного фрейма а у всего куба сразу после построения TDP
+    # TODO: Возможно стоит высвобождать ресурсы не у одного фрейма а у всего куба сразу после построения TDP
     def unload(self) -> None:
         self.__pixels = None
         self.__is_loaded = False
@@ -112,38 +104,6 @@ class CubedataFrame:
     @property
     def finish_border_of_line(self) -> int:
         return self.__finish_border_of_line
-
-# class CubedataFrame:
-#     def __init__(self, content: npt.NDArray):
-#         self.__frame_content: npt.NDArray = content
-#         self.__start_border_of_line: int = -1
-#         self.__finish_border_of_line: int = -1
-
-#     def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
-#         self.__start_border_of_line = start_border
-#         self.__finish_border_of_line = finish_border
-
-
-#     @property
-#     def content(self) -> npt.NDArray:
-#         return self.__frame_content
-
-#     @property
-#     def width_of_frame(self) -> int:
-#         return self.__frame_content.shape[1]
-
-#     @property
-#     def height_of_frame(self) -> int:
-#         return self.__frame_content.shape[0]
-
-#     @property
-#     def start_border_of_line(self) -> int:
-#         return self.__start_border_of_line
-
-#     @property
-#     def finish_border_of_line(self) -> int:
-#         return self.__finish_border_of_line
-
 
 class Cubedata:
     def __init__(self, x_size: int, y_size: int):
@@ -173,11 +133,6 @@ class Cubedata:
             raise Exception("CubeData::get_frame() index out")
         return self.__frames[index]
 
-
-
-# 1. Удалить свойство pixels. Оно больше ненужно. Нужно хранить только размеры изображения (которое получаем при создании объекта)
-# 2. CubedataFrame удалить метод get_size(), теперь можно обращаться сразу к SolarFrame
-# 3. qimage нужно создавать при создании объекта а map удалять
 
 class SolarFrame:
     def __init__(self,
@@ -256,80 +211,6 @@ class SolarFrame:
         self.__height_of_frame = m.data.shape[0]
         m = None
 
-
-# class SolarFrame:
-#     def __init__(self,
-#                  id: int,
-#                  path_to_fits_file: str,
-#                  channel: int,
-#                  date: str):
-#         self.__id: int = id
-#         self.__path_to_fits_file: str = path_to_fits_file
-#         self.__channel: int = channel
-#         self.__date: str = date
-#         self.__map = self.__get_map()
-#         self.__pixels_array: npt.NDArray = self.__get_pixels_array()
-#         self.__qimage = self.__get_qtimage()
-#         self.__viewport_transform: ViewportTransform = None
-
-#     @property
-#     def path_to_file(self) -> str:
-#         return self.__path_to_fits_file
-
-#     @property
-#     def id(self) -> int:
-#         return self.__id
-
-#     @property
-#     def channel(self) -> int:
-#         return self.__channel
-
-#     # todo: Это поле устарело. Используется только для получения размеров изображения. Нужно заменить 
-#     @property
-#     def pixels_array(self) -> npt.NDArray:
-#         return self.__pixels_array
-
-#     @property
-#     def qtimage(self) -> QImage:
-#         return self.__qimage
-
-#     def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
-#         self.__viewport_transform = viewport_transform
-
-#     def get_pixmap_of_solar_region(self,
-#                                    top_left_in_view: QPoint,
-#                                    bottom_right_in_view: QPoint) -> QPixmap:
-#         top_left_in_image = (self.__viewport_transform
-#                              .transform_from_viewport_pixel_to_image_pixel(top_left_in_view))
-#         bottom_right_in_image = (self.__viewport_transform
-#                                  .transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view))
-#         rect = QRect(top_left_in_image, bottom_right_in_image)
-#         pixmap_from_origin_frame = QPixmap.fromImage(self.__qimage.copy(rect))
-#         scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
-#         return scaled_pixmap_of_frame
-
-#     def __get_pixels_array(self) -> npt.NDArray:
-#         return self.__map.data
-
-#     def __get_map(self):
-#         m = sunpy.map.Map(self.__path_to_fits_file)
-#         m.data[np.isnan(m.data)] = 0
-#         return m
-
-
-#     def __get_qtimage(self) -> QImage:
-#         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-#         fig = Figure((40.96, 40.96), subplotpars=sp)
-#         canvas = FigureCanvas(fig)
-#         ax = fig.add_subplot(projection=self.__map)
-#         self.__map.plot(axes=ax)
-#         ax.set_axis_off()
-#         canvas.draw()
-#         width, height = fig.figbbox.width, fig.figbbox.height
-#         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
-#         return im
-
-
 class SolarFramesStorage(QObject):
     finished = pyqtSignal()
     progress = pyqtSignal(int, int, str)
@@ -345,9 +226,7 @@ class SolarFramesStorage(QObject):
         self.__initialize_database()
 
     def __initialize_database(self) -> None:
-        files = self.__get_files_in_directory()
-        channels = self.__get_channels(files)
-        dates = self.__get_dates_of_this_files(files)
+        paths, channels, dates = self.__search_files()
 
         connection = sqlite3.connect('my_database.db')
         cursor = connection.cursor()
@@ -360,26 +239,29 @@ class SolarFramesStorage(QObject):
         Date TEXT NOT NULL
         )
         """)
-        for i, file in enumerate(files):
+        for i, file in enumerate(paths):
             insert_command = "INSERT INTO Images (Id, Path, Channel, Date) VALUES (?,?,?,?)"
             insert_data = (i, file, channels[i], dates[i])
             cursor.execute(insert_command, insert_data)
         connection.commit()
         connection.close()
 
-    def __get_files_in_directory(self) -> List[str]:
-        files_in_directory = []
+    def __search_files(self):
+        paths = []
+        wavelengths = []
+        dates = []
         for root, dirs, files in os.walk(self.__path_to_directory):
             for file in files:
-                files_in_directory.append(os.path.join(root, file))
-        files_in_directory = list(filter((lambda f: "image" in f), files_in_directory))
-        return files_in_directory
+                paths.append(os.path.join(root, file))
+        paths = list(filter((lambda f: "image" in f), paths))
 
-    def __get_channels(self, files) -> List[int]:
-        return [f.split('.')[3] for f in files]
-
-    def __get_dates_of_this_files(self, files) -> List[str]:
-        return [f.split('.')[2][0:10] for f in files]
+        for path in paths:
+            with fits.open(path) as hdul:
+                header = hdul[1].header
+                wavelengths.append(header["WAVELNTH"])
+                dates.append(header["DATE-OBS"])
+        
+        return paths, wavelengths, dates
 
     @pyqtSlot()
     def load_channel(self, channel: int):
@@ -390,6 +272,7 @@ class SolarFramesStorage(QObject):
 
         self.__current_channel = channel
         self.__loaded_channel.clear()
+        gc.collect()
 
         files = self.__get_files_in_channel(channel)
         ids = self.__get_ids_of_frames_in_channel(channel)
@@ -483,14 +366,12 @@ class SolarFramesStorage(QObject):
 
     def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
         first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
-        x_size = first_frame.width #first_frame.pixels_array.shape[1]
-        y_size = first_frame.height #first_frame.pixels_array.shape[0]
+        x_size = first_frame.width
+        y_size = first_frame.height
         cubedata = Cubedata(x_size, y_size)
         for index in range(start_index, finish_index):
             solar_frame: SolarFrame = self.get_solar_frame_by_index_from_current_channel(index)
             frame = CubedataFrame(solar_frame)
-            # content = solar_frame.pixels_array
-            # frame = CubedataFrame(content)
             cubedata.add_frame(frame)
         return cubedata
     
@@ -553,9 +434,7 @@ class BezierCurve:
         for i in range(1, number_of_points - 1):
             target_length: float = i * segment_length
             func = lambda t: abs(self.arc_length(t) - target_length)
-            print('start')
             result = minimize_scalar(func, bounds=(0, 1), method="bounded", tol=1e-2)
-            print('finish')
             t_values.append(result.x)
 
         t_values.append(1)
