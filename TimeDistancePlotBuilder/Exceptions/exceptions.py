@@ -43,3 +43,10 @@ class DataForExportNotValid(Exception):
     def __str__(self) -> str:
         return "Data for export is not valid"
     
+class DataNotLoaded(Exception):
+    def __init__(self) -> None:
+        pass
+
+    def __str__(self) -> str:
+        return "Cannot access to unloading data"
+    

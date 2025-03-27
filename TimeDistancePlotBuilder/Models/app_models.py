@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 import glob
@@ -6,7 +7,7 @@ from typing import List, Tuple, Optional
 from enum import IntEnum, unique
 import time
 
-from pympler import asizeof
+# from pympler import asizeof
 
 from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
 from scipy.ndimage import zoom, gaussian_filter
@@ -32,7 +33,7 @@ from TimeDistancePlotBuilder import transformations
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
-from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectZoneInterestingSize, NotFoundDataForExport, DataForExportNotValid
+from TimeDistancePlotBuilder.Exceptions.exceptions import DataNotLoaded, IncorrectZoneInterestingSize, NotFoundDataForExport, DataForExportNotValid
 
 
 from aiapy.calibrate import normalize_exposure, register, update_pointing
@@ -55,27 +56,54 @@ def get_cmap_by_channel(channel: int):
 
 
 class CubedataFrame:
-    def __init__(self, content: npt.NDArray):
-        self.__frame_content: npt.NDArray = content
+    def __init__(self, solar_frame: 'SolarFrame'):
         self.__start_border_of_line: int = -1
         self.__finish_border_of_line: int = -1
+        self.__is_loaded: bool = False
+        self.__path_to_fits_file: str = solar_frame.path_to_file
+        self.__pixels: Optional[npt.NDArray] = None
+        self.__width_of_frame: int = solar_frame.width
+        self.__height_of_frame: int = solar_frame.height
+
+        # self.__get_size()
+
+    # def __get_size(self) -> None:
+    #     m = sunpy.map.Map(self.__path_to_fits_file)
+    #     self.__width_of_frame = m.data.shape[1]
+    #     self.__height_of_frame = m.data.shape[0]
+    #     m = None
 
     def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
         self.__start_border_of_line = start_border
         self.__finish_border_of_line = finish_border
 
+    def load(self) -> None:
+        m = sunpy.map.Map(self.__path_to_fits_file)
+        m.data[np.isnan(m.data)] = 0
+        self.__pixels = m.data.copy()
+        self.__pixels = np.nan_to_num(self.__pixels, copy=False, nan=0.0)
+        self.__is_loaded = True
+
+    # возможно стоит высвобождать ресурсы не у одного фрейма а у всего куба сразу после построения TDP
+    def unload(self) -> None:
+        self.__pixels = None
+        self.__is_loaded = False
+        gc.collect()
 
     @property
     def content(self) -> npt.NDArray:
-        return self.__frame_content
+        if self.__is_loaded == False:
+            raise DataNotLoaded()
+        
+        return self.__pixels
 
     @property
     def width_of_frame(self) -> int:
-        return self.__frame_content.shape[1]
+        return self.__width_of_frame
 
     @property
     def height_of_frame(self) -> int:
-        return self.__frame_content.shape[0]
+        return self.__height_of_frame
 
     @property
     def start_border_of_line(self) -> int:
@@ -84,6 +112,37 @@ class CubedataFrame:
     @property
     def finish_border_of_line(self) -> int:
         return self.__finish_border_of_line
+
+# class CubedataFrame:
+#     def __init__(self, content: npt.NDArray):
+#         self.__frame_content: npt.NDArray = content
+#         self.__start_border_of_line: int = -1
+#         self.__finish_border_of_line: int = -1
+
+#     def set_border_of_time_distance_plot_line(self, start_border: int, finish_border: int) -> None:
+#         self.__start_border_of_line = start_border
+#         self.__finish_border_of_line = finish_border
+
+
+#     @property
+#     def content(self) -> npt.NDArray:
+#         return self.__frame_content
+
+#     @property
+#     def width_of_frame(self) -> int:
+#         return self.__frame_content.shape[1]
+
+#     @property
+#     def height_of_frame(self) -> int:
+#         return self.__frame_content.shape[0]
+
+#     @property
+#     def start_border_of_line(self) -> int:
+#         return self.__start_border_of_line
+
+#     @property
+#     def finish_border_of_line(self) -> int:
+#         return self.__finish_border_of_line
 
 
 class Cubedata:
@@ -116,92 +175,30 @@ class Cubedata:
 
 
 
-# class SolarFrame:
-#     def __init__(self,
-#                  id: int,
-#                  path_to_fits_file: str,
-#                  channel: int,
-#                  date: str):
-#         self.__id: int = id
-#         self.__path_to_fits_file: str = path_to_fits_file
-#         self.__channel: int = channel
-#         self.__date: str = date
-#         self.__viewport_transform: ViewportTransform = None
-        
-#         # Ленивая инициализация тяжелых атрибутов
-#         self.__map = None
-#         self.__pixels_array = None
-#         self.__qimage = None
-
-#     @property
-#     def id(self) -> int:
-#         return self.__id
-
-#     @property
-#     def channel(self) -> int:
-#         return self.__channel
-
-#     @property
-#     def pixels_array(self) -> npt.NDArray:
-#         if self.__pixels_array is None:
-#             self.__pixels_array = self.__get_pixels_array()
-#         return self.__pixels_array
-
-#     @property
-#     def qtimage(self) -> QImage:
-#         if self.__qimage is None:
-#             self.__qimage = self.__get_qtimage()
-#         return self.__qimage
-
-#     def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
-#         self.__viewport_transform = viewport_transform
-
-#     def get_pixmap_of_solar_region(self,
-#                                  top_left_in_view: QPoint,
-#                                  bottom_right_in_view: QPoint) -> QPixmap:
-#         if self.__viewport_transform is None:
-#             raise ValueError("Viewport transform not set")
-            
-#         top_left_in_image = self.__viewport_transform.transform_from_viewport_pixel_to_image_pixel(top_left_in_view)
-#         bottom_right_in_image = self.__viewport_transform.transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view)
-#         rect = QRect(top_left_in_image, bottom_right_in_image)
-#         pixmap_from_origin_frame = QPixmap.fromImage(self.qtimage.copy(rect))
-#         return pixmap_from_origin_frame.scaled(600, 600)
-
-#     def __get_pixels_array(self) -> npt.NDArray:
-#         return self.__get_map().data
-
-#     def __get_map(self):
-#         if self.__map is None:
-#             self.__map = sunpy.map.Map(self.__path_to_fits_file)
-#             self.__map.data[np.isnan(self.__map.data)] = 0
-#         return self.__map
-
-#     def __get_qtimage(self) -> QImage:
-#         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-#         fig = Figure((40.96, 40.96), subplotpars=sp)
-#         canvas = FigureCanvas(fig)
-#         ax = fig.add_subplot(projection=self.__get_map())
-#         self.__get_map().plot(axes=ax)
-#         ax.set_axis_off()
-#         canvas.draw()
-#         width, height = fig.figbbox.width, fig.figbbox.height
-#         return QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
+# 1. Удалить свойство pixels. Оно больше ненужно. Нужно хранить только размеры изображения (которое получаем при создании объекта)
+# 2. CubedataFrame удалить метод get_size(), теперь можно обращаться сразу к SolarFrame
+# 3. qimage нужно создавать при создании объекта а map удалять
 
 class SolarFrame:
     def __init__(self,
-                 id: int,
-                 path_to_fits_file: str,
-                 channel: int,
-                 date: str):
+                id: int,
+                path_to_fits_file: str,
+                channel: int,
+                date: str):
         self.__id: int = id
         self.__path_to_fits_file: str = path_to_fits_file
         self.__channel: int = channel
-        self.__date: str = date
-        self.__map = self.__get_map()
-        self.__pixels_array: npt.NDArray = self.__get_pixels_array()
         self.__qimage = self.__get_qtimage()
         self.__viewport_transform: ViewportTransform = None
+
+        self.__width_of_frame = -1
+        self.__height_of_frame = -1
+
+        self.__get_size()
+
+    @property
+    def path_to_file(self) -> str:
+        return self.__path_to_fits_file
 
     @property
     def id(self) -> int:
@@ -210,10 +207,14 @@ class SolarFrame:
     @property
     def channel(self) -> int:
         return self.__channel
+    
+    @property
+    def width(self) -> int:
+        return self.__width_of_frame
 
     @property
-    def pixels_array(self) -> npt.NDArray:
-        return self.__pixels_array
+    def height(self) -> int:
+        return self.__height_of_frame
 
     @property
     def qtimage(self) -> QImage:
@@ -234,26 +235,99 @@ class SolarFrame:
         scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
         return scaled_pixmap_of_frame
 
-    def __get_pixels_array(self) -> npt.NDArray:
-        return self.__map.data
-
-    def __get_map(self):
+    def __get_qtimage(self) -> QImage:
         m = sunpy.map.Map(self.__path_to_fits_file)
         m.data[np.isnan(m.data)] = 0
-        return m
-
-
-    def __get_qtimage(self) -> QImage:
         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
         fig = Figure((40.96, 40.96), subplotpars=sp)
         canvas = FigureCanvas(fig)
-        ax = fig.add_subplot(projection=self.__map)
-        self.__map.plot(axes=ax)
+        ax = fig.add_subplot(projection=m)
+        m.plot(axes=ax)
         ax.set_axis_off()
         canvas.draw()
         width, height = fig.figbbox.width, fig.figbbox.height
         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
+        m = None
         return im
+    
+    def __get_size(self) -> None:
+        m = sunpy.map.Map(self.__path_to_fits_file)
+        self.__width_of_frame = m.data.shape[1]
+        self.__height_of_frame = m.data.shape[0]
+        m = None
+
+
+# class SolarFrame:
+#     def __init__(self,
+#                  id: int,
+#                  path_to_fits_file: str,
+#                  channel: int,
+#                  date: str):
+#         self.__id: int = id
+#         self.__path_to_fits_file: str = path_to_fits_file
+#         self.__channel: int = channel
+#         self.__date: str = date
+#         self.__map = self.__get_map()
+#         self.__pixels_array: npt.NDArray = self.__get_pixels_array()
+#         self.__qimage = self.__get_qtimage()
+#         self.__viewport_transform: ViewportTransform = None
+
+#     @property
+#     def path_to_file(self) -> str:
+#         return self.__path_to_fits_file
+
+#     @property
+#     def id(self) -> int:
+#         return self.__id
+
+#     @property
+#     def channel(self) -> int:
+#         return self.__channel
+
+#     # todo: Это поле устарело. Используется только для получения размеров изображения. Нужно заменить 
+#     @property
+#     def pixels_array(self) -> npt.NDArray:
+#         return self.__pixels_array
+
+#     @property
+#     def qtimage(self) -> QImage:
+#         return self.__qimage
+
+#     def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
+#         self.__viewport_transform = viewport_transform
+
+#     def get_pixmap_of_solar_region(self,
+#                                    top_left_in_view: QPoint,
+#                                    bottom_right_in_view: QPoint) -> QPixmap:
+#         top_left_in_image = (self.__viewport_transform
+#                              .transform_from_viewport_pixel_to_image_pixel(top_left_in_view))
+#         bottom_right_in_image = (self.__viewport_transform
+#                                  .transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view))
+#         rect = QRect(top_left_in_image, bottom_right_in_image)
+#         pixmap_from_origin_frame = QPixmap.fromImage(self.__qimage.copy(rect))
+#         scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
+#         return scaled_pixmap_of_frame
+
+#     def __get_pixels_array(self) -> npt.NDArray:
+#         return self.__map.data
+
+#     def __get_map(self):
+#         m = sunpy.map.Map(self.__path_to_fits_file)
+#         m.data[np.isnan(m.data)] = 0
+#         return m
+
+
+#     def __get_qtimage(self) -> QImage:
+#         sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
+#         fig = Figure((40.96, 40.96), subplotpars=sp)
+#         canvas = FigureCanvas(fig)
+#         ax = fig.add_subplot(projection=self.__map)
+#         self.__map.plot(axes=ax)
+#         ax.set_axis_off()
+#         canvas.draw()
+#         width, height = fig.figbbox.width, fig.figbbox.height
+#         im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
+#         return im
 
 
 class SolarFramesStorage(QObject):
@@ -339,7 +413,7 @@ class SolarFramesStorage(QObject):
             solar_frame = SolarFrame(id, path, channel, date)
             solar_frame.set_viewport_transform(self.__viewport_transform)
 
-            print(asizeof.asized(solar_frame))
+            # print(asizeof.asized(solar_frame))
             self.__loaded_channel.append(solar_frame)
 
             need_to_skip = step - 1
@@ -409,13 +483,14 @@ class SolarFramesStorage(QObject):
 
     def get_cubedata_by_interval(self, start_index: int, finish_index) -> Cubedata:
         first_frame = self.get_solar_frame_by_index_from_current_channel(start_index)
-        x_size = first_frame.pixels_array.shape[1]
-        y_size = first_frame.pixels_array.shape[0]
+        x_size = first_frame.width #first_frame.pixels_array.shape[1]
+        y_size = first_frame.height #first_frame.pixels_array.shape[0]
         cubedata = Cubedata(x_size, y_size)
         for index in range(start_index, finish_index):
             solar_frame: SolarFrame = self.get_solar_frame_by_index_from_current_channel(index)
-            content = solar_frame.pixels_array
-            frame = CubedataFrame(content)
+            frame = CubedataFrame(solar_frame)
+            # content = solar_frame.pixels_array
+            # frame = CubedataFrame(content)
             cubedata.add_frame(frame)
         return cubedata
     
@@ -1033,8 +1108,9 @@ class TDP(QObject):
 
         for index_of_step in range(cubedata.number_of_frames):
             frame: CubedataFrame = cubedata.get_frame(index_of_step)
+            frame.load()
             self.__handle_tdp_step(slices, frame, self.__width_of_tdp_step, index_of_step)
-
+            frame.unload()
             self.progress.emit(index_of_step, cubedata.number_of_frames - 1)
             QCoreApplication.processEvents()
 
