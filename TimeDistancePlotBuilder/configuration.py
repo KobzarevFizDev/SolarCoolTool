@@ -28,29 +28,32 @@ class ConfigurationApp:
         self.__path_to_configuration: str = path_to_configuration
 
     def check_valid(self) -> bool:
-        max_number_line_a94: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A94_PROPERTY_NAME)
-        max_number_line_a131: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A131_PROPERTY_NAME)
-        max_number_line_a171: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A171_PROPERTY_NAME)
-        max_number_line_a193: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A193_PROPERTY_NAME)
-        max_number_line_a211: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A211_PROPERTY_NAME)
-        max_number_line_a304: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A304_PROPERTY_NAME)
-        max_number_line_a335: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A335_PROPERTY_NAME)
+        self.max_number_of_frames_in_a94
+        self.max_number_of_frames_in_a131
+        self.max_number_of_frames_in_a171
+        self.max_number_of_frames_in_a193
+        self.max_number_of_frames_in_a211
+        self.max_number_of_frames_in_a304
+        self.max_number_of_frames_in_a335
 
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A94_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A131_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A171_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A193_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A211_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A304_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A335_PROPERTY_NAME)
+        self.step_for_channel_a94
+        self.step_for_channel_a131
+        self.step_for_channel_a171
+        self.step_for_channel_a193
+        self.step_for_channel_a211
+        self.step_for_channel_a304
+        self.step_for_channel_a335
 
-        self.__get_line_with_property_from_configuration_file_by_property_name(PATH_TO_EXPORT_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(PATH_TO_SOLAR_IMAGES_PROPERTY_NAME)
-        self.__get_line_with_property_from_configuration_file_by_property_name(INITIAL_CHANNEL)
+        self.initial_channel
 
-        self.path_to_export_results
-        self.path_to_solar_images
+        path_to_export: str = self.path_to_export_results
+        path_to_solar_images: str = self.path_to_solar_images
 
+        if os.path.exists(path_to_export) == False:
+            raise IncorrectPath(path_to_export)
+        
+        if os.path.exists(path_to_solar_images) == False:
+            raise IncorrectPath(path_to_solar_images)
 
     def get_step_for_channel(self, channel: int) -> int:
         return {94:self.step_for_channel_a94,
@@ -147,7 +150,7 @@ class ConfigurationApp:
     @property
     def step_for_channel_a211(self) -> int:
         line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(STEP_FOR_A211_PROPERTY_NAME)
-        property_value: int = self.__get_property_value_from_line_as_str(line_with_property, STEP_FOR_A211_PROPERTY_NAME)
+        property_value: int = self.__get_property_value_from_line_as_int(line_with_property, STEP_FOR_A211_PROPERTY_NAME)
         return property_value
 
     @property
