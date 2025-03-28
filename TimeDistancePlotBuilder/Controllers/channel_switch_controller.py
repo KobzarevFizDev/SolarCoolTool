@@ -8,11 +8,8 @@ class ChannelSwitchController:
         self.__model: AppModel = model
         self.__view = ChannelSwitchView(self, model, mainAppWindow)
         self.__popups_manager: PopupManager = mainAppWindow.popup_manager
-        self.__w = mainAppWindow
 
-    def switch_channel(self, channel: int):
-        current_channel: int = self.__model.current_channel.channel
-
+    def switch_channel(self, channel: int) -> None:
         self.__popups_manager.loading_program_popup.show()
 
         self.__thread_load_frames = QThread()
@@ -20,7 +17,7 @@ class ChannelSwitchController:
         self.__worker.moveToThread(self.__thread_load_frames)
 
         self.__worker.progress.connect(self.__popups_manager.loading_program_popup.update_progress)
-        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
+        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(channel))
         self.__worker.finished.connect(self.__thread_load_frames.quit)
         self.__worker.finished.connect(self.__worker.deleteLater)
         self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
@@ -28,7 +25,7 @@ class ChannelSwitchController:
 
         self.__thread_load_frames.start()
 
-    def __on_loaded_solar_frames(self, channel: int):
+    def __on_loaded_solar_frames(self, channel: int) -> None:
         self.__model.current_channel.channel = channel
         self.__model.notify_observers()
         self.__popups_manager.loading_program_popup.hide()
