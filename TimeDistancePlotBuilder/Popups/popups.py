@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QHBoxLayout, QLabel
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPathForExport, FileNameIsEmpty
+from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPath, FileNameIsEmpty
 
 from TimeDistancePlotBuilder.Models.app_models import SolarFrame
 
@@ -321,7 +321,7 @@ class ExportImagePopup(QDialog):
             if (not self.__image_for_save == None) and self.__path_is_valid(file_name):
                 self.__image_for_save.save(path_to_export)
             else:
-                raise IncorrectPathForExport(path_to_export)
+                raise IncorrectPath(path_to_export)
         
         except Exception as e:
             self.exception_occured.emit(e)

@@ -1,11 +1,11 @@
+import os
 import sys
-import logging
 
 from TimeDistancePlotBuilder.Controllers.channel_switch_controller import ChannelSwitchController
 from TimeDistancePlotBuilder.Controllers.time_line_controller import TimeLineController
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, QTimer
 
 from TimeDistancePlotBuilder.Controllers.time_distance_plot_controller import TimeDistancePlotController
 from TimeDistancePlotBuilder.Controllers.time_distance_plot_export_controller import TimeDistancePlotExportController
@@ -15,7 +15,7 @@ from TimeDistancePlotBuilder.Controllers.select_bezier_segments_controller impor
 from TimeDistancePlotBuilder.Controllers.app_state_controller import AppStateController
 from TimeDistancePlotBuilder.Controllers.publish_tdp_controller import PublishTdpController
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel, SolarFramesStorage
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
@@ -40,6 +40,13 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.layout = QGridLayout()
 
         configuration: ConfigurationApp = ConfigurationApp(path_to_configuration)
+        try:
+            configuration.check_valid()
+        except Exception as ex:
+            print(ex)
+            QTimer.singleShot(0, QApplication.instance().quit) 
+            return 
+        
         self.__app_model = AppModel(configuration)
 
         self.__popup_manager = PopupManager(self)
@@ -104,6 +111,9 @@ def main():
     else:  
         print("Please wait!")
         path_to_configuration: str = sys.argv[1]
+        if os.path.exists(path_to_configuration) == False:
+            print("Incorrect path to configuration.txt")
+            return
         app = QApplication(sys.argv)
         ex = TimeDistancePlotBuilder(path_to_configuration)
         sys.exit(app.exec_())
