@@ -313,7 +313,7 @@ class SolarFramesStorage(QObject):
     def get_number_of_frames_in_current_channel(self) -> int:
         return len(self.__loaded_channel)
 
-    def __get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
+    def get_number_of_frames_of_channel_in_database(self, channel: int) -> int:
         connection = sqlite3.connect("my_database.db")
         cursor = connection.cursor()
         command = "SELECT COUNT(*) FROM Images WHERE Channel = {0}".format(channel)

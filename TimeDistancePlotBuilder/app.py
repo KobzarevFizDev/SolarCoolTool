@@ -21,7 +21,6 @@ from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
-
 class TimeDistancePlotBuilder(QMainWindow):
     @property
     def popup_manager(self) -> PopupManager:
@@ -32,7 +31,6 @@ class TimeDistancePlotBuilder(QMainWindow):
 
         self.__controllers_was_created: bool = False
         self.__popups_was_created: bool = False
-
 
         self.setWindowTitle("TimeDistancePlotBuilder")
         self.setGeometry(200, 200, 1200, 600)
@@ -48,6 +46,12 @@ class TimeDistancePlotBuilder(QMainWindow):
             return 
         
         self.__app_model = AppModel(configuration)
+
+        number_of_frames_in_current_channel: int = self.__app_model.solar_frames_storage.get_number_of_frames_of_channel_in_database(configuration.initial_channel)
+        if number_of_frames_in_current_channel == 0:
+            print(f"Not found files for initial channel = {configuration.initial_channel}")
+            QTimer.singleShot(0, QApplication.instance().quit) 
+            return 
 
         self.__popup_manager = PopupManager(self)
 
