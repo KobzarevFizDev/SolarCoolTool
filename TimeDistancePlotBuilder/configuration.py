@@ -45,6 +45,7 @@ class ConfigurationApp:
                 304:self.max_number_of_frames_in_a304,
                 335:self.max_number_of_frames_in_a335}[channel]
 
+
     @property
     def max_number_of_frames_in_a94(self) -> int:
         line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(MAX_NUMBER_OF_FRAMES_A94_PROPERTY_NAME)

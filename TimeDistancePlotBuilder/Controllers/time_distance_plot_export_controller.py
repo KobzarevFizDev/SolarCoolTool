@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel, TimeDistancePlot
+from TimeDistancePlotBuilder.Models.app_models import AppModel
 from TimeDistancePlotBuilder.Views.time_distance_plot_export_view import TimeDistancePlotExportView
 from TimeDistancePlotBuilder.Popups.popups import PopupManager
 from PyQt5.QtGui import QPixmap
