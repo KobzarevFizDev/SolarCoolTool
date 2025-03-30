@@ -1,6 +1,8 @@
 python -m TimeDistancePlotBuilder.app /home/changame/Programming/TimeDistancePlotBuilder/TimeDistancePlotBuilder/configuration.txt
 D:\Python\SolarCoolTool\TimeDistancePlotBuilder\configuration.txt
 
+(Если проблемы с установкой, то нужно  почистить build, dist) и пересоздать окружения для тестирования
+
 1. Сборка
 python setup.py sdist bdist_wheel 
 
