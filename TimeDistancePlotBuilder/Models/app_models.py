@@ -250,18 +250,20 @@ class SolarFramesStorage(QObject):
         paths = []
         wavelengths = []
         dates = []
+
         for root, dirs, files in os.walk(self.__path_to_directory):
             for file in files:
                 paths.append(os.path.join(root, file))
         paths = list(filter((lambda f: "image" in f), paths))
 
         for path in paths:
-            with fits.open(path) as hdul:
-                header = hdul[1].header
-                wavelengths.append(header["WAVELNTH"])
-                dates.append(header["DATE-OBS"])
-        
+            print(f"Indexing -> {path}")
+            header = fits.getheader(path, ext=1)
+            wavelengths.append(header["WAVELNTH"])
+            dates.append(header["DATE-OBS"])
+
         return paths, wavelengths, dates
+    
 
     @pyqtSlot()
     def load_channel(self, channel: int):

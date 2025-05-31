@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='TimeDistancePlotBuilder', 
-    version='0.6.10',
+    version='0.7.3',
     packages=find_packages(include=['TimeDistancePlotBuilder*']),
     install_requires=open('requirements.txt').read().splitlines(),
     include_package_data=True,
