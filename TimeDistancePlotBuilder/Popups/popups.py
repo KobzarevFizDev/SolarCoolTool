@@ -13,7 +13,6 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt, pyqtSignal
 
 from TimeDistancePlotBuilder.Exceptions.exceptions import IncorrectPath, FileNameIsEmpty
-
 from TimeDistancePlotBuilder.Models.app_models import SolarFrame
 
 class LoadingProgramPopup(QDialog):
