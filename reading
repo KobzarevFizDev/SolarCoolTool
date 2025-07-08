@@ -15,3 +15,11 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 
 
 pyinstaller --clean --noconfirm --additional-hooks-dir=hooks .\app.spec
+
+pyinstaller --clean --noconfirm .\app.spec
+
+
+
+Get-ChildItem -Path .\dist\app\_internal -Recurse |
+>>     Sort-Object -Property Length -Descending |
+>>     Select-Object -First 20 Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB, 2)}}
