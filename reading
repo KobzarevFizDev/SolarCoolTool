@@ -21,5 +21,5 @@ pyinstaller --clean --noconfirm .\app.spec
 
 
 Get-ChildItem -Path .\dist\app\_internal -Recurse |
->>     Sort-Object -Property Length -Descending |
->>     Select-Object -First 20 Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB, 2)}}
+     Sort-Object -Property Length -Descending |
+     Select-Object -First 20 Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB, 2)}}

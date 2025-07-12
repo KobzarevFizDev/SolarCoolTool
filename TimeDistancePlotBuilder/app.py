@@ -16,9 +16,7 @@ from TimeDistancePlotBuilder.Controllers.app_state_controller import AppStateCon
 from TimeDistancePlotBuilder.Controllers.publish_tdp_controller import PublishTdpController
 
 from TimeDistancePlotBuilder.Models.app_models import AppModel
-
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
-
 from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
 class TimeDistancePlotBuilder(QMainWindow):
@@ -111,7 +109,7 @@ class TimeDistancePlotBuilder(QMainWindow):
 def main():
     if len(sys.argv) < 2:
         print("You need to give me path to configuration.txt")
-        exit()
+        sys.exit()
     else:  
         print("Please wait!")
         path_to_configuration: str = sys.argv[1]
