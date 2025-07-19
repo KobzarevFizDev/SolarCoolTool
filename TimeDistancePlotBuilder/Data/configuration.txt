@@ -14,6 +14,14 @@ MAX_NUMBER_OF_FRAMES_A211 = [10]
 MAX_NUMBER_OF_FRAMES_A304 = [10]
 MAX_NUMBER_OF_FRAMES_A335 = [10]
 
+COLORMAP_A94 = [D:\Python\SolarCoolTool\Data\colormap_A94.json]
+COLORMAP_A131 = [D:\Python\SolarCoolTool\Data\colormap_A131.json]
+COLORMAP_A171 = [D:\Python\SolarCoolTool\Data\colormap_A171.json]
+COLORMAP_A193 = [D:\Python\SolarCoolTool\Data\colormap_A193.json]
+COLORMAP_A211 = [D:\Python\SolarCoolTool\Data\colormap_A211.json]
+COLORMAP_A304 = [D:\Python\SolarCoolTool\Data\colormap_A304.json]
+COLORMAP_A335 = [D:\Python\SolarCoolTool\Data\colormap_A335.json]
+
 PATH_TO_SOLAR_IMAGES = [D:\WangPreparated]
 PATH_TO_EXPORT = [D:\ExportData]
 

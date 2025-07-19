@@ -34,7 +34,7 @@ class TDP_MatplotlibPreviewWidget(FigureCanvas):
         self.__axes.set_xlabel("Время, С")
         self.__axes.set_ylabel("Дистанция вдоль петли, Mm")
         self.__axes.set_title(f"Канал {self.__channel} A")
-        self.__axes.imshow(self.__tdp, cmap=self.__cmap)
+        # self.__axes.imshow(self.__tdp, cmap=self.__cmap)
 
     def __create_figure_by_tdp(self) -> Figure:
         dpi = 100

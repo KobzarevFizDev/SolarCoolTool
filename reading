@@ -18,6 +18,7 @@ pyinstaller --clean --noconfirm --additional-hooks-dir=hooks .\app.spec
 
 pyinstaller --clean --noconfirm .\app.spec
 
+  Successfully uninstalled sunpy-6.0.5
 
 
 Get-ChildItem -Path .\dist\app\_internal -Recurse |
