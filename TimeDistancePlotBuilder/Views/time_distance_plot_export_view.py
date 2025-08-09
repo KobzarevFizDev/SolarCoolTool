@@ -41,21 +41,19 @@ class TimeDistancePlotExportView:
         return self.__model.app_state.current_state == AppStates.PREVIEW_PLOT_STATE
 
     def __create_tdp_matplotlib_preview(self) -> None:
-        placeholder_tdp: npt.NDArray = self.__model.time_distance_plot.get_placeholder(width_in_px=900, height_in_px=300)
-        cmap: Colormap = self.__model.time_distance_plot.cmap
+        placeholder_tdp_as_rgb_array: npt.NDArray = self.__model.time_distance_plot.get_placeholder_as_rgb_array(width_in_px=900, height_in_px=300)
         channel: int = self.__model.current_channel.channel
 
-        self.__tdp_matplotlib_preview = TDP_MatplotlibPreviewWidget(placeholder_tdp, channel, cmap, self.__parent_window)
+        self.__tdp_matplotlib_preview = TDP_MatplotlibPreviewWidget(placeholder_tdp_as_rgb_array, channel, self.__parent_window)
         self.__tdp_matplotlib_preview.show_time_distance_plot()
         self.__layout.addWidget(self.__tdp_matplotlib_preview)
 
     def __update_tdp_matplotlib_preview(self) -> None:
-        tdp: npt.NDArray = self.__model.time_distance_plot.tdp_array
-        cmap: Colormap = self.__model.time_distance_plot.cmap
+        tdp_rgb_array: npt.NDArray = self.__model.time_distance_plot.rgb
         channel: int = self.__model.current_channel.channel
         
-        self.__tdp_matplotlib_preview.change_tdp(tdp)
-        self.__tdp_matplotlib_preview.change_channel(channel, cmap)
+        self.__tdp_matplotlib_preview.change_tdp(tdp_rgb_array)
+        self.__tdp_matplotlib_preview.change_channel(channel)
         self.__tdp_matplotlib_preview.show_time_distance_plot()
 
     def __create_export_tdp_plot_button(self) -> None:

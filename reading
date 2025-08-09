@@ -11,3 +11,16 @@ twine upload --repository testpypi dist/*
 
 3.  Для установки выполнить: 
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ timedistanceplotbuilder
+
+TimeDistancePlotBuilder.app D:\Python\SolarCoolTool\TimeDistancePlotBuilder\Data\configuration.txt
+
+pyinstaller --clean --noconfirm --additional-hooks-dir=hooks .\app.spec
+
+pyinstaller --clean --noconfirm .\app.spec
+
+  Successfully uninstalled sunpy-6.0.5
+
+
+Get-ChildItem -Path .\dist\app\_internal -Recurse |
+     Sort-Object -Property Length -Descending |
+     Select-Object -First 20 Name, @{Name="Size(MB)";Expression={[math]::Round($_.Length/1MB, 2)}}

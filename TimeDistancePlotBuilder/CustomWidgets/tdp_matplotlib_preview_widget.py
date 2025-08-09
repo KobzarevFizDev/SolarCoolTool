@@ -5,15 +5,15 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
 
+from TimeDistancePlotBuilder.Models.app_models import SolarRenderPlot
+
 class TDP_MatplotlibPreviewWidget(FigureCanvas):
     def __init__(self,
-                 time_distance_plot: npt.NDArray,
+                 tdp_rgb_array: npt.NDArray,
                  channel: int,
-                 cmap: Colormap,
                  parent=None):
-        self.__tdp: npt.NDArray = time_distance_plot
+        self.__tdp_rgb_array: npt.NDArray = tdp_rgb_array
         self.__channel: int = channel
-        self.__cmap: Colormap = cmap
 
         self.__fig: Figure = self.__create_figure_by_tdp()
         self.__axes = self.__fig.add_subplot()
@@ -21,25 +21,24 @@ class TDP_MatplotlibPreviewWidget(FigureCanvas):
 
         self.show_time_distance_plot()
 
-    def change_tdp(self, new_tdp: npt.NDArray) -> None:
-        self.__tdp = new_tdp
+    def change_tdp(self, tdp_rgb_array: npt.NDArray) -> None:
+        self.__tdp_rgb_array = tdp_rgb_array
         self.update_plot()
 
-    def change_channel(self, new_channel: int, new_cmap: Colormap) -> None:
+    def change_channel(self, new_channel: int) -> None:
         self.__channel = new_channel
-        self.__cmap = new_cmap
         self.update_plot()
 
     def show_time_distance_plot(self) -> None:
         self.__axes.set_xlabel("Время, С")
         self.__axes.set_ylabel("Дистанция вдоль петли, Mm")
         self.__axes.set_title(f"Канал {self.__channel} A")
-        self.__axes.imshow(self.__tdp, cmap=self.__cmap)
+        self.__axes.imshow(self.__tdp_rgb_array)
 
     def __create_figure_by_tdp(self) -> Figure:
         dpi = 100
-        height_in_pixels: int = self.__tdp.shape[0]
-        width_in_pixels: int = self.__tdp.shape[1]
+        height_in_pixels: int = self.__tdp_rgb_array.shape[0]
+        width_in_pixels: int = self.__tdp_rgb_array.shape[1]
         fig = Figure(figsize=(width_in_pixels / dpi, height_in_pixels / dpi), dpi=dpi)
         return fig
 

@@ -5,29 +5,23 @@ import glob
 import sqlite3
 from typing import List, Tuple, Optional
 from enum import IntEnum, unique
-import time
 
-# from pympler import asizeof
+from TimeDistancePlotBuilder.dda import get_pixels_of_line
 
-from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
-from scipy.ndimage import zoom, gaussian_filter
-from scipy.integrate import quad
-from scipy.optimize import minimize_scalar
-
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure, SubplotParams
 from matplotlib import pyplot as plt
 from matplotlib.colors import Colormap
 
 import numpy as np
+
 from PyQt5.QtCore import QPoint, QPointF, QRect, QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtCore import QCoreApplication, QRect
-import sunpy.map
-import sunpy.data.sample
-import sunpy.visualization.colormaps.cm
+
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QPen, QColor
 from astropy.io import fits
 import numpy.typing as npt
+from numpy.typing import NDArray
+
+from TimeDistancePlotBuilder.Utils.math import get_integral_by_simpson, minimize_scalar, zoom
 
 from TimeDistancePlotBuilder import transformations
 
@@ -35,24 +29,126 @@ from TimeDistancePlotBuilder.configuration import ConfigurationApp
 
 from TimeDistancePlotBuilder.Exceptions.exceptions import DataNotLoaded, IncorrectZoneInterestingSize, NotFoundDataForExport, DataForExportNotValid
 
+from TimeDistancePlotBuilder.Data.colormap_a94 import COLORMAP_DATA_A94
+from TimeDistancePlotBuilder.Data.colormap_a131 import COLORMAP_DATA_A131
+from TimeDistancePlotBuilder.Data.colormap_a171 import COLORMAP_DATA_A171
+from TimeDistancePlotBuilder.Data.colormap_a193 import COLORMAP_DATA_A193
+from TimeDistancePlotBuilder.Data.colormap_a211 import COLORMAP_DATA_A211
+from TimeDistancePlotBuilder.Data.colormap_a304 import COLORMAP_DATA_A304
+from TimeDistancePlotBuilder.Data.colormap_a335 import COLORMAP_DATA_A335
 
-from aiapy.calibrate import normalize_exposure, register, update_pointing
+from TimeDistancePlotBuilder.Utils.math import smooth_with_gauss
 
 
-def get_cmap_by_channel(channel: int):
+class SolarColorMap:
+    def __init__(self, colormap_json_data: dict):
+        self.__deserialize(colormap_json_data)
+    
+    def interpolate_channel(self, input_values: float, channel: str) -> np.float32:
+        if not channel in ['red', 'blue', 'green']:
+            raise Exception("Invalid value of channel")
+
+        channel_values = { 'red': self.__red,
+                   'blue': self.__blue,
+                   'green': self.__green}[channel]
+
+        x_values = np.array([point[0] for point in channel_values])
+        y_values = np.array([point[1] for point in channel_values])
+        return np.interp(input_values, x_values, y_values)
+    
+    def __deserialize_channel(self, colormap_json: dict, channel: str):
+        if not channel in ['red', 'blue', 'green']:
+            raise Exception("Invalid value of channel")
+
+        result = []
+        for value in colormap_json[channel]:
+            x0 = np.float32(value[0])
+            y0 = np.float32(value[1])
+            result.append([x0, y0])
+        return result
+
+    def __deserialize(self, colormap_json_data: dict) -> dict:
+        self.__red = self.__deserialize_channel(colormap_json_data, 'red')
+        self.__blue = self.__deserialize_channel(colormap_json_data, 'blue')
+        self.__green = self.__deserialize_channel(colormap_json_data, 'green')
+
+
+class BaseSolarRender:
+    def __init__(self, data: NDArray, colormap: SolarColorMap):
+        self.__colormap = colormap
+        self.__width = data.shape[1]
+        self.__height = data.shape[0]
+
+    @property
+    def width(self) -> int:
+        return self.__width
+
+    @property
+    def height(self) -> int:
+        return self.__height
+    
+    def _normalize_data(self, data: NDArray) -> NDArray:
+        data = np.nan_to_num(data, nan=0.0)
+        data_min = np.nanmin(data)
+        data_max = np.nanmax(data)
+        data = (data - data_min) / (data_max - data_min)
+        return data
+
+    def _apply_colormap(self, normalized_data: NDArray) -> NDArray:
+        rgb_array = np.zeros((*normalized_data.shape, 3), dtype=np.float32)
+        rgb_array[..., 0] = self.__colormap.interpolate_channel(normalized_data, channel='red') # * 6
+        rgb_array[..., 1] = self.__colormap.interpolate_channel(normalized_data, channel='green') # * 6
+        rgb_array[..., 2] = self.__colormap.interpolate_channel(normalized_data, channel='blue') # * 6
+        rgb_array = np.clip(rgb_array * 255, 0, 255)
+        return (rgb_array).astype(np.uint8)
+
+
+class SolarRenderPlot(BaseSolarRender):
+    def __init__(self, data: NDArray, colormap: SolarColorMap):
+        super().__init__(data, colormap)
+        self.__rgb: NDArray = self.__create_rgb(data)
+
+    @property
+    def rgb(self) -> NDArray:
+        return self.__rgb
+
+    def __create_rgb(self, data: NDArray) -> NDArray:
+        normalized = self._normalize_data(data)
+        rgb_data = self._apply_colormap(normalized)
+        return rgb_data
+
+class SolarRenderPixmap(BaseSolarRender):
+    def __init__(self, data: NDArray, colormap: SolarColorMap):
+        super().__init__(data, colormap)
+        self.__qpixmap: QPixmap = self.__create_qpixmap(data)
+
+    @property
+    def qpixmap(self) -> QPixmap:
+        return self.__qpixmap
+
+    def __create_qpixmap(self, data: NDArray) -> QPixmap:
+        normalized = self._normalize_data(data)
+        rgb_data = self._apply_colormap(normalized)
+        height, width, _ = rgb_data.shape
+        bytes_per_line = 3 * width
+
+        qimage = QImage(rgb_data.data.tobytes(), width, height, bytes_per_line, QImage.Format_RGB888)
+        return QPixmap.fromImage(qimage)
+
+def get_colormap_by_channel(channel: int) -> SolarColorMap:
     if channel not in [94, 131, 171, 193, 211, 304, 335]:
         raise Exception(
             f"TimeDistancePlot::get_time_distance_plot_as_qpixmap_using_cmap_of_channel({channel}). Not correct channel")
 
-    cm = {94: sunpy.visualization.colormaps.cm.sdoaia94,
-          131: sunpy.visualization.colormaps.cm.sdoaia131,
-          171: sunpy.visualization.colormaps.cm.sdoaia171,
-          193: sunpy.visualization.colormaps.cm.sdoaia193,
-          211: sunpy.visualization.colormaps.cm.sdoaia211,
-          304: sunpy.visualization.colormaps.cm.sdoaia304,
-          335: sunpy.visualization.colormaps.cm.sdoaia335
-          }[channel]
-    return cm
+    colormap_data = {94: COLORMAP_DATA_A94,
+          131: COLORMAP_DATA_A131,
+          171: COLORMAP_DATA_A171,
+          193: COLORMAP_DATA_A193,
+          211: COLORMAP_DATA_A211,
+          304: COLORMAP_DATA_A304,
+          335: COLORMAP_DATA_A335}[channel]
+    
+    return SolarColorMap(colormap_data)
 
 
 class CubedataFrame:
@@ -70,11 +166,10 @@ class CubedataFrame:
         self.__finish_border_of_line = finish_border
 
     def load(self) -> None:
-        m = sunpy.map.Map(self.__path_to_fits_file)
-        m.data[np.isnan(m.data)] = 0
-        self.__pixels = m.data.copy()
-        self.__pixels = np.nan_to_num(self.__pixels, copy=False, nan=0.0)
-        self.__is_loaded = True
+        with fits.open(self.__path_to_fits_file) as hdul:
+            data = hdul[1].data
+            self.__pixels = np.nan_to_num(data, nan=0.0)
+            self.__is_loaded = True
 
     # TODO: Возможно стоит высвобождать ресурсы не у одного фрейма а у всего куба сразу после построения TDP
     def unload(self) -> None:
@@ -143,13 +238,12 @@ class SolarFrame:
         self.__id: int = id
         self.__path_to_fits_file: str = path_to_fits_file
         self.__channel: int = channel
-        self.__qimage = self.__get_qtimage()
-        self.__viewport_transform: ViewportTransform = None
 
-        self.__width_of_frame = -1
-        self.__height_of_frame = -1
-
-        self.__get_size()
+        with fits.open(path_to_fits_file) as hdul:
+            data = hdul[1].data
+            data = data[::-1]
+            colormap = get_colormap_by_channel(self.__channel)
+            self.__solar_render_pixmap = SolarRenderPixmap(data, colormap)
 
     @property
     def path_to_file(self) -> str:
@@ -165,51 +259,28 @@ class SolarFrame:
     
     @property
     def width(self) -> int:
-        return self.__width_of_frame
+        return self.__solar_render_pixmap.width
 
     @property
     def height(self) -> int:
-        return self.__height_of_frame
-
+        return self.__solar_render_pixmap.height
+    
     @property
-    def qtimage(self) -> QImage:
-        return self.__qimage
+    def pixmap(self) -> QPixmap:
+        return self.__solar_render_pixmap.qpixmap
 
-    def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
-        self.__viewport_transform = viewport_transform
-
-    def get_pixmap_of_solar_region(self,
-                                   top_left_in_view: QPoint,
-                                   bottom_right_in_view: QPoint) -> QPixmap:
+    def get_pixmap_of_solar_region(self, top_left_in_view: QPoint, bottom_right_in_view: QPoint) -> QPixmap:
         top_left_in_image = (self.__viewport_transform
                              .transform_from_viewport_pixel_to_image_pixel(top_left_in_view))
         bottom_right_in_image = (self.__viewport_transform
-                                 .transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view))
+                            .transform_from_viewport_pixel_to_image_pixel(bottom_right_in_view))
         rect = QRect(top_left_in_image, bottom_right_in_image)
-        pixmap_from_origin_frame = QPixmap.fromImage(self.__qimage.copy(rect))
+        pixmap_from_origin_frame = self.__solar_render_pixmap.qpixmap.copy(rect)
         scaled_pixmap_of_frame = pixmap_from_origin_frame.scaled(600, 600)
         return scaled_pixmap_of_frame
 
-    def __get_qtimage(self) -> QImage:
-        m = sunpy.map.Map(self.__path_to_fits_file)
-        m.data[np.isnan(m.data)] = 0
-        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-        fig = Figure((40.96, 40.96), subplotpars=sp)
-        canvas = FigureCanvas(fig)
-        ax = fig.add_subplot(projection=m)
-        m.plot(axes=ax)
-        ax.set_axis_off()
-        canvas.draw()
-        width, height = fig.figbbox.width, fig.figbbox.height
-        im = QImage(canvas.buffer_rgba(), int(width), int(height), QImage.Format_RGBA8888)
-        m = None
-        return im
-    
-    def __get_size(self) -> None:
-        m = sunpy.map.Map(self.__path_to_fits_file)
-        self.__width_of_frame = m.data.shape[1]
-        self.__height_of_frame = m.data.shape[0]
-        m = None
+    def set_viewport_transform(self, viewport_transform: 'ViewportTransform') -> None:
+        self.__viewport_transform = viewport_transform
 
 class SolarFramesStorage(QObject):
     finished = pyqtSignal()
@@ -422,12 +493,12 @@ class BezierCurve:
         normal: QPoint = self.normal_at_t(t)
         norm = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
         return QPointF(normal.x() / norm, normal.y() / norm)
-    
-    def arc_length(self, t: float) -> float:
+
+    def arc_length(self, t: float) -> float: 
         integrand = lambda t: (tangent := self.tangent_at_t(t)) and np.linalg.norm([tangent.x(), tangent.y()])
-        length, _ = quad(integrand, 0, t)
-        return length 
-    
+        length = get_integral_by_simpson(integrand, 0, 1, 100)
+        return length
+
     def find_t_for_equal_distances(self, number_of_points: int) -> List[float]:
         total_length: float = self.arc_length(1)
         segment_length: float = total_length / (number_of_points - 1)
@@ -784,9 +855,8 @@ class ViewportTransform:
 
     def get_transformed_pixmap_for_viewport(self, solar_frame: SolarFrame) -> QPixmap:
         scale: int = int(self.__zoom * self.__origin_size_image)
-        scaled_solar_frame = solar_frame.qtimage.scaled(scale, scale)
-        pixmap_for_draw = QPixmap.fromImage(scaled_solar_frame)
-        return pixmap_for_draw
+        scaled_solar_frame = solar_frame.pixmap.scaled(scale, scale)
+        return scaled_solar_frame
 
 
 class TimeLine:
@@ -928,14 +998,6 @@ class TDP(QObject):
     def is_test(self) -> bool:
         return self.__is_test
 
-    # todo: проверика на то что channel корректный 
-    @property
-    def cmap(self) -> Colormap:
-        if self.__channel != -1:
-            return get_cmap_by_channel(self.__channel)
-        else:
-            return get_cmap_by_channel(131)
-
     @property
     def was_builded(self) -> bool:
         return self.__is_builded
@@ -963,6 +1025,11 @@ class TDP(QObject):
     def tdp_array(self) -> npt.NDArray:
         return self.__tdp_array
     
+    @property
+    def rgb(self) -> NDArray:
+        colormap: SolarColorMap = get_colormap_by_channel(self.__channel)
+        return SolarRenderPlot(self.__tdp_array, colormap).rgb
+
     @property
     def smooth_parametr(self) -> float:
         return self.__smooth_parametr
@@ -996,7 +1063,9 @@ class TDP(QObject):
             QCoreApplication.processEvents()
 
 
-        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
 
@@ -1025,12 +1094,16 @@ class TDP(QObject):
             finish_border: int = borders_indexes[i + 1]
             self.__tdp_array[:, start_border:finish_border] = 1
 
-        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
 
-    def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
-        return np.zeros((height_in_px, width_in_px))
+    def get_placeholder_as_rgb_array(self, width_in_px: int, height_in_px: int) -> NDArray:
+        data = np.ones((height_in_px, width_in_px))
+        colormap: Colormap = get_colormap_by_channel(171)
+        return SolarRenderPlot(data, colormap).rgb
 
     def __get_number_of_slices(self) -> int:        
         dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
@@ -1103,25 +1176,10 @@ class TDP(QObject):
         return self.convert_to_qpixmap(0, self.total_tdp_steps - 1, vertical_size_in_px=self.__tdp_array.shape[0])
 
     def convert_to_qpixmap(self, start_step: int, finish_step: int, vertical_size_in_px: int) -> QPixmap:
-        cm = get_cmap_by_channel(self.__channel)
-        sp = SubplotParams(left=0., bottom=0., right=1., top=1.)
-        dpi_value = 100
-
         tdp: npt.NDArray = self.__tdp_array[ : , start_step * self.__width_of_tdp_step : (finish_step - 1) * self.__width_of_tdp_step]
         tdp = self.__vertical_resize_tdp_array(tdp, vertical_size_in_px)
-
-        l = tdp.shape[1] / dpi_value
-        h = tdp.shape[0] / dpi_value
-        fig = Figure(figsize=(l, h), dpi=dpi_value, subplotpars=sp)
-        canvas = FigureCanvas(fig)
-        axes = fig.add_subplot()
-        axes.set_axis_off()
-        axes.imshow(tdp.astype(np.float32), cmap=cm)
-        canvas.draw()
-        width, height = int(fig.figbbox.width), int(fig.figbbox.height)
-        im = QImage(canvas.buffer_rgba(), width, height, QImage.Format_RGBA8888)
-        return QPixmap.fromImage(im)
-
+        colormap = get_colormap_by_channel(self.__channel)
+        return SolarRenderPixmap(tdp, colormap).qpixmap
 
 class SelectedBezierSegments:
     def __init__(self, number_of_bizer_segments: int):

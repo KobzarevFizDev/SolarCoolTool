@@ -1,5 +1,10 @@
 import os.path
 from TimeDistancePlotBuilder.Exceptions.exceptions import ConfigKeyValueError, NotFoundConfigurationPropertyWithName, ConfigValueError, IncorrectPath
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from TimeDistancePlotBuilder.Models.app_models import SolarColorMap
 
 
 STEP_FOR_A94_PROPERTY_NAME = "STEP_FOR_A94"
@@ -9,6 +14,14 @@ STEP_FOR_A193_PROPERTY_NAME = "STEP_FOR_A193"
 STEP_FOR_A211_PROPERTY_NAME = "STEP_FOR_A211"
 STEP_FOR_A304_PROPERTY_NAME = "STEP_FOR_A304"
 STEP_FOR_A335_PROPERTY_NAME = "STEP_FOR_A335"
+
+COLORMAP_A94_NAME = "COLORMAP_A94"
+COLORMAP_A131_NAME = "COLORMAP_A131"
+COLORMAP_A171_NAME = "COLORMAP_A171"
+COLORMAP_A193_NAME = "COLORMAP_A193"
+COLORMAP_A211_NAME = "COLORMAP_A211"
+COLORMAP_A304_NAME = "COLORMAP_A304"
+COLORMAP_A335_NAME = "COLORMAP_A335"
 
 MAX_NUMBER_OF_FRAMES_A94_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A94"
 MAX_NUMBER_OF_FRAMES_A131_PROPERTY_NAME = "MAX_NUMBER_OF_FRAMES_A131"
@@ -73,7 +86,57 @@ class ConfigurationApp:
                 211:self.max_number_of_frames_in_a211,
                 304:self.max_number_of_frames_in_a304,
                 335:self.max_number_of_frames_in_a335}[channel]
+    
+    def get_path_to_colormap_for_channel(self, channel: int) -> str:
+        return {94:self.path_to_colormap_a94,
+                131:self.path_to_colormap_a131,
+                171:self.path_to_colormap_a171,
+                193:self.path_to_colormap_a193,
+                211:self.path_to_colormap_a211,
+                304:self.path_to_colormap_a304,
+                335:self.path_to_colormap_a335}[channel]
 
+    @property
+    def path_to_colormap_a94(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A94_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A94_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a131(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A131_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A131_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a171(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A171_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A171_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a193(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A193_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A193_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a211(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A211_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A211_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a304(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A304_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A304_NAME)
+        return property_value
+    
+    @property
+    def path_to_colormap_a335(self) -> 'SolarColorMap':
+        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A335_NAME)
+        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A335_NAME)
+        return property_value
 
     @property
     def max_number_of_frames_in_a94(self) -> int:
