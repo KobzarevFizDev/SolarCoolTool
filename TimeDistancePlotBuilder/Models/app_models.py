@@ -3,18 +3,11 @@ import math
 import os
 import glob
 import sqlite3
-import json
 from typing import List, Tuple, Optional
 from enum import IntEnum, unique
-import time
 
-from TimeDistancePlotBuilder.dda import get_pixels_of_line, get_pixels_of_cicle
-from scipy.ndimage import zoom, gaussian_filter
-from scipy.integrate import quad
-from scipy.optimize import minimize_scalar
+from TimeDistancePlotBuilder.dda import get_pixels_of_line
 
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure, SubplotParams
 from matplotlib import pyplot as plt
 from matplotlib.colors import Colormap
 
@@ -28,6 +21,7 @@ from astropy.io import fits
 import numpy.typing as npt
 from numpy.typing import NDArray
 
+from TimeDistancePlotBuilder.Utils.math import get_integral_by_simpson, minimize_scalar, zoom
 
 from TimeDistancePlotBuilder import transformations
 
@@ -43,6 +37,7 @@ from TimeDistancePlotBuilder.Data.colormap_a211 import COLORMAP_DATA_A211
 from TimeDistancePlotBuilder.Data.colormap_a304 import COLORMAP_DATA_A304
 from TimeDistancePlotBuilder.Data.colormap_a335 import COLORMAP_DATA_A335
 
+from TimeDistancePlotBuilder.Utils.math import smooth_with_gauss
 
 
 class SolarColorMap:
@@ -77,17 +72,13 @@ class SolarColorMap:
         self.__blue = self.__deserialize_channel(colormap_json_data, 'blue')
         self.__green = self.__deserialize_channel(colormap_json_data, 'green')
 
-class SolarRenderPixmap:
+
+class BaseSolarRender:
     def __init__(self, data: NDArray, colormap: SolarColorMap):
         self.__colormap = colormap
-        self.__qpixmap = self.__create_qpixmap(data)
         self.__width = data.shape[1]
         self.__height = data.shape[0]
 
-    @property
-    def qpixmap(self) -> QPixmap:
-        return self.__qpixmap
-    
     @property
     def width(self) -> int:
         return self.__width
@@ -96,30 +87,53 @@ class SolarRenderPixmap:
     def height(self) -> int:
         return self.__height
     
-    def __normalize_data(self, data: NDArray) -> NDArray:
+    def _normalize_data(self, data: NDArray) -> NDArray:
         data = np.nan_to_num(data, nan=0.0)
         data_min = np.nanmin(data)
         data_max = np.nanmax(data)
         data = (data - data_min) / (data_max - data_min)
         return data
 
-    def __apply_colormap(self, normalized_data: NDArray) -> NDArray:
+    def _apply_colormap(self, normalized_data: NDArray) -> NDArray:
         rgb_array = np.zeros((*normalized_data.shape, 3), dtype=np.float32)
-        rgb_array[..., 0] = self.__colormap.interpolate_channel(normalized_data, channel='red') * 6
-        rgb_array[..., 1] = self.__colormap.interpolate_channel(normalized_data, channel='green') * 6
-        rgb_array[..., 2] = self.__colormap.interpolate_channel(normalized_data, channel='blue') * 6
+        rgb_array[..., 0] = self.__colormap.interpolate_channel(normalized_data, channel='red') # * 6
+        rgb_array[..., 1] = self.__colormap.interpolate_channel(normalized_data, channel='green') # * 6
+        rgb_array[..., 2] = self.__colormap.interpolate_channel(normalized_data, channel='blue') # * 6
         rgb_array = np.clip(rgb_array * 255, 0, 255)
         return (rgb_array).astype(np.uint8)
 
+
+class SolarRenderPlot(BaseSolarRender):
+    def __init__(self, data: NDArray, colormap: SolarColorMap):
+        super().__init__(data, colormap)
+        self.__rgb: NDArray = self.__create_rgb(data)
+
+    @property
+    def rgb(self) -> NDArray:
+        return self.__rgb
+
+    def __create_rgb(self, data: NDArray) -> NDArray:
+        normalized = self._normalize_data(data)
+        rgb_data = self._apply_colormap(normalized)
+        return rgb_data
+
+class SolarRenderPixmap(BaseSolarRender):
+    def __init__(self, data: NDArray, colormap: SolarColorMap):
+        super().__init__(data, colormap)
+        self.__qpixmap: QPixmap = self.__create_qpixmap(data)
+
+    @property
+    def qpixmap(self) -> QPixmap:
+        return self.__qpixmap
+
     def __create_qpixmap(self, data: NDArray) -> QPixmap:
-        normalized = self.__normalize_data(data)
-        rgb_data = self.__apply_colormap(normalized)
+        normalized = self._normalize_data(data)
+        rgb_data = self._apply_colormap(normalized)
         height, width, _ = rgb_data.shape
         bytes_per_line = 3 * width
 
         qimage = QImage(rgb_data.data.tobytes(), width, height, bytes_per_line, QImage.Format_RGB888)
         return QPixmap.fromImage(qimage)
-
 
 def get_colormap_by_channel(channel: int) -> SolarColorMap:
     if channel not in [94, 131, 171, 193, 211, 304, 335]:
@@ -153,14 +167,9 @@ class CubedataFrame:
 
     def load(self) -> None:
         with fits.open(self.__path_to_fits_file) as hdul:
-            self.__pixels = np.nan_to_num(hdul[1].data, nan=0.0)
+            data = hdul[1].data
+            self.__pixels = np.nan_to_num(data, nan=0.0)
             self.__is_loaded = True
-
-        # m = sunpy.map.Map(self.__path_to_fits_file)
-        # m.data[np.isnan(m.data)] = 0
-        # self.__pixels = m.data.copy()
-        # self.__pixels = np.nan_to_num(self.__pixels, copy=False, nan=0.0)
-        # self.__is_loaded = True
 
     # TODO: Возможно стоит высвобождать ресурсы не у одного фрейма а у всего куба сразу после построения TDP
     def unload(self) -> None:
@@ -231,8 +240,10 @@ class SolarFrame:
         self.__channel: int = channel
 
         with fits.open(path_to_fits_file) as hdul:
+            data = hdul[1].data
+            data = data[::-1]
             colormap = get_colormap_by_channel(self.__channel)
-            self.__solar_render_pixmap = SolarRenderPixmap(hdul[1].data, colormap)
+            self.__solar_render_pixmap = SolarRenderPixmap(data, colormap)
 
     @property
     def path_to_file(self) -> str:
@@ -482,12 +493,12 @@ class BezierCurve:
         normal: QPoint = self.normal_at_t(t)
         norm = math.sqrt(normal.x() ** 2 + normal.y() ** 2)
         return QPointF(normal.x() / norm, normal.y() / norm)
-    
-    def arc_length(self, t: float) -> float:
+
+    def arc_length(self, t: float) -> float: 
         integrand = lambda t: (tangent := self.tangent_at_t(t)) and np.linalg.norm([tangent.x(), tangent.y()])
-        length, _ = quad(integrand, 0, t)
-        return length 
-    
+        length = get_integral_by_simpson(integrand, 0, 1, 100)
+        return length
+
     def find_t_for_equal_distances(self, number_of_points: int) -> List[float]:
         total_length: float = self.arc_length(1)
         segment_length: float = total_length / (number_of_points - 1)
@@ -987,14 +998,6 @@ class TDP(QObject):
     def is_test(self) -> bool:
         return self.__is_test
 
-    # todo: проверика на то что channel корректный 
-    @property
-    def cmap(self) -> Colormap:
-        if self.__channel != -1:
-            return get_colormap_by_channel(self.__channel)
-        else:
-            return get_colormap_by_channel(131)
-
     @property
     def was_builded(self) -> bool:
         return self.__is_builded
@@ -1022,6 +1025,11 @@ class TDP(QObject):
     def tdp_array(self) -> npt.NDArray:
         return self.__tdp_array
     
+    @property
+    def rgb(self) -> NDArray:
+        colormap: SolarColorMap = get_colormap_by_channel(self.__channel)
+        return SolarRenderPlot(self.__tdp_array, colormap).rgb
+
     @property
     def smooth_parametr(self) -> float:
         return self.__smooth_parametr
@@ -1055,7 +1063,9 @@ class TDP(QObject):
             QCoreApplication.processEvents()
 
 
-        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
 
@@ -1084,12 +1094,16 @@ class TDP(QObject):
             finish_border: int = borders_indexes[i + 1]
             self.__tdp_array[:, start_border:finish_border] = 1
 
-        self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
+
+        self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
 
-    def get_placeholder(self, width_in_px: int, height_in_px: int) -> None:
-        return np.zeros((height_in_px, width_in_px))
+    def get_placeholder_as_rgb_array(self, width_in_px: int, height_in_px: int) -> NDArray:
+        data = np.ones((height_in_px, width_in_px))
+        colormap: Colormap = get_colormap_by_channel(171)
+        return SolarRenderPlot(data, colormap).rgb
 
     def __get_number_of_slices(self) -> int:        
         dpi: float = self.__viewport_transform.dpi_of_bezier_mask_window 
