@@ -15,7 +15,7 @@ from TimeDistancePlotBuilder.Controllers.select_bezier_segments_controller impor
 from TimeDistancePlotBuilder.Controllers.app_state_controller import AppStateController
 from TimeDistancePlotBuilder.Controllers.publish_tdp_controller import PublishTdpController
 
-from TimeDistancePlotBuilder.Models.app_models import AppModel
+from TimeDistancePlotBuilder.Models.app_models import AppModel, zoom_to_zoomlevel
 from TimeDistancePlotBuilder.configuration import ConfigurationApp
 from TimeDistancePlotBuilder.Popups.popups import PopupManager
 
@@ -26,6 +26,8 @@ class TimeDistancePlotBuilder(QMainWindow):
 
     def __init__(self, path_to_configuration: str):
         super().__init__()
+
+        self.__zoom_level: int = 1
 
         self.__controllers_was_created: bool = False
         self.__popups_was_created: bool = False
@@ -45,6 +47,8 @@ class TimeDistancePlotBuilder(QMainWindow):
         
         self.__app_model = AppModel(configuration)
 
+        self.__app_model.add_observer(self)
+
         number_of_frames_in_current_channel: int = self.__app_model.solar_frames_storage.get_number_of_frames_of_channel_in_database(configuration.initial_channel)
         if number_of_frames_in_current_channel == 0:
             print(f"Not found files for initial channel = {configuration.initial_channel}")
@@ -53,14 +57,19 @@ class TimeDistancePlotBuilder(QMainWindow):
 
         self.__popup_manager = PopupManager(self)
 
-        self.__load_solar_frames_for_current_channel()
+        self.__load_solar_frames_for_current_channel(self.__zoom_level)
 
         centralWidget = QWidget()
         centralWidget.setLayout(self.layout)
         self.setCentralWidget(centralWidget)
 
+    def model_is_changed(self) -> None:
+        zoom_level = zoom_to_zoomlevel(self.__app_model.viewport_transform.zoom)
+        if zoom_level != self.__zoom_level:
+            self.__load_solar_frames_for_current_channel(zoom_level)
+            self.__zoom_level = zoom_level
 
-    def __load_solar_frames_for_current_channel(self) -> None:
+    def __load_solar_frames_for_current_channel(self, zoom_level: int) -> None:
         current_channel: int = self.__app_model.current_channel.channel
 
         self.__popup_manager.loading_program_popup.show()
@@ -70,7 +79,7 @@ class TimeDistancePlotBuilder(QMainWindow):
         self.__worker.moveToThread(self.__thread_load_frames)
 
         self.__worker.progress.connect(self.__popup_manager.loading_program_popup.update_progress)
-        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel))
+        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(current_channel, zoom_level))
         self.__worker.finished.connect(self.__thread_load_frames.quit)
         self.__worker.finished.connect(self.__worker.deleteLater)
         self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)
