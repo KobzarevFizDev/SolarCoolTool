@@ -46,7 +46,7 @@ def transform_point_from_solar_view_to_fits(point_in_solar_view: QPoint,
     p_3x = int( ( p_2.x() - offset.x() ) * (s_3 / (ws * zoom)) ) 
     p_3y = int( ( p_2.y() - offset.y() ) * (s_3 / (ws * zoom)) )
     
-    p_3y = s_3 - 1 - p_3y
+    p_3y = int(s_3 - 1 - p_3y)
 
     return QPoint(p_3x, p_3y)
 

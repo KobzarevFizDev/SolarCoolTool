@@ -1083,8 +1083,6 @@ class TDP(QObject):
             QCoreApplication.processEvents()
 
 
-        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
-
         self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True

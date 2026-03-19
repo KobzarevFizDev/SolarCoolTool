@@ -111,6 +111,7 @@ class TimeDistancePlotBuilder(QMainWindow):
 
         self.show()
         self.__popup_manager.loading_program_popup.close()
+        self.__app_model.notify_observers()
 
     def keyPressEvent(self, event):
         event.accept()
