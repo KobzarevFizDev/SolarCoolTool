@@ -40,6 +40,20 @@ from TimeDistancePlotBuilder.Data.colormap_a335 import COLORMAP_DATA_A335
 from TimeDistancePlotBuilder.Utils.math import smooth_with_gauss
 
 
+def zoom_to_zoomlevel(zoom: float) -> int:
+    zoom_level = 5
+
+    if zoom > 0 and zoom < 1.5:
+        zoom_level = 4
+    elif zoom >= 1.5 and zoom < 3:
+        zoom_level = 3
+    elif zoom >= 3 and zoom < 5:
+        zoom_level = 2
+    else:
+        zoom_level = 1
+
+    return zoom_level
+
 class SolarColorMap:
     def __init__(self, colormap_json_data: dict):
         self.__deserialize(colormap_json_data)
@@ -234,7 +248,8 @@ class SolarFrame:
                 id: int,
                 path_to_fits_file: str,
                 channel: int,
-                date: str):
+                date: str,
+                zoom_level: int):
         self.__id: int = id
         self.__path_to_fits_file: str = path_to_fits_file
         self.__channel: int = channel
@@ -242,6 +257,8 @@ class SolarFrame:
         with fits.open(path_to_fits_file) as hdul:
             data = hdul[1].data
             data = data[::-1]
+            data = data[::zoom_level,::zoom_level]
+
             colormap = get_colormap_by_channel(self.__channel)
             self.__solar_render_pixmap = SolarRenderPixmap(data, colormap)
 
@@ -337,7 +354,7 @@ class SolarFramesStorage(QObject):
     
 
     @pyqtSlot()
-    def load_channel(self, channel: int):
+    def load_channel(self, channel: int, zoom_level: int):
         step = self.__configuration_app.get_step_for_channel(channel)
         limit = self.__configuration_app.get_limit_for_channel(channel)
         need_to_skip = step - 1
@@ -354,19 +371,17 @@ class SolarFramesStorage(QObject):
 
         for i, path in enumerate(files):
             if number_of_cached_frames > limit:
-                # print("Acheve limit")
                 break
             print(f"caching {number_of_cached_frames}/{len(files)}. i = {i}")
 
             if need_to_skip > 0:
-                # print(f"skip {i}")
                 need_to_skip -= 1
                 continue
 
             number_of_cached_frames += 1
             id = ids[i]
             date = dates[i]
-            solar_frame = SolarFrame(id, path, channel, date)
+            solar_frame = SolarFrame(id, path, channel, date, zoom_level)
             solar_frame.set_viewport_transform(self.__viewport_transform)
 
             # print(asizeof.asized(solar_frame))
@@ -760,13 +775,16 @@ class ZoneInteresting:
 
 
 
-# todo: Подумать над названием
 class ViewportTransform:
     def __init__(self, zone_interesting: ZoneInteresting):
         self.__zone_interesting: ZoneInteresting = zone_interesting
         self.__zoom = 1
         self.__origin_size_image = 600
         self.__offset: QPoint = QPoint(0, 0)
+
+    @property
+    def image_size(self) -> int:
+        return 4096 / zoom_to_zoomlevel(self.__zoom)
 
     @property
     def dpi_of_bezier_mask_window(self) -> float:
@@ -779,8 +797,7 @@ class ViewportTransform:
     @property
     def dpi_solar_view_window(self) -> float:
         widget_size = 600
-        image_size = 4096
-        dpi_of_solar_view = image_size / (widget_size * self.__zoom)
+        dpi_of_solar_view = self.image_size / (widget_size * self.__zoom)
         return dpi_of_solar_view
     
     @property
@@ -792,6 +809,10 @@ class ViewportTransform:
     def solar_view_px_size_in_megameters(self) -> float:
         size_of_px_in_megameters = 400
         return self.dpi_solar_view_window * size_of_px_in_megameters
+
+    @property
+    def zoom_level(self) -> int:
+        return zoom_to_zoomlevel(self.__zoom)
 
     @property
     def zoom(self) -> float:
@@ -814,7 +835,6 @@ class ViewportTransform:
 
 
     def transform_point_from_bezier_mask_widget_to_fits(self, point_in_bezier_mask: QPoint) -> QPoint:
-        size_of_fits = 4096
         position_of_zone_interesting: QPoint = self.__zone_interesting.position
         size_of_zone_interesting: int = self.__zone_interesting.size
         widget_size: int = 600
@@ -826,7 +846,7 @@ class ViewportTransform:
         
         point_in_fits = transformations.transform_point_from_solar_view_to_fits(point_in_solar_view, 
                                                                                 self.offset, 
-                                                                                size_of_fits, 
+                                                                                self.image_size, 
                                                                                 widget_size, 
                                                                                 self.zoom)
         
@@ -837,7 +857,7 @@ class ViewportTransform:
     def transform_from_viewport_pixel_to_image_pixel(self, viewport_pixel: QPoint) -> QPoint:
         image_pixel = transformations.transform_point_from_view_to_image(viewport_pixel,
                                                                          [600, 600],
-                                                                         [4096, 4096],
+                                                                         [self.image_size, self.image_size],
                                                                          self.__zoom,
                                                                          self.__offset)
         return image_pixel
@@ -845,7 +865,7 @@ class ViewportTransform:
     def transform_from_image_pixel_to_viewport_pixel(self, image_pixel: QPoint) -> QPoint:
         viewport_pixel = transformations.transform_point_from_image_to_view(image_pixel,
                                                                             [600, 600],
-                                                                            [4096, 4096],
+                                                                            [self.image_size, self.image_size],
                                                                             self.__zoom,
                                                                             self.__offset)
         return viewport_pixel
@@ -1063,8 +1083,6 @@ class TDP(QObject):
             QCoreApplication.processEvents()
 
 
-        # self.__tdp_array = gaussian_filter(self.__tdp_array, sigma=self.__smooth_parametr)
-
         self.__tdp_array = smooth_with_gauss(self.__tdp_array, sigma=self.__smooth_parametr)
 
         self.__is_new = True
@@ -1247,7 +1265,6 @@ class LastExport:
             raise NotFoundDataForExport()
         else:
             return Export(directory_with_last_save)
-    
 
 class LoopAnimation:
     def __init__(self, 

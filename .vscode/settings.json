@@ -1,0 +1,47 @@
+{
+    "hidefiles.configurationType": "local",
+    "hidefiles.globalConfig": {
+        "profiles": [
+            {
+                "name": "Default",
+                "detail": "",
+                "description": "Test",
+                "hidden": [
+                    ".vscode/",
+                    "venv/",
+                    "setup.cfg",
+                    "MANIFEST.in",
+                    "LICENSE.txt",
+                    "images/",
+                    "hooks/",
+                    "TimeDistancePlotBuilder/__pycache__/"
+                ],
+                "peek": [
+                    ".vscode/"
+                ]
+            },
+            {
+                "name": "Strict",
+                "detail": "Hide everything not immediately required",
+                "hidden": [
+                    "$Default"
+                ]
+            }
+        ]
+    },
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "venv/": true,
+        "setup.cfg": true,
+        "MANIFEST.in": true,
+        "LICENSE.txt": true,
+        "images/": true,
+        "hooks/": true,
+        "TimeDistancePlotBuilder/__pycache__/": true
+    },
+    "hidefiles.selectedProfile": "Default"
+}

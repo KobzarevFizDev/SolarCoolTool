@@ -1,0 +1,59 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "label": "Run compile PowerShell",
+            "type": "shell",
+            "command": "${workspaceFolder}/compile.ps1"
+        },
+		{
+            "label": "Build Frost",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/frost/Frost.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Run DeleteUnnecessaryFiles",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/frost/Frost.csproj",
+                "--target=DeleteUnnecessaryFiles",
+                "--dist=D:\\Python\\SolarCoolTool\\dist"
+            ]
+        },
+        {
+            "label": "Run CleanPyQt",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/frost/Frost.csproj",
+                "--target=CleanPyQt",
+                "--dist=D:\\Python\\SolarCoolTool\\dist"
+            ]
+        },
+        {
+            "label": "Run Archive",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "run",
+                "--project",
+                "${workspaceFolder}/frost/Frost.csproj",
+                "--target=Archive",
+                "--dist=D:\\Python\\SolarCoolTool\\dist\\app",
+                "--winrar=C:\\Program Files\\WinRAR\\WinRAR.exe",
+                "--rarpath=D:\\Python\\SolarCoolTool\\dist\\tdpb.rar"
+            ]
+        }
+	]
+}
+

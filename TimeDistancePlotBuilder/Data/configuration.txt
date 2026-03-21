@@ -22,7 +22,7 @@ COLORMAP_A211 = [D:\Python\SolarCoolTool\Data\colormap_A211.json]
 COLORMAP_A304 = [D:\Python\SolarCoolTool\Data\colormap_A304.json]
 COLORMAP_A335 = [D:\Python\SolarCoolTool\Data\colormap_A335.json]
 
-PATH_TO_SOLAR_IMAGES = [D:\WangPreparated]
+PATH_TO_SOLAR_IMAGES = [D:\WangPreparated_mini]
 PATH_TO_EXPORT = [D:\ExportData]
 
 INITIAL_CHANEL = [131]
