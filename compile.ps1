@@ -58,6 +58,8 @@ function Archive {
         Write-Host "Failed created" -ForegroundColor Red
     }
 
+    Write-Host "Result saved to " $outputArchive
+
 }
 
 RemoveGarbage
