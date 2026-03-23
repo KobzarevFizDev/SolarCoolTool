@@ -3,6 +3,15 @@ function GetSizeOfDirectoryInMb {
         $fullPathToDir
     )
 
+    $totalSizeDir = 0
+    foreach ($i in Get-ChildItem $fullPathToDir -Recurse) {
+        $totalSizeDir += (Get-Item $i.FullName).Length
+    }
+
+    return [math]::Round($totalSizeDir / 1024 / 1024, 3)
+}
+
+function RemoveGarbage {
     $workspaceFolder = Get-Location
     $internalFolder = Join-Path $workspaceFolder "dist\app\_internal"
     $directoriesToDelete = @(
@@ -17,19 +26,10 @@ function GetSizeOfDirectoryInMb {
         "tcl8",
         "yaml")
 
-    $totalSizeDir = 0
-    foreach ($i in Get-ChildItem $fullPathToDir -Recurse) {
-        $totalSizeDir += (Get-Item $i.FullName).Length
-    }
-
-    return [math]::Round($totalSizeDir / 1024 / 1024, 3)
-}
-
-function RemoveGarbage {
     foreach ($item in Get-ChildItem $internalFolder) {
 
         if ($item -in $directoriesToDelete) {
-            if(Test-Path -Path $item.FullName) {
+            if (Test-Path -Path $item.FullName) {
                 $sizeOfDirectory = GetSizeOfDirectoryInMb $item.FullName
                 
                 Remove-Item $item.FullName -Recurse -Force
@@ -40,28 +40,30 @@ function RemoveGarbage {
     Write-Host "Garbage was deleted" -ForegroundColor Green
 }
 
-function Archive {
+function ArchiveApp {
     $archiveName = "TDPB_" + (Get-Date -Format "yyyyMMddHHmmss") + ".rar"
     Write-Host $archiveName
 
     $workspaceFolder = Get-Location
-    $inputFolder = Join-Path $workspaceFolder "dist\app"
+    $inputFolder = "app"
     $outputArchive = Join-Path $workspaceFolder "dist\$archiveName"
+    $distFolder = Join-Path $workspaceFolder "dist"
 
     Write-Host "Creating archive ..."
 
-    $process = Start-Process -FilePath "C:\Program Files\WinRAR\WinRAR.exe" -ArgumentList "a", "-r", "`"$outputArchive`"", "`"$inputFolder`"" -Wait -PassThru -NoNewWindow
-    if ($process.ExitCode -eq 0){
+    $process = Start-Process -FilePath "C:\Program Files\WinRAR\WinRAR.exe" -ArgumentList "a", "-r", "-ep1", "`"$outputArchive`"", "`"$inputFolder`"" -WorkingDirectory $distFolder -Wait -PassThru -NoNewWindow
+    
+    if ($process.ExitCode -eq 0) {
         $archiveSize = [math]::Round((Get-Item $outputArchive).Length / 1MB, 2)
         Write-Host "Success created" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "Failed created" -ForegroundColor Red
     }
 
-    Write-Host "Result saved to " $outputArchive
-
+    Write-Host "Result saved to " $outputArchive ". Size: " $archiveSize "Mb"
 }
 
-RemoveGarbage
-Archive
+# RemoveGarbage
+ArchiveApp
 
