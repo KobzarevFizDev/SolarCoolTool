@@ -86,57 +86,6 @@ class ConfigurationApp:
                 211:self.max_number_of_frames_in_a211,
                 304:self.max_number_of_frames_in_a304,
                 335:self.max_number_of_frames_in_a335}[channel]
-    
-    def get_path_to_colormap_for_channel(self, channel: int) -> str:
-        return {94:self.path_to_colormap_a94,
-                131:self.path_to_colormap_a131,
-                171:self.path_to_colormap_a171,
-                193:self.path_to_colormap_a193,
-                211:self.path_to_colormap_a211,
-                304:self.path_to_colormap_a304,
-                335:self.path_to_colormap_a335}[channel]
-
-    @property
-    def path_to_colormap_a94(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A94_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A94_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a131(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A131_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A131_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a171(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A171_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A171_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a193(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A193_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A193_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a211(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A211_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A211_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a304(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A304_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A304_NAME)
-        return property_value
-    
-    @property
-    def path_to_colormap_a335(self) -> 'SolarColorMap':
-        line_with_property: str = self.__get_line_with_property_from_configuration_file_by_property_name(COLORMAP_A335_NAME)
-        property_value: str = self.__get_property_value_from_line_as_str(line_with_property, COLORMAP_A335_NAME)
-        return property_value
 
     @property
     def max_number_of_frames_in_a94(self) -> int:
