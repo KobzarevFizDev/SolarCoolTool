@@ -784,7 +784,7 @@ class ViewportTransform:
 
     @property
     def image_size(self) -> int:
-        return 4096 / zoom_to_zoomlevel(self.__zoom)
+        return int(4096 / zoom_to_zoomlevel(self.__zoom))
 
     @property
     def dpi_of_bezier_mask_window(self) -> float:
@@ -834,6 +834,7 @@ class ViewportTransform:
         self.__offset = new_offset
 
 
+    # Данная функция работает корректно только для построения  диаграммы
     def transform_point_from_bezier_mask_widget_to_fits(self, point_in_bezier_mask: QPoint) -> QPoint:
         position_of_zone_interesting: QPoint = self.__zone_interesting.position
         size_of_zone_interesting: int = self.__zone_interesting.size
@@ -842,11 +843,11 @@ class ViewportTransform:
         point_in_solar_view =  transformations.transform_point_from_bezier_mask_to_solar_view(position_of_zone_interesting, 
                                                                                               point_in_bezier_mask,
                                                                                               size_of_zone_interesting,
-                                                                                              widget_size)
+                                                                                              widget_size)                                                                                                
         
         point_in_fits = transformations.transform_point_from_solar_view_to_fits(point_in_solar_view, 
                                                                                 self.offset, 
-                                                                                self.image_size, 
+                                                                                4096, # Важно!, image_size нельзя использовать тут 
                                                                                 widget_size, 
                                                                                 self.zoom)
         

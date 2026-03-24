@@ -1,11 +1,11 @@
 from unittest import main, TestCase
 from PyQt5.QtCore import QPoint
-from Models.app_models import ViewportTransform
-
+from TimeDistancePlotBuilder.Models.app_models import ViewportTransform, ZoneInteresting
 
 class ViewportTransformTest(TestCase):
     def setUp(self) -> None:
-        self.__viewport_transform = ViewportTransform()
+        self.__zone_interesting = ZoneInteresting()
+        self.__viewport_transform = ViewportTransform(self.__zone_interesting)
 
     def test_transformation_from_view_to_image_case1(self) -> None:
         msg = "From view to image case 1 - fail"
