@@ -3,6 +3,8 @@ from TimeDistancePlotBuilder.Views.channel_switch_view import ChannelSwitchView
 from TimeDistancePlotBuilder.Models.app_models import AppModel
 from PyQt5.QtCore import QThread
 
+from TimeDistancePlotBuilder.Models.app_models import zoom_to_zoomlevel
+
 class ChannelSwitchController:
     def __init__(self, model, mainAppWindow):
         self.__model: AppModel = model
@@ -17,7 +19,9 @@ class ChannelSwitchController:
         self.__worker.moveToThread(self.__thread_load_frames)
 
         self.__worker.progress.connect(self.__popups_manager.loading_program_popup.update_progress)
-        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(channel))
+        # zoom_level = zoom_to_zoomlevel(self.__app_model.viewport_transform.zoom)
+        zoom_level = zoom_to_zoomlevel(self.__model.viewport_transform.zoom)
+        self.__thread_load_frames.started.connect(lambda: self.__worker.load_channel(channel, zoom_level))
         self.__worker.finished.connect(self.__thread_load_frames.quit)
         self.__worker.finished.connect(self.__worker.deleteLater)
         self.__thread_load_frames.finished.connect(self.__thread_load_frames.deleteLater)

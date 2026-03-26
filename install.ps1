@@ -1,5 +1,6 @@
-$FITS_ARCHIVE_NAME = "FitsFiles.rar"
-$TDPB_ARCHIVE_NAME = "ReleaseTDPB.rar"
+﻿$FITS_ZIP_ARCHIVE_NAME = "FitsFiles.zip"
+$TDPB_ZIP_ARCHIVE_NAME = "ReleaseTDPB.zip"
+
 
 function PrintBanner() {
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -26,11 +27,11 @@ function PrintBanner() {
 
 function DownloadFITS() {
     try {
-        if ( -Not(Test-Path $FITS_ARCHIVE_NAME) ) {
+        if ( -Not(Test-Path $FITS_ZIP_ARCHIVE_NAME) ) {
             Write-Host "Downloading demo FITS files ..."
-            $url = "https://github.com/KobzarevFizDev/SolarCoolTool/releases/download/v0.9.0alpha/FitsFiles.rar"
-            curl -o $FITS_ARCHIVE_NAME $url
-            Write-Host "Downloaded" -ForegroundColor Green
+            $url = "https://github.com/KobzarevFizDev/SolarCoolTool/releases/download/v0.9.0alpha/FitsFiles.zip"
+            curl -o $FITS_ZIP_ARCHIVE_NAME $url
+            Write-Host "Fits files downloaded" -ForegroundColor Green
         }
         else {
             Write-Host "FITS files is already downloaded" -ForegroundColor Yellow
@@ -47,11 +48,11 @@ function DownloadFITS() {
 
 function DownloadTDPB() {
     try {
-        if ( -Not(Test-Path $TDPB_ARCHIVE_NAME) ) {
+        if ( -Not(Test-Path $TDPB_ZIP_ARCHIVE_NAME) ) {
             $tag = "v0.9.0alpha"
             $version = "v0.9.0"
             Write-Host "Downloading TDPB ..."
-            curl -o $TDPB_ARCHIVE_NAME "https://github.com/KobzarevFizDev/SolarCoolTool/releases/download/$tag/TDPB_$version.rar"
+            curl -o $TDPB_ZIP_ARCHIVE_NAME "https://github.com/KobzarevFizDev/SolarCoolTool/releases/download/$tag/TDPB_$version.zip"
             Write-Host "Archive with TDPB downloaded. Tag = $tag, Version = $version" -ForegroundColor Green
         }
         else {
@@ -70,59 +71,75 @@ function DownloadTDPB() {
 function ExtractFITS {
     try {
         $workspaceFolder = Get-Location
-        $pathToArchive = Join-Path $workspaceFolder $FITS_ARCHIVE_NAME
+        $pathToArchive = Join-Path $workspaceFolder $FITS_ZIP_ARCHIVE_NAME
         $destinationFolder = $workspaceFolder
 
-        Write-Host $pathToArchive
-        Write-Host $destinationFolder
+        Write-Host "Archive path: $pathToArchive"
+        Write-Host "Destination: $destinationFolder"
 
-        $process = Start-Process -FilePath "C:\Program Files\WinRAR\WinRAR.exe" -ArgumentList "x", "-y", "`"$pathToArchive`"", "`"$destinationFolder`"" -Wait -PassThru -NoNewWindow
-        
-        if ($process.ExitCode -eq 0) {
-            Write-Host "Success extracted" -ForegroundColor Green
+        if (-not (Test-Path $pathToArchive)) {
+            throw "Archive not found at $pathToArchive"
         }
-        else {
-            Write-Host "Failed extracted" -ForegroundColor Red
+
+        if (-not (Test-Path $destinationFolder)) {
+            New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
+            Write-Host "Created destination folder: $destinationFolder" -ForegroundColor Yellow
+        }
+
+        Write-Host "Extracting FITS archive ..."
+
+        Expand-Archive -Path $pathToArchive -DestinationPath $destinationFolder -Force
+        
+        Write-Host "Success extracted FITS files" -ForegroundColor Green
+        
+        $fitsFiles = Get-ChildItem -Path $destinationFolder -Recurse -Filter "*.fits" -File | Measure-Object
+        if ($fitsFiles.Count -gt 0) {
+            Write-Host "Found $($fitsFiles.Count) FITS files in the extracted content" -ForegroundColor Cyan
         }
     }
     catch {
-        Write-Host "Failed to extract archive with FITS files. Exception: " $_.Exception.Message -ForegroundColor Red
+        Write-Host "Failed to extract archive with FITS files: $($_.Exception.Message)" -ForegroundColor Red
         if ($_.Exception.InnerException) {
-            Write-Host "Details: " $_.Exception.InnerException.Message -ForegroundColor Red 
+            Write-Host "Details: $($_.Exception.InnerException.Message)" -ForegroundColor Red 
         }
-        exit
+        exit 1
     }
 }
 
-function  ExtractTDPB {
+
+function ExtractTDPB {
     try {
         $workspaceFolder = Get-Location
-        $pathToArchive = Join-Path $workspaceFolder $TDPB_ARCHIVE_NAME
-        $destinationFolder = $workspaceFolder
+        $pathToArchive = Join-Path $workspaceFolder $TDPB_ZIP_ARCHIVE_NAME
+        $destinationFolder = Join-Path $workspaceFolder "app"
 
-        Write-Host $pathToArchive
-        Write-Host $destinationFolder
+        Write-Host "Archive path: $pathToArchive"
+        Write-Host "Destination: $destinationFolder"
 
-        if ( -Not(Test-Path "C:\Program Files\WinRAR\WinRAR.exe") ) {
-            Write-Host "WinRar is not installed. Exit"
-            exit
+        if (-not (Test-Path $pathToArchive)) {
+            throw "Archive not found at $pathToArchive"
         }
 
-        $process = Start-Process -FilePath "C:\Program Files\WinRAR\WinRAR.exe" -ArgumentList "x", "-y", "`"$pathToArchive`"", "`"$destinationFolder`"" -Wait -PassThru -NoNewWindow
+        if (-not (Test-Path $destinationFolder)) {
+            New-Item -ItemType Directory -Path $destinationFolder -Force | Out-Null
+            Write-Host "Created destination folder: $destinationFolder" -ForegroundColor Yellow
+        }
+
+        Write-Host "Extracting archive ..."
+
+        Expand-Archive -Path $pathToArchive -DestinationPath $destinationFolder -Force
         
-        if ($process.ExitCode -eq 0) {
-            Write-Host "Success extracted" -ForegroundColor Green
-        }
-        else {
-            Write-Host "Failed extracted" -ForegroundColor Red
-        }
+        Write-Host "Success extracted" -ForegroundColor Green
+        
+        $extractedItems = Get-ChildItem -Path $destinationFolder -File | Measure-Object
+        Write-Host "Extracted $($extractedItems.Count) files to $destinationFolder"
     }
     catch {
-        Write-Host "Failed to extract archive with TDPB. Exception: " $_.Exception.Message -ForegroundColor Red
+        Write-Host "Failed to extract archive: $($_.Exception.Message)" -ForegroundColor Red
         if ($_.Exception.InnerException) {
-            Write-Host "Details: " $_.Exception.InnerException.Message -ForegroundColor Red 
+            Write-Host "Details: $($_.Exception.InnerException.Message)" -ForegroundColor Red 
         }
-        exit
+        exit 1
     }
 }
 
@@ -131,8 +148,8 @@ function DeleteGarbage {
         $userInput = Read-Host -Prompt "Do you want to delete downloaded archives? (Yes/No)"
         if ($userInput -eq "Yes") {
             $workspaceFolder = Get-Location
-            $appArchive = Join-Path $workspaceFolder $TDPB_ARCHIVE_NAME
-            $fitsArchive = Join-Path $workspaceFolder $FITS_ARCHIVE_NAME
+            $appArchive = Join-Path $workspaceFolder $TDPB_RAR_ARCHIVE_NAME
+            $fitsArchive = Join-Path $workspaceFolder $FITS_WINRAR_ARCHIVE_NAME
             
             if (Test-Path $appArchive) {
                 Remove-Item $appArchive
@@ -281,6 +298,8 @@ function CreateAppShortcut {
         exit
     }
 }
+
+
 
 PrintBanner
 DownloadTDPB
