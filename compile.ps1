@@ -41,29 +41,52 @@ function RemoveGarbage {
 }
 
 function ArchiveApp {
-    $archiveName = "TDPB_" + (Get-Date -Format "yyyyMMddHHmmss") + ".rar"
+    $archiveName = "TDPB_" + (Get-Date -Format "yyyyMMddHHmmss") + ".zip"
     Write-Host $archiveName
 
     $workspaceFolder = Get-Location
-    $inputFolder = "app"
+    $inputFolder = Join-Path $workspaceFolder "dist\app"
     $outputArchive = Join-Path $workspaceFolder "dist\$archiveName"
     $distFolder = Join-Path $workspaceFolder "dist"
 
+    if (-not (Test-Path $distFolder)) {
+        New-Item -ItemType Directory -Path $distFolder -Force | Out-Null
+    }
+
     Write-Host "Creating archive ..."
 
-    $process = Start-Process -FilePath "C:\Program Files\WinRAR\WinRAR.exe" -ArgumentList "a", "-r", "-ep1", "`"$outputArchive`"", "`"$inputFolder`"" -WorkingDirectory $distFolder -Wait -PassThru -NoNewWindow
-    
-    if ($process.ExitCode -eq 0) {
+    try {
+        # Check if input folder exists
+        if (-not (Test-Path $inputFolder)) {
+            throw "Input folder 'app' not found at $inputFolder"
+        }
+
+        Compress-Archive -Path "$inputFolder\*" -DestinationPath $outputArchive -Force
+        
         $archiveSize = [math]::Round((Get-Item $outputArchive).Length / 1MB, 2)
         Write-Host "Success created" -ForegroundColor Green
+        Write-Host "Result saved to $outputArchive. Size: $archiveSize Mb"
     }
-    else {
-        Write-Host "Failed created" -ForegroundColor Red
+    catch {
+        Write-Host "Failed created: $_" -ForegroundColor Red
     }
-
-    Write-Host "Result saved to " $outputArchive ". Size: " $archiveSize "Mb"
 }
 
-# RemoveGarbage
-ArchiveApp
+function PackApp {
+    param (
+        [string]$Archivator
+    )
+
+    if ($archivator -eq "WinRar") {
+        ArchiveAppWithRAR
+    }
+    else {
+        ArchiveApp
+    }
+    
+}
+
+pyinstaller --clean --noconfirm .\app.spec
+RemoveGarbage
+PackApp -Archivator "ZIP"
 
