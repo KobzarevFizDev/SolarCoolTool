@@ -1,74 +1,77 @@
-
 <h1 align="center">TimeDistancePlotBuilder ☀️ </h1>
 
+# Table of Contents
 
-# Оглавление
+- [Introduction](#introduction)
+- [Installation Process](#installation-process)
+- [Program Usage Example](#program-usage-example)
+- [Examples of Obtained Results](#examples-of-obtained-results)
 
-- [Введение](#введение)
-- [Предназначение и использование программы](#предназначение-и-использование-программы)
-- [Пример использования программы](#пример-использования-программы)
-- [Примеры полученных результатов](#примеры-полученных-результатов)
+## Introduction
 
-## Введение
+Currently, one of the observation objects that scientists in the field of solar physics are focused on is coronal loops. Coronal loops are one of the dominant types of magnetic structures in the solar corona, characterized by increased temperature and density relative to the surrounding plasma.
 
-В настоящее время одними из объектов наблюдения, на которых сосредоточен интерес ученых в области физики Солнца, являются корональные петли. Корональные петли – один из доминирующих видов магнитных структур солнечной короны, отличающийся повышенной температурой и плотностью по отношению к окружающей плазме.
+Observing the evolution of coronal loops allows us to extract information about the processes occurring within them, which is useful for solving the "Coronal Heating Problem." This problem is that the outer atmosphere of the Sun is much hotter than its surface, although temperature is expected to decrease with distance from the core. To this day, this issue remains unresolved. It turns out that observed MHD oscillations and waves in the solar atmosphere can help shed light on this question and deepen our understanding of the processes occurring in the Sun's corona.
 
-Наблюдение за эволюцией корональных петель позволяет извлечь информацию о проходящих в них процессах, которая полезна для решения “Проблемы коронального нагрева”. Данная проблема заключается в том, что внешняя атмосфера Солнца намного горячее его поверхности, хотя ожидается, что температура должна уменьшаться с расстоянием от ядра. До сих пор этот вопрос остается нерешенным. Оказалось, что наблюдаемые в солнечной атмосфере МА колебания и волн могут помочь пролить свет на этот вопрос и глубже понять процессы, происходящие в короне Солнца.
-
-В изучении процессов корональных петель помогает Пространственно-временная диаграмма интенсивности (ПВДИ) или Time distance plot
-
-(ПВДИ) – это разновидность двумерного графика, который показывает распределение интенсивности излучения вдоль петли в течении промежутка времени. 
-
+The space-time intensity diagram (STID) helps in studying coronal loop processes. This is a type of two-dimensional graph that shows the distribution of radiation intensity along the loop over a period of time.
 
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface.png)
 
+This program is designed to simplify the construction of STID from FITS files available on your computer. To construct an STID, follow this algorithm:
 
-## Предназначение и использование программы
+## Installation Process
 
-Данная программа предназначена для упрощения построения ПВДИ по имещюимся на компьютере FITS файлам. Для построения ПВДИ нужно выполнить следующий алгоритм:
+- Create a directory where the program will be installed. Place install.ps1 there. This script will download an archive with the latest program build and test images. This may take some time!
 
-1. Получить данные от SDO в виде FITS файлов за нужный вам период 
-2. Обработать FITS файлы до 1.5 уровня обработки
-3. Указать путь к каталогу с FITS файлами в файле конфигурации (Configuration.txt)
-4. Запустить программу
-5. Выбрать нужный канал
-6. Выделить на правой панели с помощью друх двойных кликов правой кнопкой мыши квадратную область зоны интереса
-7. Выделить корональную петлю на левой панели
-8. Переключиться на вкладу DISTANCE PLOT и нажать кнопку bake
-9. Итоговый результат будет лежать по пути указанном в файле конфигурации
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/change/Kobzarev/NewImagesForReadme/images/InstallDirectory.png)
 
-## Пример использования программы
+- Run the script via PowerShell. This script will download the latest program build and test solar images. It will create a desktop shortcut to launch the program.
 
-Загрузка программы
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/change/Kobzarev/NewImagesForReadme/images/ExecuteScript.png)
+
+- If you've done everything correctly, you'll see something like this. Don't be alarmed — the script is downloading archives with solar images and the program itself.
+
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/change/Kobzarev/NewImagesForReadme/images/Downloading.png)
+
+- When everything is downloaded, you can close the console.
+
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/change/Kobzarev/NewImagesForReadme/images/Installed.png)
+
+- The program should be launched via the shortcut or the console.
+
+![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/change/Kobzarev/NewImagesForReadme/images/StartProgramCMD.png)
+
+## Program Usage Example
+
+Program loading
 
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Loading.png)
 
-Начальное состояние программы после загрузки для изображений в канале 131
+Initial state of the program after loading for images in channel 131
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface.png)
 
-Начальное состояние программы после загрузки для изображений в канале 171
+Initial state of the program after loading for images in channel 171
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface2.png)
 
-Выделенный участок в короне солнца
+Selected region in the solar corona
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface3.png)
 
-Построенный ПВДИ по выделенной петле
+Constructed STID for the selected loop
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface4.png)
 
-Построенный и оформленный график 
+Constructed and formatted graph
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface5.png)
 
-Окошко экспорта графика
+Graph export window
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface7.png)
 
-Окошко экспорта данных (изображение и массив numpy для дальнейшей обработки)
+Data export window (image and numpy array for further processing)
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/Interface6.png)
 
-Окошко экспорта изображения
+Image export window
 ![Interface](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/ExportPopup.png)
 
-
-## Примеры полученных результатов
+## Examples of Obtained Results
 
 ![A94](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A94.png)
 ![A131](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A131.png)
@@ -77,3 +80,6 @@
 ![A211](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A211.png)
 ![A304](https://github.com/KobzarevFizDev/SolarCoolTool/raw/main/images/A304.png)
 
+## From the Author
+
+This program was written as a thesis project and has its shortcomings. If my program was useful to you in any way, please give it a ⭐. If you find errors, please create an issue, and I will try to help you.
