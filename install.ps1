@@ -18,7 +18,7 @@ function PrintBanner() {
     Write-Host "  ║        ██║   ██████╔╝██║     ██████╔╝            ║" -ForegroundColor DarkYellow
     Write-Host "  ║        ╚═╝   ╚═════╝ ╚═╝     ╚═════╝             ║" -ForegroundColor DarkYellow
     Write-Host "  ║                                                  ║" -ForegroundColor DarkYellow
-    Write-Host "  ║            INSTALLER v0.9.0                      ║" -ForegroundColor DarkYellow
+    Write-Host "  ║            INSTALLER v0.9.1                      ║" -ForegroundColor DarkYellow
     Write-Host "  ║            prestable version                     ║" -ForegroundColor DarkYellow
     Write-Host "  ║                                                  ║" -ForegroundColor DarkYellow
     Write-Host "  ╚══════════════════════════════════════════════════╝" -ForegroundColor DarkYellow
